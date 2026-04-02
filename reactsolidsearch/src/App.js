@@ -4,17 +4,19 @@ import './App.css';
 function App() {
   return (
     <div className="App">
+      {/* Боковое меню */}
       <aside className="sidebar">
         <div className="logo">Solid<span>search</span></div>
-        <div className="nav-link active">🏠 Главная</div>
-        <div className="nav-link">🔍 Поиск</div>
-        <div className="nav-link">📂 Архив документов</div>
-        <div className="nav-link">📜 История запросов</div>
-        <div className="nav-link">📊 Аналитика</div>
-        <div className="nav-link">⚙️ Настройки</div>
-        <div className="logout">🚪 Выход</div>
+        <div className="nav-link active"><i class="fa fa-home" aria-hidden="true"></i> Главная</div>
+        <div className="nav-link"><i class="fa fa-search" aria-hidden="true"></i> Поиск</div>
+        <div className="nav-link"><i class="fa fa-archive" aria-hidden="true"></i> Архив документов</div>
+        <div className="nav-link"><i class="fa fa-history" aria-hidden="true"></i> История запросов</div>
+        <div className="nav-link"><i class="fa fa-line-chart" aria-hidden="true"></i> Аналитика</div>
+        <div className="nav-link"><i class="fa fa-cog" aria-hidden="true"></i> Настройки</div>
+        <div className="logout"><i class="fa fa-sign-out" aria-hidden="true"></i> Выход</div>
       </aside>
 
+      {/* Контент */}
       <main className="main-content">
         <div className="header">
           <input type="text" className="search-bar" placeholder="Быстрый поиск..." />
@@ -26,6 +28,7 @@ function App() {
           <p style={{color: '#888'}}>Обзор активности и статистика системы</p>
         </section>
 
+        {/* Карточки статистики HGJFDGfhdghfd*/}
         <div className="stats-grid">
           <div className="stat-card">
             <p>Всего документов</p>
@@ -49,6 +52,7 @@ function App() {
           </div>
         </div>
 
+        {/* Нижние панели */}
         <div className="bottom-sections">
           <div className="panel">
             <h3>Последняя активность</h3>
