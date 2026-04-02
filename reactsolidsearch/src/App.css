@@ -1,9 +1,8 @@
-/* Основные цвета из твоих скриншотов */
 :root {
   --bg-main: #1e1e1e;
   --bg-side: #181818;
   --bg-card: #2a2a2a;
-  --accent: #14b8a6; /* Бирюзовый */
+  --accent: #14b8a6; 
   --text-primary: #ffffff;
   --text-secondary: #a0a0a0;
 }
@@ -16,7 +15,6 @@
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-/* Боковая панель */
 .sidebar {
   width: 250px;
   background-color: var(--bg-side);
@@ -45,7 +43,6 @@
 
 .logout { margin-top: auto; color: #ff5f5f; cursor: pointer; }
 
-/* Основная область */
 .main-content {
   flex: 1;
   padding: 30px;
@@ -67,7 +64,6 @@
   width: 400px;
 }
 
-/* Сетка карточек */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -85,7 +81,6 @@
 .trend-up { color: #10b981; font-size: 14px; }
 .trend-down { color: #f59e0b; font-size: 14px; }
 
-/* Нижние блоки */
 .bottom-sections {
   display: grid;
   grid-template-columns: 1.5fr 1fr 1fr;

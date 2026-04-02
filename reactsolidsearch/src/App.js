@@ -4,7 +4,6 @@ import './App.css';
 function App() {
   return (
     <div className="App">
-      {/* Боковое меню */}
       <aside className="sidebar">
         <div className="logo">Solid<span>search</span></div>
         <div className="nav-link active">🏠 Главная</div>
@@ -16,11 +15,10 @@ function App() {
         <div className="logout">🚪 Выход</div>
       </aside>
 
-      {/* Контент */}
       <main className="main-content">
         <div className="header">
           <input type="text" className="search-bar" placeholder="Быстрый поиск..." />
-          <div className="user">Никита Фамилия 👤</div>
+          <div className="user">Имя Фамилия 👤</div>
         </div>
 
         <section className="welcome">
@@ -28,7 +26,6 @@ function App() {
           <p style={{color: '#888'}}>Обзор активности и статистика системы</p>
         </section>
 
-        {/* Карточки статистики */}
         <div className="stats-grid">
           <div className="stat-card">
             <p>Всего документов</p>
@@ -52,7 +49,6 @@ function App() {
           </div>
         </div>
 
-        {/* Нижние панели */}
         <div className="bottom-sections">
           <div className="panel">
             <h3>Последняя активность</h3>
