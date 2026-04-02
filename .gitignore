@@ -1,0 +1,17 @@
+# Базы данных (Docker)
+postgres_data/
+pgdata/
+data/
+
+# Секреты и конфиги
+.env
+.env.local
+
+# Зависимости (если они есть в корне)
+node_modules/
+dist/
+build/
+
+# Системные файлы
+.DS_Store
+Thumbs.db
