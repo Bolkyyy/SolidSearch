@@ -7,7 +7,7 @@ function App() {
       {/* Боковое меню */}
       <aside className="sidebar">
         <div className="logo">Solid<span>search</span></div>
-        <div className="nav-link active">🏠 Главная</div>
+        <div className="nav-link active"><i class="fa fa-home" aria-hidden="true"></i> Главная</div>
         <div className="nav-link">🔍 Поиск</div>
         <div className="nav-link">📂 Архив документов</div>
         <div className="nav-link">📜 История запросов</div>
