@@ -28,7 +28,7 @@ function App() {
           <p style={{color: '#888'}}>Обзор активности и статистика системы</p>
         </section>
 
-        {/* Карточки статистики */}
+        {/* Карточки статистики HGJFDGfhdghfd*/}
         <div className="stats-grid">
           <div className="stat-card">
             <p>Всего документов</p>
