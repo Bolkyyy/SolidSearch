@@ -18,7 +18,7 @@ const LoginPage = () => {
   );
 };
 
-//ГЛАВНАЯ
+//ГЛАВНАЯЯ
 
 const HomePage = () => {
   return (
