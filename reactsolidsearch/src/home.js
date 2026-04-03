@@ -1,8 +1,8 @@
 import React from 'react';
-import './App.css';
+import './home.css';
 import logo from './Images/BlackLogo.svg';
 
-function App() {
+function home() {
   return (
     <div className="App">
       <aside className="sidebar">
@@ -113,7 +113,6 @@ function App() {
         </div>
       </main>
     </div>
-  );
+  )
 }
-
-export default App;
+export default home;
