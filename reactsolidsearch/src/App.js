@@ -6,43 +6,71 @@ function App() {
     <div className="App">
       <aside className="sidebar">
         <div className="logo">Solid<span>search</span></div>
-        <div className="nav-link active"><i class="fa fa-home" aria-hidden="true"></i> Главная</div>
-        <div className="nav-link"><i class="fa fa-search" aria-hidden="true"></i> Поиск</div>
-        <div className="nav-link"><i class="fa fa-archive" aria-hidden="true"></i> Архив документов</div>
-        <div className="nav-link"><i class="fa fa-history" aria-hidden="true"></i> История запросов</div>
-        <div className="nav-link"><i class="fa fa-line-chart" aria-hidden="true"></i> Аналитика</div>
-        <div className="nav-link"><i class="fa fa-cog" aria-hidden="true"></i> Настройки</div>
-        <div className="logout"><i class="fa fa-sign-out" aria-hidden="true"></i> Выход</div>
+        <div className="nav-link active"><i className="fa fa-home" /> Главная</div>
+        <div className="nav-link"><i className="fa fa-search" /> Поиск</div>
+        <div className="nav-link"><i className="fa fa-archive" /> Архив документов</div>
+        <div className="nav-link"><i className="fa fa-history" /> История запросов</div>
+        <div className="nav-link"><i className="fa fa-line-chart" /> Аналитика</div>
+        <div className="nav-link"><i className="fa fa-database" /> Индексация</div>
+
+        <div className="sidebar-divider" />
+        <div className="nav-link"><i className="fa fa-cog" /> Настройки</div>
+        <div className="logout"><i className="fa fa-sign-out" /> Выход</div>
       </aside>
 
       <main className="main-content">
-        <div className="header">
-          <input type="text" className="search-bar" placeholder="Быстрый поиск..." />
-          <div className="user">Имя Фамилия <i class="fa fa-user" aria-hidden="true"></i></div>
-        </div>
+        <header className="header">
+          <div className="header-top-row">
+            <div className="search-wrapper">
+              <i className="fa fa-search" />
+              <input type="text" className="search-bar" placeholder="Быстрый поиск..." />
+            </div>
+
+            <div className="user-section">
+              <div className="header-action-icons">
+                <div className="action-btn green-text"><i className="fa fa-upload" /></div>
+                <div className="action-btn"><i className="fa fa-bell" /></div>
+              </div>
+              <div className="vertical-line" />
+              <div className="user-profile">
+                <div className="user-info">
+                  <div className="user-name">Имя Фамилия</div>
+                  <div className="user-post">Должность</div>
+                </div>
+                <div className="user-avatar"><i className="fa fa-user-circle" /></div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="header-bottom-line" />
+        </header>
 
         <section className="welcome">
           <h1>Добро пожаловать!</h1>
-          <p style={{color: '#888'}}>Обзор активности и статистика системы</p>
+          <p className="welcome-link">Обзор активности и статистика системы</p>
         </section>
 
         <div className="stats-grid">
           <div className="stat-card">
+            <i className="fa fa-file-text card-icon blue" />
             <p>Всего документов</p>
             <h2>24,587</h2>
             <span className="trend-up">+1,234</span>
           </div>
           <div className="stat-card">
+            <i className="fa fa-check-circle card-icon green" />
             <p>Проиндексировано</p>
             <h2>23,892</h2>
             <span className="trend-up">+856</span>
           </div>
           <div className="stat-card">
+            <i className="fa fa-bolt card-icon purple" />
             <p>Запросов сегодня</p>
             <h2>1,456</h2>
             <span className="trend-up">+12%</span>
           </div>
           <div className="stat-card">
+            <i className="fa fa-history card-icon orange" />
             <p>Среднее время отчета</p>
             <h2>1.2 сек</h2>
             <span className="trend-down">-0.2 сек</span>
@@ -51,27 +79,32 @@ function App() {
 
         <div className="bottom-sections">
           <div className="panel">
-            <h3>Последняя активность</h3>
-            <div className="activity-item">
-              <span>Иван Петров: Поиск договора...</span>
-              <span style={{color: '#666'}}>2 мин назад</span>
+            <div className="panel-header">
+              <h3>Последняя активность</h3>
+              <i className="fa fa-line-chart panel-header-icon green" />
             </div>
-            <div className="activity-item">
-              <span>Система: Индексация завершена</span>
-              <span style={{color: '#666'}}>1 час назад</span>
-            </div>
+            <div className="activity-item"><span>Иван Петров: Поиск...</span><span className="time">2 мин назад</span></div>
+            <div className="activity-item"><span>Мария Сидорова: Открыт...</span><span className="time">15 мин назад</span></div>
+            <div className="view-all">Вся история →</div>
           </div>
 
           <div className="panel">
-            <h3>Популярные темы</h3>
+            <div className="panel-header">
+              <h3>Популярные темы</h3>
+              <i className="fa fa-th-large panel-header-icon purple" />
+            </div>
             <div className="activity-item">Договоры на ремонт <span className="trend-up">+12%</span></div>
             <div className="activity-item">Сметы и расчеты <span className="trend-up">+7%</span></div>
           </div>
 
           <div className="panel">
-            <h3>Быстрый доступ</h3>
-            <p><i class="fa fa-folder" aria-hidden="true"></i> Архив 2024</p>
-            <p><i class="fa fa-folder" aria-hidden="true"></i> Текущие проекты</p>
+            <div className="panel-header">
+              <h3>Быстрый доступ к коллекциям</h3>
+              <i className="fa fa-th panel-header-icon orange" />
+            </div>
+            <div className="quick-access-item">Архив 2024 <span className="label">Готово</span></div>
+            <div className="quick-access-item">Текущие проекты <span className="label orange">Индексация</span></div>
+            <div className="view-all-bottom">Все коллекции →</div>
           </div>
         </div>
       </main>
