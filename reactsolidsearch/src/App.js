@@ -37,7 +37,7 @@ const HomePage = () => {
         <div className="nav-link"><i className="fa fa-database" /> Индексация</div>
         <div className="sidebar-divider" />
         <div className="nav-link"><i className="fa fa-cog" /> Настройки</div>
-        <div className="logout"><i className="fa fa-sign-out" /> Выход</div>
+        <div className="logout"><i className="fa fa-sign-out" /><Link to="/" className='exit'> Выход</Link></div>
       </aside>
 
       <main className="main-content">
