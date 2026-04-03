@@ -1,8 +1,26 @@
 import React from 'react';
 import './App.css';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import logo from './Images/BlackLogo.svg';
 
-function App() {
+//СТРАНИЦА ЛОГИНА - ФЕДЯ И МАРТЫНОВ
+
+const LoginPage = () => {
+  return (
+    <div style={{ padding: '20px', maxWidth: '300px' }}>
+      <h2>Вход в систему</h2>
+      <form onSubmit={(e) => e.preventDefault()}>
+        <input type="text" placeholder="Логин" style={{ display: 'block', marginBottom: '10px' }} />
+        <input type="password" placeholder="Пароль" style={{ display: 'block', marginBottom: '10px' }} />
+        <Link to="/home"><button type="submit">Войти</button></Link>
+      </form>
+    </div>
+  );
+};
+
+//ГЛАВНАЯ
+
+const HomePage = () => {
   return (
     <div className="App">
       <aside className="sidebar">
@@ -113,6 +131,19 @@ function App() {
         </div>
       </main>
     </div>
+  )
+}
+
+
+function App() {
+  return (
+    <Router>
+      {/* Область, где контент будет подменяться */}
+      <Routes>
+        <Route path="/" element={<LoginPage />} />
+        <Route path="/home" element={<HomePage />} />
+      </Routes>
+    </Router>
   );
 }
 
