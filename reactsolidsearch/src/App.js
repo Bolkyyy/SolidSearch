@@ -1,7 +1,9 @@
 import React from 'react';
+import { useState } from 'react';
 import './App.css';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
 import logo from './Images/BlackLogo.svg';
+import axios from 'axios';
 
 //СТРАНИЦА ЛОГИНА - ФЕДЯ И МАРТЫНОВ
 
@@ -21,6 +23,26 @@ const LoginPage = () => {
 //ГЛАВНАЯ
 
 const HomePage = () => {
+  const [documents, setDocuments] = React.useState([]); // Состояние для массива документов
+
+  React.useEffect(() => {
+    axios.get('http://localhost:3001/documents') 
+      .then(response => {
+        setDocuments(response.data); // Кладем массив из БД в состояние
+      })
+      .catch(err => console.error("Ошибка загрузки документов:", err));
+  }, []);  
+  
+  const newDocsCount = documents.filter(doc => {
+    const docDate = new Date(doc.created_at); // Дата создания документа
+    const dayAgo = new Date(); 
+    dayAgo.setDate(dayAgo.getDate() - 1); // Время ровно 24 часа назад
+
+    return docDate > dayAgo; // Оставляем только те, что созданы позже, чем вчера
+  }).length;
+
+  const indexedDocs = documents.filter(doc => doc.status === "indexed");
+
   return (
     <div className="App">
       <aside className="sidebar">
@@ -37,7 +59,7 @@ const HomePage = () => {
         <div className="nav-link"><i className="fa fa-database" /> Индексация</div>
         <div className="sidebar-divider" />
         <div className="nav-link"><i className="fa fa-cog" /> Настройки</div>
-        <div className="logout"><i className="fa fa-sign-out" /> Выход</div>
+        <div className="logout"><i className="fa fa-sign-out" /><Link to="/" className='exit'> Выход</Link></div>
       </aside>
 
       <main className="main-content">
@@ -76,13 +98,13 @@ const HomePage = () => {
           <div className="stat-card">
             <i className="fa fa-file-text card-icon blue" />
             <p>Всего документов</p>
-            <h2>24,587</h2>
-            <span className="trend-up">+1,234</span>
+            <h2>{documents.length}</h2>
+            <span className="trend-up">{newDocsCount > 0 ? `+ ${newDocsCount}` : `+0`}</span>
           </div>
           <div className="stat-card">
             <i className="fa fa-check-circle card-icon green" />
             <p>Проиндексировано</p>
-            <h2>23,892</h2>
+            <h2>{indexedDocs.length}</h2>
             <span className="trend-up-index">+856</span>
           </div>
           <div className="stat-card">
