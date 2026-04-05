@@ -5,7 +5,7 @@ import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react
 import logo from './Images/BlackLogo.svg';
 import axios from 'axios';
 
-//СТРАНИЦА ЛОГИНА - ФЕДЯ И МАРТЫНОВ
+//СТРАНИЦА ЛОГИНА - МАРТЫНОВ
 
 const LoginPage = () => {
   return (
