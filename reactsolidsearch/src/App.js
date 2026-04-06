@@ -8,13 +8,54 @@ import axios from 'axios';
 
 const LoginPage = () => {
   return (
-    <div style={{ padding: '20px', maxWidth: '300px' }}>
-      <h2 style={{color: 'white'}}>Вход в систему</h2>
-      <form onSubmit={(e) => e.preventDefault()}>
-        <input type="text" placeholder="Логин" style={{ display: 'block', marginBottom: '10px' }} />
-        <input type="password" placeholder="Пароль" style={{ display: 'block', marginBottom: '10px' }} />
-        <Link to="/home"><button type="submit">Войти</button></Link>
-      </form>
+    <div className="login-container">
+      <div className="login-card">
+        <h1 className="logo">Solid Search</h1>
+        <p className="subtitle">AI-powered система поиска и аналитики документов</p>
+        
+        <h2 className="login-title">Вход в систему</h2>
+        
+        <form onSubmit={(e) => e.preventDefault()}>
+          <div className="input-group">
+            <label className="input-label">Email</label>
+            <input 
+              type="email" 
+              placeholder="example@company.com" 
+              className="input-field"
+            />
+          </div>
+          
+          <div className="input-group">
+            <label className="input-label">Пароль</label>
+            <input 
+              type="password" 
+              placeholder="********" 
+              className="input-field"
+            />
+          </div>
+          
+          <div className="options">
+            <label className="checkbox-label">
+              <input type="checkbox" /> Запомнить меня
+            </label>
+            <a href="#" className="forgot-link">Забыли пароль?</a>
+          </div>
+          
+          <Link to="/home">
+            <button type="submit" className="login-btn">Войти в систему</button>
+          </Link>
+        </form>
+        
+        <div className="demo-box">
+          <strong>Демо-доступ</strong><br />
+          <span>Email: demo@company.ru</span><br />
+          <span>Пароль: demo123</span>
+        </div>
+        
+        <hr className="divider" />
+        
+        <p className="footer">© 2026 Интеллектуальный архив. Все права защищены.</p>
+      </div>
     </div>
   );
 };
