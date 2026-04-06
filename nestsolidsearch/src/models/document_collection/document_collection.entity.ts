@@ -1,6 +1,6 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
 
-@Entity({ name:'document_collection', schema: 'solidsearchdb'})
+@Entity({ name:'document_collections', schema: 'solidsearchdb'})
 export class DocumentCollection {
     @PrimaryGeneratedColumn()
     id!: number;

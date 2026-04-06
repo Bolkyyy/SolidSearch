@@ -1,6 +1,6 @@
 import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
 
-@Entity()
+@Entity({ name:'search_queries', schema: 'solidsearchdb'})
 export class SearchQuerie {
     @PrimaryGeneratedColumn()
     id!: number;
@@ -14,8 +14,8 @@ export class SearchQuerie {
     @Column()
     query_type!: string;
 
-    @Column()
-    filters_json!: string;
+    @Column({ type: 'json', nullable: true })
+    filters_json!: any;
 
     @Column({type: 'timestamp', name: 'created_at'})
     created_at!: Date;

@@ -1,9 +1,9 @@
 import { Controller, Get } from '@nestjs/common';
-import { DocumentsService } from './documents.service';
+import { DocumentFilesService } from './documents.service';
 
 @Controller('documents')
 export class DocumentsController {
-    constructor(private readonly documentsService: DocumentsService) {}
+    constructor(private readonly documentsService: DocumentFilesService) {}
 
     @Get()
     async findall() {

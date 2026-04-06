@@ -23,6 +23,6 @@ export class DocumentFiles {
     @Column()
     page_count!: number;
 
-    @CreateDateColumn({ type: 'timestamp', name: 'upload_at' })
-    upload_at!: Date;
+    @CreateDateColumn({ type: 'timestamp', name: 'uploaded_at' })
+    uploaded_at!: Date;
 }
