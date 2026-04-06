@@ -1,3 +1,5 @@
+/* Страница главная */
+
 :root {
   --bg-main: #1e1e1e;
   --bg-side: #181818;
@@ -104,3 +106,8 @@ body { margin: 0; padding: 0; background-color: var(--bg-main); overflow-x: hidd
 .trend-up-index { color: #10b981; font-size: 12px; font-weight: bold; }
 .trend-up-request { color: #a855f7; font-size: 12px; font-weight: bold; }
 .trend-down { color: #f59e0b; font-size: 12px; font-weight: bold; }
+
+.exit { text-decoration: none; color: #e4585a;}
+
+/* Страница логина */
+

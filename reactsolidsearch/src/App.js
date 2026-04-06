@@ -20,7 +20,7 @@ const LoginPage = () => {
   );
 };
 
-//ГЛАВНАЯ
+//ГЛАВНАЯЯ
 
 const HomePage = () => {
   const [documents, setDocuments] = React.useState([]);
