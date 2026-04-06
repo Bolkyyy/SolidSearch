@@ -7,6 +7,8 @@ import { DocumentsModule } from './models/documents/documents.module';
 import { UsersController } from './models/users/users.controller';
 import { UsersModule } from './models/users/users.module';
 import { SearchQueriesModule } from './models/search_queries/search_queries.module';
+import { DocumentCollectionModule } from './models/document_collection/document_collection.module';
+import { DocumentFilesModule } from './models/document_files/document_files.module';
 
 @Module({
   imports: [
@@ -26,7 +28,9 @@ import { SearchQueriesModule } from './models/search_queries/search_queries.modu
     RolesModule,
     DocumentsModule,
     UsersModule,
-    SearchQueriesModule, 
+    SearchQueriesModule,
+    DocumentCollectionModule,
+    DocumentFilesModule
   ],
   controllers: [AppController, UsersController],
   providers: [AppService],
