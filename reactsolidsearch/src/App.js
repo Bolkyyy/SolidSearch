@@ -9,7 +9,7 @@ import axios from 'axios';
 const LoginPage = () => {
   return (
     <div style={{ padding: '20px', maxWidth: '300px' }}>
-      <h2>Вход в систему</h2>
+      <h2 style={{color: 'white'}}>Вход в систему</h2>
       <form onSubmit={(e) => e.preventDefault()}>
         <input type="text" placeholder="Логин" style={{ display: 'block', marginBottom: '10px' }} />
         <input type="password" placeholder="Пароль" style={{ display: 'block', marginBottom: '10px' }} />
