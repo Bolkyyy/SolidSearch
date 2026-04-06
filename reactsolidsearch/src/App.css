@@ -111,3 +111,65 @@ body { margin: 0; padding: 0; background-color: var(--bg-main); overflow-x: hidd
 
 /* Страница логина */
 
+.activity-item.multi-line {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 12px 0;
+}
+
+.activity-row {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.user-name-small {
+    font-weight: bold;
+    color: #fff;
+    font-size: 13px;
+}
+
+.search-query {
+    color: var(--text-secondary);
+    font-size: 12px;
+}
+
+.results-count {
+    color: var(--accent);
+    font-size: 11px;
+}
+
+.Collection {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    background: transparent; 
+    padding: 12px 20px;
+    border: 1px solid #5a5a5a;
+    border-radius: 15px;
+    margin-bottom: 10px;
+    color: #fff;
+    cursor: pointer;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 13px;
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+.Collection:hover {
+    background: #262626; 
+    border-color: var(--accent);
+    transform: translateY(-2px); 
+}
+
+.Collection:active {
+    transform: translateY(0);
+}
+
+.label.orange {
+    background: #451a03;
+    color: #f59e0b;
+    border: none;
+}

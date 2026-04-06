@@ -1,5 +1,4 @@
-import React from 'react';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import './App.css';
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
 import logo from './Images/BlackLogo.svg';
@@ -21,42 +20,42 @@ const LoginPage = () => {
 };
 
 //ГЛАВНАЯЯ
-
 const HomePage = () => {
   const [documents, setDocuments] = React.useState([]);
+  const navigate = useNavigate();
 
   React.useEffect(() => {
-    axios.get('http://localhost:3001/documents') 
+    axios.get('http://localhost:3001/documents')
       .then(response => {
         setDocuments(response.data);
       })
       .catch(err => console.error("Ошибка загрузки документов:", err));
-  }, []);  
-  
+  }, []);
+
   const newDocsCount = documents.filter(doc => {
     const docDate = new Date(doc.created_at);
-    const dayAgo = new Date(); 
+    const dayAgo = new Date();
     dayAgo.setDate(dayAgo.getDate() - 1);
-
     return docDate > dayAgo;
   }).length;
 
-  const indexedDocs = documents.filter(doc => doc.status === "indexed");
+  const indexedDocs = documents.filter(doc => doc.status === "indexed").length;
 
   return (
     <div className="App">
       <aside className="sidebar">
         <div className="logo-container">
-          <img src={logo} className="logo-img"></img>
+          <img src={logo} className="logo-img" alt="logo" />
           <span className="logo-text">AI-поиск по документам</span>
         </div>
-        
+
         <div className="nav-link active"><i className="fa fa-home" /> Главная</div>
         <div className="nav-link"><i className="fa fa-search" /> Поиск</div>
         <div className="nav-link"><i className="fa fa-folder-open" /> Архив документов</div>
         <div className="nav-link"><i className="fa fa-history" /> История запросов</div>
         <div className="nav-link"><i className="fa fa-line-chart" /> Аналитика</div>
         <div className="nav-link"><i className="fa fa-database" /> Индексация</div>
+
         <div className="sidebar-divider" />
         <div className="nav-link"><i className="fa fa-cog" /> Настройки</div>
         <div className="logout"><i className="fa fa-sign-out" /><Link to="/" className='exit'> Выход</Link></div>
@@ -79,13 +78,12 @@ const HomePage = () => {
               <div className="user-profile">
                 <div className="user-info">
                   <div className="user-name">Имя Фамилия</div>
-                  <div className="user-post">Должность</div>
+                  <div className="user-post">Разработчик</div>
                 </div>
                 <div className="user-avatar"><i className="fa fa-user-circle" /></div>
               </div>
             </div>
           </div>
-          
           <div className="header-bottom-line" />
         </header>
 
@@ -99,12 +97,12 @@ const HomePage = () => {
             <i className="fa fa-file-text card-icon blue" />
             <p>Всего документов</p>
             <h2>{documents.length}</h2>
-            <span className="trend-up">{newDocsCount > 0 ? `+ ${newDocsCount}` : `+0`}</span>
+            <span className="trend-up">+{newDocsCount}</span>
           </div>
           <div className="stat-card">
             <i className="fa fa-check-circle card-icon green" />
             <p>Проиндексировано</p>
-            <h2>{indexedDocs.length}</h2>
+            <h2>{indexedDocs}</h2>
             <span className="trend-up-index">+856</span>
           </div>
           <div className="stat-card">
@@ -127,8 +125,29 @@ const HomePage = () => {
               <h3>Последняя активность</h3>
               <i className="fa fa-line-chart panel-header-icon green" />
             </div>
-            <div className="activity-item"><span>Иван Петров: Поиск...</span><span className="time">2 мин назад</span></div>
-            <div className="activity-item"><span>Мария Сидорова: Открыт...</span><span className="time">15 мин назад</span></div>
+            
+            <div className="activity-item multi-line">
+              <div className="activity-row">
+                <span className="user-name-small">Иван Петров</span>
+                <span className="time">2 мин назад</span>
+              </div>
+              <div className="activity-row">
+                <span className="search-query">Поиск: "Договоры"</span>
+                <span className="results-count">12 результатов</span>
+              </div>
+            </div>
+
+            <div className="activity-item multi-line">
+              <div className="activity-row">
+                <span className="user-name-small">Мария Сидорова</span>
+                <span className="time">15 мин назад</span>
+              </div>
+              <div className="activity-row">
+                <span className="search-query">Открыт: "Смета_ремонт.pdf"</span>
+                <span className="results-count">1 файл</span>
+              </div>
+            </div>
+
             <div className="view-all-history">Вся история →</div>
           </div>
 
@@ -146,21 +165,26 @@ const HomePage = () => {
               <h3>Быстрый доступ к коллекциям</h3>
               <i className="fa fa-th panel-header-icon orange" />
             </div>
-            <div className="Collection">Архив 2024 <span className="label orange">Готово</span></div>
-            <div className="Collection">Текущие проекты <span className="label orange">Индексация</span></div>
+            
+            <button className="Collection">
+              Архив 2024 <span className="label orange">Готово</span>
+            </button>
+            
+            <button className="Collection" >
+              Текущие проекты <span className="label orange">Индексация</span>
+            </button>
+            
             <div className="view-all-bottom">Все коллекции →</div>
           </div>
         </div>
       </main>
     </div>
-  )
-}
-
+  );
+};
 
 function App() {
   return (
     <Router>
-      {/* Область, где контент будет подменяться */}
       <Routes>
         <Route path="/" element={<LoginPage />} />
         <Route path="/home" element={<HomePage />} />
