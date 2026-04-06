@@ -6,6 +6,7 @@ import { RolesModule } from './models/roles/roles.module';
 import { DocumentsModule } from './models/documents/documents.module';
 import { UsersController } from './models/users/users.controller';
 import { UsersModule } from './models/users/users.module';
+import { SearchQueriesModule } from './models/search_queries/search_queries.module';
 
 @Module({
   imports: [
@@ -24,7 +25,8 @@ import { UsersModule } from './models/users/users.module';
     }),
     RolesModule,
     DocumentsModule,
-    UsersModule, 
+    UsersModule,
+    SearchQueriesModule, 
   ],
   controllers: [AppController, UsersController],
   providers: [AppService],
