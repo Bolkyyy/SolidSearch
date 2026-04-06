@@ -7,146 +7,63 @@ import axios from 'axios';
 
 
 //СТРАНИЦА ЛОГИНА - МАРТЫНОВ
+import { Link } from 'react-router-dom';
+import './LoginPage.css';
 
 const LoginPage = () => {
   return (
-    <div style={{ 
-      minHeight: '100vh',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: '#1d1d1d',  // Светло-серый фон как на фото
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif'
-    }}>
-      <div style={{
-        backgroundColor: '#2D2D2D',  // Белая карточка
-        padding: '40px',
-        borderRadius: '8px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-        width: '380px'
-      }}>
-        {/* ЛОГО */}
-        <h1 style={{ 
-          fontSize: '32px', 
-          fontWeight: 'bold',
-          marginBottom: '8px',
-          marginTop: 0,
-          color: '#000000'  // Черный цвет
-        }}>Solid Search</h1>
+    <div className="login-container">
+      <div className="login-card">
+        <h1 className="logo">Solid Search</h1>
+        <p className="subtitle">AI-powered система поиска и аналитики документов</p>
         
-        <p style={{ 
-          fontSize: '14px', 
-          color: '#666666',  // Серый для подзаголовка
-          marginBottom: '32px'
-        }}>AI-powered система поиска и аналитики документов</p>
-        
-        <h2 style={{ 
-          fontSize: '20px', 
-          marginBottom: '20px',
-          fontWeight: 'bold',
-          color: '#000000'  // Черный
-        }}>Вход в систему</h2>
+        <h2 className="login-title">Вход в систему</h2>
         
         <form onSubmit={(e) => e.preventDefault()}>
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{ 
-              display: 'block', 
-              fontWeight: 'bold',
-              marginBottom: '6px',
-              fontSize: '14px',
-              color: '#000000'  // Черный
-            }}>Email</label>
+          <div className="input-group">
+            <label className="input-label">Email</label>
             <input 
               type="email" 
-              defaultValue="example@company.com"
-              style={{ 
-                width: '100%', 
-                padding: '8px 10px',
-                border: '1px solid #cccccc',  // Светло-серая рамка
-                borderRadius: '4px',
-                fontSize: '14px',
-                boxSizing: 'border-box',
-                color: '#000000'
-              }} 
+              placeholder="example@company.com" 
+              className="input-field"
             />
           </div>
           
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ 
-              display: 'block', 
-              fontWeight: 'bold',
-              marginBottom: '6px',
-              fontSize: '14px',
-              color: '#000000'
-            }}>Пароль</label>
+          <div className="input-group">
+            <label className="input-label">Пароль</label>
             <input 
               type="password" 
-              defaultValue="********"
-              style={{ 
-                width: '100%', 
-                padding: '8px 10px',
-                border: '1px solid #cccccc',
-                borderRadius: '4px',
-                fontSize: '14px',
-                boxSizing: 'border-box'
-              }} 
+              placeholder="********" 
+              className="input-field"
             />
           </div>
           
-          <div style={{ 
-            marginBottom: '24px',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            fontSize: '14px'
-          }}>
-            <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', color: '#000000' }}>
-              <input type="checkbox" style={{ marginRight: '6px' }} /> 
-              Запомнить меня
+          <div className="options">
+            <label className="checkbox-label">
+              <input type="checkbox" /> Запомнить меня
             </label>
-            <a href="#" style={{ color: '#0066cc', textDecoration: 'none' }}>Забыли пароль?</a>
+            <a href="#" className="forgot-link">Забыли пароль?</a>
           </div>
           
           <Link to="/home">
-            <button 
-              type="submit" 
-              style={{ 
-                width: '100%',
-                padding: '10px',
-                backgroundColor: '#007bff',  // Синяя кнопка
-                color: '#ffffff',  // Белый текст
-                border: 'none',
-                borderRadius: '4px',
-                fontSize: '16px',
-                cursor: 'pointer',
-                marginBottom: '30px'
-              }}
-            >
-              Войти в систему
-            </button>
+            <button type="submit" className="login-btn">Войти в систему</button>
           </Link>
         </form>
         
-        <div style={{ marginBottom: '20px' }}>
-          <strong style={{ fontSize: '14px', color: '#000000' }}>Демо-доступ</strong><br />
-          <span style={{ fontSize: '13px', color: '#555555' }}>
-            Email: demo@company.ru<br />
-            Пароль: demo123
-          </span>
+        <div className="demo-box">
+          <strong>Демо-доступ</strong><br />
+          <span>Email: demo@company.ru</span><br />
+          <span>Пароль: demo123</span>
         </div>
         
-        <hr style={{ border: 'none', borderTop: '1px solid #eeeeee', marginBottom: '15px' }} />
+        <hr className="divider" />
         
-        <p style={{ 
-          fontSize: '12px', 
-          color: '#999999',  // Светло-серый для копирайта
-          textAlign: 'center',
-          margin: 0
-        }}>© 2026 Интеллектуальный архив. Все права защищены.</p>
+        <p className="footer">© 2026 Интеллектуальный архив. Все права защищены.</p>
       </div>
     </div>
   );
 };
+
 //ГЛАВНАЯЯ
 
 const HomePage = () => {
