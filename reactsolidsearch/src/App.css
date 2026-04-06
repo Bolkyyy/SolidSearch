@@ -18,7 +18,7 @@ body { margin: 0; padding: 0; background-color: var(--bg-main); overflow-x: hidd
 .logo-container { display: flex; flex-direction: column; justify-content: center; align-items: center; margin-bottom: 40px;}
 .logo-img { width: 90%; height: auto; display: block; }
 .logo-text { color: #B0BEC5; margin-top: 0; padding-top: 0; line-height: 1; font-family: 'Montserrat'; font-size: 18px; }
-.nav-link { padding: 12px; color: var(--text-secondary); cursor: pointer; border-radius: 8px; margin-bottom: 5px; font-size: 16px; font-weight: normal;}
+.nav-link { padding: 12px; color: var(--text-secondary); cursor: pointer; border-radius: 8px; margin-bottom: 5px; font-size: 16px; font-weight: normal; transition: all 0.25s;}
 .nav-link i { margin-right: 12px; width: 18px; text-align: center; }
 .nav-link.active, .nav-link:hover { background-color: #262626; color: var(--accent); }
 .sidebar-divider { height: 1px; background-color: #333; margin: 20px 0; }
@@ -79,10 +79,18 @@ body { margin: 0; padding: 0; background-color: var(--bg-main); overflow-x: hidd
 .user-avatar { font-size: 34px; color: #444; display: flex; }
 .logout {color: #e4585a;}
 .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 35px; }
-.stat-card { background: var(--bg-card); padding: 22px; border-radius: 14px; }
+.stat-card { background: var(--bg-card); padding: 22px; border-radius: 14px; transition: all 0.25s;}
+.stat-card-green { background: var(--bg-card); padding: 22px; border-radius: 14px; transition: all 0.25s;}
+.stat-card-viol { background: var(--bg-card); padding: 22px; border-radius: 14px; transition: all 0.25s;}
+.stat-card-orange { background: var(--bg-card); padding: 22px; border-radius: 14px; transition: all 0.25s;}
 .card-icon { font-size: 24px; margin-bottom: 15px; display: block; }
 .stat-card h2 { margin: 10px 0; font-size: 30px; }
 .stat-card p { margin: 0; font-size: 13px; color: #888; }
+
+.stat-card:hover { box-shadow: inset 0 -2px 0 0 #3b82f6; }
+.stat-card-green:hover { box-shadow: inset 0 -2px 0 0 #10b981; }
+.stat-card-viol:hover { box-shadow: inset 0 -2px 0 0 #a855f7; }
+.stat-card-orange:hover { box-shadow: inset 0 -2px 0 0 #f59e0b; }
 
 .bottom-sections { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
 .panel { background: var(--bg-card); padding: 22px; border-radius: 14px; }
@@ -137,7 +145,8 @@ body { margin: 0; padding: 0; background-color: var(--bg-main); overflow-x: hidd
 
 .results-count {
     color: var(--accent);
-    font-size: 11px;
+    font-size: 12px;
+    
 }
 
 .Collection {
@@ -160,7 +169,7 @@ body { margin: 0; padding: 0; background-color: var(--bg-main); overflow-x: hidd
 
 .Collection:hover {
     background: #262626; 
-    border-color: var(--accent);
+    border-color: #f59e0b;
     transform: translateY(-2px); 
 }
 

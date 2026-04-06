@@ -98,19 +98,19 @@ const HomePage = () => {
             <h2>{documents.length}</h2>
             <span className="trend-up">+{newDocsCount}</span>
           </div>
-          <div className="stat-card">
+          <div className="stat-card-green">
             <i className="fa fa-check-circle card-icon green" />
             <p>Проиндексировано</p>
             <h2>{indexedDocs}</h2>
             <span className="trend-up-index">+856</span>
           </div>
-          <div className="stat-card">
+          <div className="stat-card-viol">
             <i className="fa fa-bolt card-icon purple" />
             <p>Запросов сегодня</p>
             <h2>1,456</h2>
             <span className="trend-up-request">+12%</span>
           </div>
-          <div className="stat-card">
+          <div className="stat-card-orange">
             <i className="fa fa-history card-icon orange" />
             <p>Среднее время отчета</p>
             <h2>1.2 сек</h2>
