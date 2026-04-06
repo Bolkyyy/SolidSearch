@@ -7,8 +7,7 @@ import axios from 'axios';
 
 
 //СТРАНИЦА ЛОГИНА - МАРТЫНОВ
-import { Link } from 'react-router-dom';
-import './LoginPage.css';
+import './App.css';
 
 const LoginPage = () => {
   return (

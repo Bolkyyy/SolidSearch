@@ -3,5 +3,25 @@
     "@supabase/supabase-js": "^2.101.1",
     "dotenv": "^17.4.0",
     "react-router-dom": "^7.13.2"
-  }
+  },
+  "name": "solidsearch",
+  "version": "1.0.0",
+  "description": "",
+  "main": "test.js",
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Bolkyyy/SolidSearch.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Bolkyyy/SolidSearch/issues"
+  },
+  "homepage": "https://github.com/Bolkyyy/SolidSearch#readme"
 }
