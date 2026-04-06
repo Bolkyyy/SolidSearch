@@ -9,4 +9,12 @@ export class UsersController {
     async findall() {
         return await this.usersService.findall();
     }
+
+    @Post()
+    async login() {
+        
+    }
+
 }
+
+    

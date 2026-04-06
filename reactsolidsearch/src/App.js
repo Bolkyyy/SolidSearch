@@ -23,22 +23,22 @@ const LoginPage = () => {
 //ГЛАВНАЯ
 
 const HomePage = () => {
-  const [documents, setDocuments] = React.useState([]); // Состояние для массива документов
+  const [documents, setDocuments] = React.useState([]);
 
   React.useEffect(() => {
     axios.get('http://localhost:3001/documents') 
       .then(response => {
-        setDocuments(response.data); // Кладем массив из БД в состояние
+        setDocuments(response.data);
       })
       .catch(err => console.error("Ошибка загрузки документов:", err));
   }, []);  
   
   const newDocsCount = documents.filter(doc => {
-    const docDate = new Date(doc.created_at); // Дата создания документа
+    const docDate = new Date(doc.created_at);
     const dayAgo = new Date(); 
-    dayAgo.setDate(dayAgo.getDate() - 1); // Время ровно 24 часа назад
+    dayAgo.setDate(dayAgo.getDate() - 1);
 
-    return docDate > dayAgo; // Оставляем только те, что созданы позже, чем вчера
+    return docDate > dayAgo;
   }).length;
 
   const indexedDocs = documents.filter(doc => doc.status === "indexed");
