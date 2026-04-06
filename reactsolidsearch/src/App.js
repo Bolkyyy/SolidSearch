@@ -5,21 +5,148 @@ import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react
 import logo from './Images/BlackLogo.svg';
 import axios from 'axios';
 
+
 //СТРАНИЦА ЛОГИНА - МАРТЫНОВ
 
 const LoginPage = () => {
   return (
-    <div style={{ padding: '20px', maxWidth: '300px' }}>
-      <h2>Вход в систему</h2>
-      <form onSubmit={(e) => e.preventDefault()}>
-        <input type="text" placeholder="Логин" style={{ display: 'block', marginBottom: '10px' }} />
-        <input type="password" placeholder="Пароль" style={{ display: 'block', marginBottom: '10px' }} />
-        <Link to="/home"><button type="submit">Войти</button></Link>
-      </form>
+    <div style={{ 
+      minHeight: '100vh',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: '#1d1d1d',  // Светло-серый фон как на фото
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif'
+    }}>
+      <div style={{
+        backgroundColor: '#2D2D2D',  // Белая карточка
+        padding: '40px',
+        borderRadius: '8px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        width: '380px'
+      }}>
+        {/* ЛОГО */}
+        <h1 style={{ 
+          fontSize: '32px', 
+          fontWeight: 'bold',
+          marginBottom: '8px',
+          marginTop: 0,
+          color: '#000000'  // Черный цвет
+        }}>Solid Search</h1>
+        
+        <p style={{ 
+          fontSize: '14px', 
+          color: '#666666',  // Серый для подзаголовка
+          marginBottom: '32px'
+        }}>AI-powered система поиска и аналитики документов</p>
+        
+        <h2 style={{ 
+          fontSize: '20px', 
+          marginBottom: '20px',
+          fontWeight: 'bold',
+          color: '#000000'  // Черный
+        }}>Вход в систему</h2>
+        
+        <form onSubmit={(e) => e.preventDefault()}>
+          <div style={{ marginBottom: '16px' }}>
+            <label style={{ 
+              display: 'block', 
+              fontWeight: 'bold',
+              marginBottom: '6px',
+              fontSize: '14px',
+              color: '#000000'  // Черный
+            }}>Email</label>
+            <input 
+              type="email" 
+              defaultValue="example@company.com"
+              style={{ 
+                width: '100%', 
+                padding: '8px 10px',
+                border: '1px solid #cccccc',  // Светло-серая рамка
+                borderRadius: '4px',
+                fontSize: '14px',
+                boxSizing: 'border-box',
+                color: '#000000'
+              }} 
+            />
+          </div>
+          
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ 
+              display: 'block', 
+              fontWeight: 'bold',
+              marginBottom: '6px',
+              fontSize: '14px',
+              color: '#000000'
+            }}>Пароль</label>
+            <input 
+              type="password" 
+              defaultValue="********"
+              style={{ 
+                width: '100%', 
+                padding: '8px 10px',
+                border: '1px solid #cccccc',
+                borderRadius: '4px',
+                fontSize: '14px',
+                boxSizing: 'border-box'
+              }} 
+            />
+          </div>
+          
+          <div style={{ 
+            marginBottom: '24px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            fontSize: '14px'
+          }}>
+            <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', color: '#000000' }}>
+              <input type="checkbox" style={{ marginRight: '6px' }} /> 
+              Запомнить меня
+            </label>
+            <a href="#" style={{ color: '#0066cc', textDecoration: 'none' }}>Забыли пароль?</a>
+          </div>
+          
+          <Link to="/home">
+            <button 
+              type="submit" 
+              style={{ 
+                width: '100%',
+                padding: '10px',
+                backgroundColor: '#007bff',  // Синяя кнопка
+                color: '#ffffff',  // Белый текст
+                border: 'none',
+                borderRadius: '4px',
+                fontSize: '16px',
+                cursor: 'pointer',
+                marginBottom: '30px'
+              }}
+            >
+              Войти в систему
+            </button>
+          </Link>
+        </form>
+        
+        <div style={{ marginBottom: '20px' }}>
+          <strong style={{ fontSize: '14px', color: '#000000' }}>Демо-доступ</strong><br />
+          <span style={{ fontSize: '13px', color: '#555555' }}>
+            Email: demo@company.ru<br />
+            Пароль: demo123
+          </span>
+        </div>
+        
+        <hr style={{ border: 'none', borderTop: '1px solid #eeeeee', marginBottom: '15px' }} />
+        
+        <p style={{ 
+          fontSize: '12px', 
+          color: '#999999',  // Светло-серый для копирайта
+          textAlign: 'center',
+          margin: 0
+        }}>© 2026 Интеллектуальный архив. Все права защищены.</p>
+      </div>
     </div>
   );
 };
-
 //ГЛАВНАЯЯ
 
 const HomePage = () => {
@@ -170,3 +297,5 @@ function App() {
 }
 
 export default App;
+
+/* страница логина */
