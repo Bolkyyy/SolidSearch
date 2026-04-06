@@ -1,13 +1,27 @@
-import React, { useState } from 'react';
+import React from 'react';
 import './App.css';
-import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import logo from './Images/BlackLogo.svg';
 import axios from 'axios';
 
-// --- ГЛАВНАЯ СТРАНИЦА --- Мартынов
+//СТРАНИЦА ЛОГИНА - МАРТЫНОВ
+
+const LoginPage = () => {
+  return (
+    <div style={{ padding: '20px', maxWidth: '300px' }}>
+      <h2>Вход в систему</h2>
+      <form onSubmit={(e) => e.preventDefault()}>
+        <input type="text" placeholder="Логин" style={{ display: 'block', marginBottom: '10px' }} />
+        <input type="password" placeholder="Пароль" style={{ display: 'block', marginBottom: '10px' }} />
+        <Link to="/home"><button type="submit">Войти</button></Link>
+      </form>
+    </div>
+  );
+};
+
+//ГЛАВНАЯЯ
 const HomePage = () => {
   const [documents, setDocuments] = React.useState([]);
-  const navigate = useNavigate();
 
   React.useEffect(() => {
     axios.get('http://localhost:3001/documents')
@@ -62,7 +76,7 @@ const HomePage = () => {
               <div className="vertical-line" />
               <div className="user-profile">
                 <div className="user-info">
-                  <div className="user-name">Никита Фамилия</div>
+                  <div className="user-name">Имя Фамилия</div>
                   <div className="user-post">Разработчик</div>
                 </div>
                 <div className="user-avatar"><i className="fa fa-user-circle" /></div>
@@ -151,11 +165,11 @@ const HomePage = () => {
               <i className="fa fa-th panel-header-icon orange" />
             </div>
             
-            <button className="Collection" onClick={() => alert('Переход в Архив')}>
+            <button className="Collection">
               Архив 2024 <span className="label orange">Готово</span>
             </button>
             
-            <button className="Collection" onClick={() => alert('Переход в Проекты')}>
+            <button className="Collection" >
               Текущие проекты <span className="label orange">Индексация</span>
             </button>
             
@@ -171,7 +185,7 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<div style={{padding: '20px'}}><h2>Вход в систему</h2><Link to="/home">Войти</Link></div>} />
+        <Route path="/" element={<LoginPage />} />
         <Route path="/home" element={<HomePage />} />
       </Routes>
     </Router>
