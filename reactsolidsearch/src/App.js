@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import './App.css';
-import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import logo from './Images/BlackLogo.svg';
 import axios from 'axios';
 
@@ -22,7 +22,6 @@ const LoginPage = () => {
 //ГЛАВНАЯЯ
 const HomePage = () => {
   const [documents, setDocuments] = React.useState([]);
-  const navigate = useNavigate();
 
   React.useEffect(() => {
     axios.get('http://localhost:3001/documents')
