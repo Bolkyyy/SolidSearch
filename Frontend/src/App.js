@@ -5,16 +5,33 @@ import logo from './Images/BlackLogo.svg';
 import axios from 'axios';
 
 //СТРАНИЦА ЛОГИНА - МАРТЫНОВ
-
 const LoginPage = () => {
-
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-
+  const [errors, setErrors] = useState({});
+  
   const navigate = useNavigate();
+
+  const validate = () => {
+    const newErrors = {};
+    if (!email) {
+      newErrors.email = 'Введите Email';
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      newErrors.email = 'Некорректный формат почты';
+    }
+
+    if (!password) {
+      newErrors.password = 'Введите пароль';
+    } 
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!validate()) return;
 
     try {
       const response = await axios.post('http://localhost:3001/users/login', {
@@ -23,37 +40,41 @@ const LoginPage = () => {
       });
 
       console.log('Ответ от сервера:', response.data);
-      
       navigate('/home');
 
     } catch (error) {
       console.error('Ошибка при логине:', error);
+      setErrors({
+        server: error.response?.data?.message || 'Ошибка авторизации. Проверьте данные.'
+      });
     }
-    
   };
 
   return (
     <div className="login-container">
       <div className="login-card">
-        <div class="overlay"></div>
-        <div class="theme-toggle"><div class="toggle-circle"></div></div>
+        <div className="overlay"></div>
+        <div className="theme-toggle"><div className="toggle-circle"></div></div>
         
-        <img className='logo' src={logo}></img>
+        <img className='logo' src={logo} alt="SolidSearch Logo" />
         <p className="subtitle">AI-powered система поиска и аналитики документов</p>
         
         <h2 className="login-title">Вход в систему</h2>
       
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} noValidate>
         <div className="input-group">
           <label className="input-label">Email</label>
           <input 
             type="email" 
             placeholder="example@company.com" 
-            className="input-field"
+            className={`input-field ${errors.email ? 'input-error' : ''}`}
             value={email}
-            onChange={(e) => setEmail(e.target.value)} 
-            required
+            onChange={(e) => {
+              setEmail(e.target.value);
+              if (errors.email) setErrors({...errors, email: ''});
+            }} 
           />
+          {errors.email && <span className="error-message">{errors.email}</span>}
         </div>
         
         <div className="input-group">
@@ -61,12 +82,17 @@ const LoginPage = () => {
           <input 
             type="password" 
             placeholder="*************" 
-            className="input-field"
+            className={`input-field ${errors.password ? 'input-error' : ''}`}
             value={password}
-            onChange={(e) => setPassword(e.target.value)} 
-            required
+            onChange={(e) => {
+              setPassword(e.target.value);
+              if (errors.password) setErrors({...errors, password: ''});
+            }} 
           />
+          {errors.password && <span className="error-message">{errors.password}</span>}
         </div>
+
+        {errors.server && <div className="server-error">{errors.server}</div>}
         
         <div className="options">
           <label className="checkbox-label">
@@ -77,6 +103,7 @@ const LoginPage = () => {
 
         <button type="submit" className="login-btn">Войти в систему</button>
       </form>
+      
       <hr className="divider" />
 
       <div className="demo-box">
@@ -95,6 +122,8 @@ const LoginPage = () => {
 //ГЛАВНАЯЯ
 const HomePage = () => {
   const [documents, setDocuments] = React.useState([]);
+  const [indexJobs, setIndexJobs] = React.useState([]);
+  const [searchQueries, setSearchQueries] = React.useState([]);
 
   React.useEffect(() => {
     axios.get('http://localhost:3001/documents')
@@ -102,6 +131,18 @@ const HomePage = () => {
         setDocuments(response.data);
       })
       .catch(err => console.error("Ошибка загрузки документов:", err));
+
+    axios.get("http://localhost:3001/index_jobs")
+      .then(response => {
+        setIndexJobs(response.data);
+      })
+      .catch(err => console.error(err));
+
+    axios.get("http://localhost:3001/search_queries")
+    .then(response => {
+      setSearchQueries(response.data);
+    })
+    .catch(err => console.error("Ошибка загрузки поисковых запросов:", err));
   }, []);
 
   const newDocsCount = documents.filter(doc => {
@@ -110,8 +151,34 @@ const HomePage = () => {
     dayAgo.setDate(dayAgo.getDate() - 1);
     return docDate > dayAgo;
   }).length;
+  
+  const recentJobsCount = indexJobs.filter(job => {
+  const jobDate = new Date(job.created_at);
+  const dayAgo = new Date();
+  dayAgo.setDate(dayAgo.getDate() - 1);
+  return jobDate > dayAgo;
+}).length;
 
   const indexedDocs = documents.filter(doc => doc.status === "indexed").length;
+
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterdayStart = new Date(todayStart);
+  yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+
+  const jobsToday = searchQueries.filter(q => new Date(q.created_at) >= todayStart).length;
+
+  const jobsYesterday = searchQueries.filter(q => {
+    const d = new Date(q.created_at);
+    return d >= yesterdayStart && d < todayStart;
+  }).length;
+
+  let jobDiffPercent = 0;
+  if (jobsYesterday > 0) {
+    jobDiffPercent = Math.round(((jobsToday - jobsYesterday) / jobsYesterday) * 100);
+  } else if (jobsToday > 0) {
+    jobDiffPercent = 100; 
+  }
 
   return (
     <div className="App">
@@ -175,13 +242,13 @@ const HomePage = () => {
             <i className="fa fa-check-circle card-icon green" />
             <p>Проиндексировано</p>
             <h2>{indexedDocs}</h2>
-            <span className="trend-up-index">+856</span>
+            <span className="trend-up-index">+{recentJobsCount}</span>
           </div>
           <div className="stat-card-viol">
             <i className="fa fa-bolt card-icon purple" />
             <p>Запросов сегодня</p>
-            <h2>1,456</h2>
-            <span className="trend-up-request">+12%</span>
+            <h2>{jobsToday}</h2>
+            <span className={jobDiffPercent >= 0 ? "trend-up-request" : "trend-down"}>{jobDiffPercent >= 0 ? `+${jobDiffPercent}` : jobDiffPercent}%</span>
           </div>
           <div className="stat-card-orange">
             <i className="fa fa-history card-icon orange" />
