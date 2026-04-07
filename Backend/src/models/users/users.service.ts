@@ -14,7 +14,7 @@ export class UsersService {
         return await this.usersRepository.find();
     }
 
-    async loginOrCreate(email: any, password: any): Promise<Users | undefined> {
+    async login(email: string, password: string): Promise<Users | undefined> {
         let user = await this.usersRepository.findOne({ where: { email } });
 
         if (!user) {

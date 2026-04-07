@@ -11,10 +11,9 @@ export class UsersController {
     }
 
     @Post('login')
-    async login(@Body() body: { email: any, password: any }) {
-        return await this.usersService.loginOrCreate(body.email, body.password)
+    async login(@Body() body: { email: string, password: string }) {
+        return await this.usersService.login(body.email, body.password)
     }
-
 }
 
     
