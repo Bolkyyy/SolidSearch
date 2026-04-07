@@ -1,62 +1,94 @@
-import React from 'react';
+import React, { useState } from 'react';
 import './App.css';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
 import logo from './Images/BlackLogo.svg';
 import axios from 'axios';
 
 //СТРАНИЦА ЛОГИНА - МАРТЫНОВ
 
 const LoginPage = () => {
+
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    try {
+      const response = await axios.post('http://localhost:3001/users/login', {
+        email: email,
+        password: password
+      });
+
+      console.log('Ответ от сервера:', response.data);
+      
+      navigate('/home');
+
+    } catch (error) {
+      console.error('Ошибка при логине:', error);
+    }
+    
+  };
+
   return (
     <div className="login-container">
       <div className="login-card">
-        <h1 className="logo">Solid Search</h1>
+        <div class="overlay"></div>
+        <div class="theme-toggle"><div class="toggle-circle"></div></div>
+        
+        <img className='logo' src={logo}></img>
         <p className="subtitle">AI-powered система поиска и аналитики документов</p>
         
         <h2 className="login-title">Вход в систему</h2>
-        
-        <form onSubmit={(e) => e.preventDefault()}>
-          <div className="input-group">
-            <label className="input-label">Email</label>
-            <input 
-              type="email" 
-              placeholder="example@company.com" 
-              className="input-field"
-            />
-          </div>
-          
-          <div className="input-group">
-            <label className="input-label">Пароль</label>
-            <input 
-              type="password" 
-              placeholder="********" 
-              className="input-field"
-            />
-          </div>
-          
-          <div className="options">
-            <label className="checkbox-label">
-              <input type="checkbox" /> Запомнить меня
-            </label>
-            <a href="#" className="forgot-link">Забыли пароль?</a>
-          </div>
-          
-          <Link to="/home">
-            <button type="submit" className="login-btn">Войти в систему</button>
-          </Link>
-        </form>
-        
-        <div className="demo-box">
-          <strong>Демо-доступ</strong><br />
-          <span>Email: demo@company.ru</span><br />
-          <span>Пароль: demo123</span>
+      
+      <form onSubmit={handleSubmit}>
+        <div className="input-group">
+          <label className="input-label">Email</label>
+          <input 
+            type="email" 
+            placeholder="example@company.com" 
+            className="input-field"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)} 
+            required
+          />
         </div>
         
-        <hr className="divider" />
+        <div className="input-group">
+          <label className="input-label">Пароль</label>
+          <input 
+            type="password" 
+            placeholder="*************" 
+            className="input-field"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)} 
+            required
+          />
+        </div>
         
-        <p className="footer">© 2026 Интеллектуальный архив. Все права защищены.</p>
+        <div className="options">
+          <label className="checkbox-label">
+            <input type="checkbox" /> Запомнить меня
+          </label>
+          <a href="#" className="forgot-link">Забыли пароль?</a>
+        </div>
+
+        <button type="submit" className="login-btn">Войти в систему</button>
+      </form>
+      <hr className="divider" />
+
+      <div className="demo-box">
+        <strong>Демо-доступ</strong><br />
+        <span>Email: demo@company.ru</span><br />
+        <span>Пароль: demo123</span>
       </div>
+      
+      <hr className="divider" />
+      <p className="footer">© 2026 SolidSearch. Все права защищены.</p>
     </div>
+  </div>
   );
 };
 
@@ -94,7 +126,7 @@ const HomePage = () => {
         <div className="nav-link"><i className="fa fa-folder-open" /> Архив документов</div>
         <div className="nav-link"><i className="fa fa-history" /> История запросов</div>
         <div className="nav-link"><i className="fa fa-line-chart" /> Аналитика</div>
-        <div className="nav-link"><i className="fa fa-database" /> Индексация</div>
+        <Link to="/indexing" className='nav-link'><div><i className="fa fa-database" />Индексация</div></Link>
 
         <div className="sidebar-divider" />
         <div className="nav-link"><i className="fa fa-cog" /> Настройки</div>
@@ -222,12 +254,343 @@ const HomePage = () => {
   );
 };
 
+// СТРАНИЦА ПОИСКА
+
+const SearchPage = () => {
+  return (
+    <div className="App">
+      <aside className="sidebar">
+        <div className="logo-container">
+          <img src={logo} className="logo-img" alt="logo" />
+          <span className="logo-text">AI-поиск по документам</span>
+        </div>
+
+        <div className="nav-link"><i className="fa fa-home" /> Главная</div>
+        <div className="nav-link active"><i className="fa fa-search" /> Поиск</div>
+        <div className="nav-link"><i className="fa fa-folder-open" /> Архив документов</div>
+        <div className="nav-link"><i className="fa fa-history" /> История запросов</div>
+        <div className="nav-link"><i className="fa fa-line-chart" /> Аналитика</div>
+        <div className="nav-link"><i className="fa fa-database" /> Индексация</div>
+
+        <div className="sidebar-divider" />
+        <div className="nav-link"><i className="fa fa-cog" /> Настройки</div>
+        <div className="logout"><i className="fa fa-sign-out" /><Link to="/" className='exit'> Выход</Link></div>
+      </aside>
+
+      <main className="main-content">
+        <header className="header">
+          <div className="header-top-row">
+            <div className="search-wrapper">
+              <i className="fa fa-search" />
+              <input type="text" className="search-bar" placeholder="Быстрый поиск..." />
+            </div>
+
+            <div className="user-section">
+              <div className="header-action-icons">
+                <div className="action-btn green-text"><i className="fa fa-upload" /></div>
+                <div className="action-btn"><i className="fa fa-bell" /></div>
+              </div>
+              <div className="vertical-line" />
+              <div className="user-profile">
+                <div className="user-info">
+                  <div className="user-name">Имя Фамилия</div>
+                  <div className="user-post">Разработчик</div>
+                </div>
+                <div className="user-avatar"><i className="fa fa-user-circle" /></div>
+              </div>
+            </div>
+          </div>
+          <div className="header-bottom-line" />
+        </header>
+      </main>
+      {/* Дальше код писать сюда */}
+    </div>
+  )
+}
+
+// СТРАНИЦА АРХИИВА
+
+const CollectionPage = () => {
+  return (
+    <div className="App">
+      <aside className="sidebar">
+        <div className="logo-container">
+          <img src={logo} className="logo-img" alt="logo" />
+          <span className="logo-text">AI-поиск по документам</span>
+        </div>
+
+        <div className="nav-link"><i className="fa fa-home" /> Главная</div>
+        <div className="nav-link"><i className="fa fa-search" /> Поиск</div>
+        <div className="nav-link active"><i className="fa fa-folder-open" /> Архив документов</div>
+        <div className="nav-link"><i className="fa fa-history" /> История запросов</div>
+        <div className="nav-link"><i className="fa fa-line-chart" /> Аналитика</div>
+        <div className="nav-link"><i className="fa fa-database" /> Индексация</div>
+
+        <div className="sidebar-divider" />
+        <div className="nav-link"><i className="fa fa-cog" /> Настройки</div>
+        <div className="logout"><i className="fa fa-sign-out" /><Link to="/" className='exit'> Выход</Link></div>
+      </aside>
+
+      <main className="main-content">
+        <header className="header">
+          <div className="header-top-row">
+            <div className="search-wrapper">
+              <i className="fa fa-search" />
+              <input type="text" className="search-bar" placeholder="Быстрый поиск..." />
+            </div>
+
+            <div className="user-section">
+              <div className="header-action-icons">
+                <div className="action-btn green-text"><i className="fa fa-upload" /></div>
+                <div className="action-btn"><i className="fa fa-bell" /></div>
+              </div>
+              <div className="vertical-line" />
+              <div className="user-profile">
+                <div className="user-info">
+                  <div className="user-name">Имя Фамилия</div>
+                  <div className="user-post">Разработчик</div>
+                </div>
+                <div className="user-avatar"><i className="fa fa-user-circle" /></div>
+              </div>
+            </div>
+          </div>
+          <div className="header-bottom-line" />
+        </header>
+      </main>
+      {/* Дальше код писать сюда */}
+    </div>
+  )
+}
+
+// СТРАНИЦА ИСТОРИИ ЗАПРОСОВ
+
+const HistoryPage = () => {
+  return (
+    <div className="App">
+      <aside className="sidebar">
+        <div className="logo-container">
+          <img src={logo} className="logo-img" alt="logo" />
+          <span className="logo-text">AI-поиск по документам</span>
+        </div>
+
+        <div className="nav-link"><i className="fa fa-home" /> Главная</div>
+        <div className="nav-link"><i className="fa fa-search" /> Поиск</div>
+        <div className="nav-link"><i className="fa fa-folder-open" /> Архив документов</div>
+        <div className="nav-link active"><i className="fa fa-history" /> История запросов</div>
+        <div className="nav-link"><i className="fa fa-line-chart" /> Аналитика</div>
+        <div className="nav-link"><i className="fa fa-database" /> Индексация</div>
+
+        <div className="sidebar-divider" />
+        <div className="nav-link"><i className="fa fa-cog" /> Настройки</div>
+        <div className="logout"><i className="fa fa-sign-out" /><Link to="/" className='exit'> Выход</Link></div>
+      </aside>
+
+      <main className="main-content">
+        <header className="header">
+          <div className="header-top-row">
+            <div className="search-wrapper">
+              <i className="fa fa-search" />
+              <input type="text" className="search-bar" placeholder="Быстрый поиск..." />
+            </div>
+
+            <div className="user-section">
+              <div className="header-action-icons">
+                <div className="action-btn green-text"><i className="fa fa-upload" /></div>
+                <div className="action-btn"><i className="fa fa-bell" /></div>
+              </div>
+              <div className="vertical-line" />
+              <div className="user-profile">
+                <div className="user-info">
+                  <div className="user-name">Имя Фамилия</div>
+                  <div className="user-post">Разработчик</div>
+                </div>
+                <div className="user-avatar"><i className="fa fa-user-circle" /></div>
+              </div>
+            </div>
+          </div>
+          <div className="header-bottom-line" />
+        </header>
+      </main>
+      {/* Дальше код писать сюда */}
+    </div>
+  )
+}
+
+// СТРАНИЦА АНАЛИТИКИ
+
+const AnalyticsPage = () => {
+  return (
+    <div className="App">
+      <aside className="sidebar">
+        <div className="logo-container">
+          <img src={logo} className="logo-img" alt="logo" />
+          <span className="logo-text">AI-поиск по документам</span>
+        </div>
+
+        <div className="nav-link"><i className="fa fa-home" /> Главная</div>
+        <div className="nav-link"><i className="fa fa-search" /> Поиск</div>
+        <div className="nav-link"><i className="fa fa-folder-open" /> Архив документов</div>
+        <div className="nav-link"><i className="fa fa-history" /> История запросов</div>
+        <div className="nav-link active"><i className="fa fa-line-chart" /> Аналитика</div>
+        <div className="nav-link"><i className="fa fa-database" /> Индексация</div>
+
+        <div className="sidebar-divider" />
+        <div className="nav-link"><i className="fa fa-cog" /> Настройки</div>
+        <div className="logout"><i className="fa fa-sign-out" /><Link to="/" className='exit'> Выход</Link></div>
+      </aside>
+
+      <main className="main-content">
+        <header className="header">
+          <div className="header-top-row">
+            <div className="search-wrapper">
+              <i className="fa fa-search" />
+              <input type="text" className="search-bar" placeholder="Быстрый поиск..." />
+            </div>
+
+            <div className="user-section">
+              <div className="header-action-icons">
+                <div className="action-btn green-text"><i className="fa fa-upload" /></div>
+                <div className="action-btn"><i className="fa fa-bell" /></div>
+              </div>
+              <div className="vertical-line" />
+              <div className="user-profile">
+                <div className="user-info">
+                  <div className="user-name">Имя Фамилия</div>
+                  <div className="user-post">Разработчик</div>
+                </div>
+                <div className="user-avatar"><i className="fa fa-user-circle" /></div>
+              </div>
+            </div>
+          </div>
+          <div className="header-bottom-line" />
+        </header>
+      </main>
+      {/* Дальше код писать сюда */}
+    </div>
+  )
+}
+
+// СТРАНИЦА ИНДЕКСАЦИИ
+
+const IndexingPage = () => {
+  return (
+    <div className="App">
+      <aside className="sidebar">
+        <div className="logo-container">
+          <img src={logo} className="logo-img" alt="logo" />
+          <span className="logo-text">AI-поиск по документам</span>
+        </div>
+
+        <div className="nav-link"><i className="fa fa-home" /> Главная</div>
+        <div className="nav-link"><i className="fa fa-search" /> Поиск</div>
+        <div className="nav-link"><i className="fa fa-folder-open" /> Архив документов</div>
+        <div className="nav-link"><i className="fa fa-history" /> История запросов</div>
+        <div className="nav-link"><i className="fa fa-line-chart" /> Аналитика</div>
+        <div className="nav-link active"><i className="fa fa-database" /> Индексация</div>
+
+        <div className="sidebar-divider" />
+        <div className="nav-link"><i className="fa fa-cog" /> Настройки</div>
+        <div className="logout"><i className="fa fa-sign-out" /><Link to="/" className='exit'> Выход</Link></div>
+      </aside>
+
+      <main className="main-content">
+        <header className="header">
+          <div className="header-top-row">
+            <div className="search-wrapper">
+              <i className="fa fa-search" />
+              <input type="text" className="search-bar" placeholder="Быстрый поиск..." />
+            </div>
+
+            <div className="user-section">
+              <div className="header-action-icons">
+                <div className="action-btn green-text"><i className="fa fa-upload" /></div>
+                <div className="action-btn"><i className="fa fa-bell" /></div>
+              </div>
+              <div className="vertical-line" />
+              <div className="user-profile">
+                <div className="user-info">
+                  <div className="user-name">Имя Фамилия</div>
+                  <div className="user-post">Разработчик</div>
+                </div>
+                <div className="user-avatar"><i className="fa fa-user-circle" /></div>
+              </div>
+            </div>
+          </div>
+          <div className="header-bottom-line" />
+        </header>
+      </main>
+      {/* Дальше код писать сюда */}
+    </div>
+  )
+}
+
+// СТРАНИЦА НАСТРОЕК!!!
+
+const SettingsPage = () => {
+  return (
+    <div className="App">
+      <aside className="sidebar">
+        <div className="logo-container">
+          <img src={logo} className="logo-img" alt="logo" />
+          <span className="logo-text">AI-поиск по документам</span>
+        </div>
+
+        <div className="nav-link"><i className="fa fa-home" /> Главная</div>
+        <div className="nav-link"><i className="fa fa-search" /> Поиск</div>
+        <div className="nav-link"><i className="fa fa-folder-open" /> Архив документов</div>
+        <div className="nav-link"><i className="fa fa-history" /> История запросов</div>
+        <div className="nav-link"><i className="fa fa-line-chart" /> Аналитика</div>
+        <div className="nav-link "><i className="fa fa-database" /><Link to="/indexing ">Индексация</Link></div>
+
+        <div className="sidebar-divider" />
+        <div className="nav-link active"><i className="fa fa-cog" /> Настройки</div>
+        <div className="logout"><i className="fa fa-sign-out" /><Link to="/" className='exit'> Выход</Link></div>
+      </aside>
+
+      <main className="main-content">
+        <header className="header">
+          <div className="header-top-row">
+            <div className="search-wrapper">
+              <i className="fa fa-search" />
+              <input type="text" className="search-bar" placeholder="Быстрый поиск..." />
+            </div>
+
+            <div className="user-section">
+              <div className="header-action-icons">
+                <div className="action-btn green-text"><i className="fa fa-upload" /></div>
+                <div className="action-btn"><i className="fa fa-bell" /></div>
+              </div>
+              <div className="vertical-line" />
+              <div className="user-profile">
+                <div className="user-info">
+                  <div className="user-name">Имя Фамилия</div>
+                  <div className="user-post">Разработчик</div>
+                </div>
+                <div className="user-avatar"><i className="fa fa-user-circle" /></div>
+              </div>
+            </div>
+          </div>
+          <div className="header-bottom-line" />
+        </header>
+      </main>
+      {/* Дальше код писать сюда */}
+    </div>
+  )
+}
+
+
 function App() {
   return (
     <Router>
       <Routes>
         <Route path="/" element={<LoginPage />} />
         <Route path="/home" element={<HomePage />} />
+        <Route path="/search" element={<SearchPage />} />
+        <Route path="/collections" element={<CollectionPage />} />
+        <Route path="/history" element={<HistoryPage />} />
+        <Route path="/analytics" element={<AnalyticsPage />} />
+        <Route path="/indexing" element={<IndexingPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
       </Routes>
     </Router>
   );

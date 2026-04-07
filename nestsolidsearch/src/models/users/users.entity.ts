@@ -5,21 +5,21 @@ export class Users {
     @PrimaryGeneratedColumn()
     id!: number;
 
-    @Column()
+    @Column({ nullable: true })
     full_name!: string;
 
-    @Column()
+    @Column({ unique: true })
     email!: string;
 
-    @Column()
+    @Column({ nullable: true })
     password_hash!: string;
 
-    @Column()
+    @Column({ nullable: true })
     role_id!: number;
 
-    @Column()
+    @Column({ nullable: true })
     status!: string;
 
-    @CreateDateColumn({type: "timestamp", name: "created_at"})
+    @CreateDateColumn( { type: "timestamp", name: "created_at" } )
     created_at!: Date;
 }
