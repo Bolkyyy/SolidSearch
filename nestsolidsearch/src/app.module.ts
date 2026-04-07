@@ -9,6 +9,11 @@ import { UsersModule } from './models/users/users.module';
 import { SearchQueriesModule } from './models/search_queries/search_queries.module';
 import { DocumentCollectionModule } from './models/document_collection/document_collection.module';
 import { DocumentFilesModule } from './models/document_files/document_files.module';
+import { DocumentSourcesController } from './models/document_sources/document_sources.controller';
+import { DocumentSourcesModule } from './models/document_sources/document_sources.module';
+import { IndexJobsService } from './models/index_jobs/index_jobs.service';
+import { IndexJobsController } from './models/index_jobs/index_jobs.controller';
+import { IndexJobsModule } from './models/index_jobs/index_jobs.module';
 
 @Module({
   imports: [
@@ -30,9 +35,11 @@ import { DocumentFilesModule } from './models/document_files/document_files.modu
     UsersModule,
     SearchQueriesModule,
     DocumentCollectionModule,
-    DocumentFilesModule
+    DocumentFilesModule,
+    DocumentSourcesModule,
+    IndexJobsModule
   ],
-  controllers: [AppController, UsersController],
+  controllers: [AppController, UsersController, DocumentSourcesController, IndexJobsController],
   providers: [AppService],
 })
 export class AppModule {}
