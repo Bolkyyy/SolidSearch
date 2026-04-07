@@ -127,8 +127,6 @@ const HomePage = () => {
   const [indexJobs, setIndexJobs] = React.useState([]);
   const [searchQueries, setSearchQueries] = React.useState([]);
 
-  loginEmail = localStorage.getItem('userEmail')
-
   React.useEffect(() => {
     axios.get('http://localhost:3001/documents')
       .then(response => {
