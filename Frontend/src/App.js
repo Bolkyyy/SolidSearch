@@ -22,7 +22,9 @@ const LoginPage = () => {
 
     if (!password) {
       newErrors.password = 'Введите пароль';
-    } 
+    } else if (password.length < 8){
+      newErrors.password = "Пароль должен содержать не менее 8 символов"
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -124,6 +126,8 @@ const HomePage = () => {
   const [documents, setDocuments] = React.useState([]);
   const [indexJobs, setIndexJobs] = React.useState([]);
   const [searchQueries, setSearchQueries] = React.useState([]);
+
+  loginEmail = localStorage.getItem('userEmail')
 
   React.useEffect(() => {
     axios.get('http://localhost:3001/documents')
