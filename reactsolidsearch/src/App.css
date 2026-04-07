@@ -312,3 +312,58 @@ body { margin: 0; padding: 0; background-color: var(--bg-main); overflow-x: hidd
   color: #999999;
   text-align: center;
 }
+
+.nav-link {
+    position: relative;
+    overflow: hidden; 
+    z-index: 0;
+}
+
+.nav-link::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%; 
+    width: 0; 
+    height: 100%;
+    background-color: #262626; 
+    border-radius: 8px;
+    transform: translateX(-50%); 
+    transition: width 0.3s ease-out; 
+    z-index: -1; 
+}
+
+.nav-link.active {
+    background-color: transparent; 
+}
+
+.nav-link.active::before {
+    width: 100%; 
+}
+
+.nav-link:not(.active):hover::before {
+    width: 100%; 
+    background-color: #222; 
+}
+
+.search-wrapper {
+    transition: background-color 0.3s ease-out;
+}
+
+.search-wrapper:hover,
+.search-wrapper:focus-within {
+    background-color: #262626; 
+}
+
+.view-all-history,
+.view-all-bottom {
+    transition: transform 0.2s ease-out, color 0.2s ease-out;
+    display: inline-block; 
+    white-space: nowrap; 
+}
+
+.view-all-history:hover,
+.view-all-bottom:hover {
+    transform: scale(1.05); 
+    color: var(--accent); 
+}

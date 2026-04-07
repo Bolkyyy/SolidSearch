@@ -15,7 +15,7 @@ const LoginPage = () => {
         
         <h2 className="login-title">Вход в систему</h2>
         
-        <form onSubmit={(e) => e.preventDefault()}>
+      <form onSubmit={(e) => e.preventDefault()}>
           <div className="input-group">
             <label className="input-label">Email</label>
             <input 
@@ -44,7 +44,7 @@ const LoginPage = () => {
           <Link to="/home">
             <button type="submit" className="login-btn">Войти в систему</button>
           </Link>
-        </form>
+      </form>
         
         <div className="demo-box">
           <strong>Демо-доступ</strong><br />
@@ -232,5 +232,6 @@ function App() {
     </Router>
   );
 }
+
 
 export default App;
