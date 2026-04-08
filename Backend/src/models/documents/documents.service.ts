@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import { Documents } from './documents.entity';
 
 @Injectable()
-export class DocumentsService {
+export class DocumentFilesService {
     constructor(
         @InjectRepository(Documents)
         private readonly documentsRepository: Repository<Documents>,

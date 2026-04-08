@@ -1,7 +1,9 @@
 {
   "dependencies": {
+    "@nestjs/typeorm": "^11.0.1",
     "@supabase/supabase-js": "^2.101.1",
     "dotenv": "^17.4.0",
+<<<<<<< HEAD
     "react-router-dom": "^7.13.2"
   },
   "name": "solidsearch",
@@ -24,4 +26,10 @@
     "url": "https://github.com/Bolkyyy/SolidSearch/issues"
   },
   "homepage": "https://github.com/Bolkyyy/SolidSearch#readme"
+=======
+    "react-router-dom": "^7.13.2",
+    "sqlite3": "^5.1.7",
+    "typeorm": "^0.3.28"
+  }
+>>>>>>> 59267d5622a9b7420516c4e1665baaa9682c1c5c
 }
