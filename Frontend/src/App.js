@@ -571,6 +571,7 @@ const CollectionPage = () => {
           <div className="header-bottom-line" />
         </header>
       {/* Дальше код писать сюда */}
+
       </main>
     </div>
   )
@@ -644,6 +645,144 @@ const HistoryPage = () => {
           <div className="header-bottom-line" />
         </header>
       {/* Дальше код писать сюда */}
+      {/* Дальше код писать сюда */}
+<div className="archive-container">
+  {/* Заголовок страницы */}
+  <div className="archive-header">
+    <h1>Архив документов</h1>
+    <p className="archive-subtitle">Управление коллекциями и архивами документов</p>
+  </div>
+
+  {/* Статистические карточки */}
+  <div className="stats-grid">
+    <div className="stat-card">
+      <div className="stat-icon blue"><i className="fa fa-folder" /></div>
+      <div className="stat-info">
+        <div className="stat-number">6</div>
+        <div className="stat-label">Всего коллекций</div>
+      </div>
+    </div>
+    <div className="stat-card">
+      <div className="stat-icon green"><i className="fa fa-file-text" /></div>
+      <div className="stat-info">
+        <div className="stat-number">21 814</div>
+        <div className="stat-label">Всего документов</div>
+      </div>
+    </div>
+    <div className="stat-card">
+      <div className="stat-icon purple"><i className="fa fa-check-circle" /></div>
+      <div className="stat-info">
+        <div className="stat-number">21 234</div>
+        <div className="stat-label">Проиндексировано</div>
+      </div>
+    </div>
+    <div className="stat-card">
+      <div className="stat-icon orange"><i className="fa fa-exclamation-triangle" /></div>
+      <div className="stat-info">
+        <div className="stat-number">1</div>
+        <div className="stat-label">Требуют внимания</div>
+      </div>
+    </div>
+  </div>
+
+  {/* Список архивов/коллекций */}
+  <div className="archives-list">
+    {/* Архив 2024 */}
+    <div className="archive-item">
+      <div className="archive-icon">
+        <i className="fa fa-archive" />
+      </div>
+      <div className="archive-details">
+        <h3>Архив 2024</h3>
+        <div className="archive-stats">
+          <span><i className="fa fa-file" /> 3 245 документов</span>
+          <span><i className="fa fa-file-pdf-o" /> PDF, DOCX, TXT</span>
+          <span><i className="fa fa-hdd-o" /> 2.4 ГБ</span>
+        </div>
+      </div>
+      <div className="archive-actions">
+        <button className="btn-primary"><i className="fa fa-folder-open" /> Открыть</button>
+        <button className="btn-secondary"><i className="fa fa-refresh" /> Переиндексировать</button>
+      </div>
+    </div>
+
+    {/* Архив 2023 */}
+    <div className="archive-item">
+      <div className="archive-icon">
+        <i className="fa fa-archive" />
+      </div>
+      <div className="archive-details">
+        <h3>Архив 2023</h3>
+        <div className="archive-stats">
+          <span><i className="fa fa-file" /> 8 134 документов</span>
+          <span><i className="fa fa-file-pdf-o" /> PDF, DOCX, TXT</span>
+          <span><i className="fa fa-hdd-o" /> 5.8 ГБ</span>
+        </div>
+      </div>
+      <div className="archive-actions">
+        <button className="btn-primary"><i className="fa fa-folder-open" /> Открыть</button>
+        <button className="btn-secondary"><i className="fa fa-refresh" /> Переиндексировать</button>
+      </div>
+    </div>
+
+    {/* Текущие проекты */}
+    <div className="archive-item">
+      <div className="archive-icon">
+        <i className="fa fa-folder" />
+      </div>
+      <div className="archive-details">
+        <h3>Текущие проекты</h3>
+        <div className="archive-stats">
+          <span><i className="fa fa-file" /> 456 документов</span>
+          <span><i className="fa fa-file-pdf-o" /> PDF, DOCX, TXT, XLSX</span>
+          <span><i className="fa fa-hdd-o" /> 890 МБ</span>
+        </div>
+      </div>
+      <div className="archive-actions">
+        <button className="btn-primary"><i className="fa fa-folder-open" /> Открыть</button>
+        <button className="btn-secondary"><i className="fa fa-refresh" /> Переиндексировать</button>
+      </div>
+    </div>
+
+    {/* Финансовые документы (первый) */}
+    <div className="archive-item">
+      <div className="archive-icon">
+        <i className="fa fa-money" />
+      </div>
+      <div className="archive-details">
+        <h3>Финансовые документы</h3>
+        <div className="archive-stats">
+          <span><i className="fa fa-file" /> 1 234 документов</span>
+          <span><i className="fa fa-file-pdf-o" /> PDF, DOCX, TXT</span>
+          <span><i className="fa fa-hdd-o" /> 42 ГБ</span>
+        </div>
+      </div>
+      <div className="archive-actions">
+        <button className="btn-primary"><i className="fa fa-folder-open" /> Открыть</button>
+        <button className="btn-secondary"><i className="fa fa-refresh" /> Переиндексировать</button>
+      </div>
+    </div>
+
+    {/* Финансовые документы (второй) */}
+    <div className="archive-item">
+      <div className="archive-icon">
+        <i className="fa fa-line-chart" />
+      </div>
+      <div className="archive-details">
+        <h3>Финансовые отчёты</h3>
+        <div className="archive-stats">
+          <span><i className="fa fa-file" /> 1 234 документов</span>
+          <span><i className="fa fa-file-pdf-o" /> PDF, DOCX, TXT</span>
+          <span><i className="fa fa-hdd-o" /> 340 МБ</span>
+        </div>
+      </div>
+      <div className="archive-actions">
+        <button className="btn-primary"><i className="fa fa-folder-open" /> Открыть</button>
+        <button className="btn-secondary"><i className="fa fa-refresh" /> Переиндексировать</button>
+      </div>
+    </div>
+  </div>
+</div>
       </main>
     </div>
   )
