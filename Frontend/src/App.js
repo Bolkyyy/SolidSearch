@@ -23,7 +23,7 @@ const LoginPage = () => {
     if (!password) {
       newErrors.password = 'Введите пароль';
     } else if (password.length < 7){
-      newErrors.password = "Пароль должен содержать не менее 8 символов"
+      newErrors.password = "Пароль должен содержать не менее 7 символов"
     }
 
     setErrors(newErrors);
@@ -127,7 +127,7 @@ const LoginPage = () => {
   );
 };
 
-//ГЛАВНАЯЯ
+//ГЛАВНАЯ
 const HomePage = () => {
   const [documents, setDocuments] = React.useState([]);
   const [indexJobs, setIndexJobs] = React.useState([]);
