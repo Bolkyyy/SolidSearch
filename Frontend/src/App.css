@@ -265,10 +265,14 @@ body { margin: 0; padding: 0; background-color: var(--bg-main); overflow-x: hidd
     white-space: nowrap; 
 }
 
-.view-all-history:hover,
-.view-all-bottom:hover {
+.view-all-history:hover {
     transform: scale(1.05); 
     color: var(--accent); 
+}
+
+.view-all-bottom:hover {
+    transform: scale(1.05); 
+    color: #f59e0b; 
 }
 
 .input-field.input-error {

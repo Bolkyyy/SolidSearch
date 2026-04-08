@@ -20,11 +20,11 @@ export class UsersService {
         if (!user) {
             throw new UnauthorizedException('Неверный email');
         }
-
+        
         if (user.password_hash !== password) {
             throw new UnauthorizedException('Неверный пароль');
         }
         
         return user;
-    }
+    } 
 }

@@ -145,6 +145,9 @@ const HomePage = () => {
       setSearchQueries(response.data);
     })
     .catch(err => console.error("Ошибка загрузки поисковых запросов:", err));
+
+    
+
   }, []);
 
   const newDocsCount = documents.filter(doc => {
@@ -218,7 +221,7 @@ const HomePage = () => {
               <div className="vertical-line" />
               <div className="user-profile">
                 <div className="user-info">
-                  <div className="user-name">Имя Фамилия</div>
+                  <div className="user-name"></div>
                   <div className="user-post">Разработчик</div>
                 </div>
                 <div className="user-avatar"><i className="fa fa-user-circle" /></div>
