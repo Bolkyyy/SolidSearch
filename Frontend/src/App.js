@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import './App.css';
-import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
 import logo from './Images/BlackLogo.svg';
 import axios from 'axios';
 
@@ -22,7 +22,7 @@ const LoginPage = () => {
 
     if (!password) {
       newErrors.password = 'Введите пароль';
-    } else if (password.length < 8){
+    } else if (password.length < 7){
       newErrors.password = "Пароль должен содержать не менее 8 символов"
     }
 
@@ -41,8 +41,14 @@ const LoginPage = () => {
         password: password
       });
 
-      console.log('Ответ от сервера:', response.data);
-      navigate('/home');
+      const userData = response.data;
+      console.log('Ответ от сервера:', userData);
+
+      if (userData?.full_name && typeof window !== 'undefined') {
+        localStorage.setItem('userFullName', userData.full_name);
+      }
+
+      navigate('/home', { state: { user: userData } });
 
     } catch (error) {
       console.error('Ошибка при логине:', error);
@@ -110,7 +116,7 @@ const LoginPage = () => {
 
       <div className="demo-box">
         <strong>Демо-доступ</strong><br />
-        <span>Email: demo@company.ru</span><br />
+        <span>Email: demo1@company.ru</span><br />
         <span>Пароль: demo123</span>
       </div>
       
@@ -126,27 +132,49 @@ const HomePage = () => {
   const [documents, setDocuments] = React.useState([]);
   const [indexJobs, setIndexJobs] = React.useState([]);
   const [searchQueries, setSearchQueries] = React.useState([]);
+  const [userName, setUserName] = React.useState('');
+  const location = useLocation();
 
   React.useEffect(() => {
+    //всего файлов
     axios.get('http://localhost:3001/documents')
       .then(response => {
         setDocuments(response.data);
       })
       .catch(err => console.error("Ошибка загрузки документов:", err));
 
+    //Количество индексированных файлов
     axios.get("http://localhost:3001/index_jobs")
       .then(response => {
         setIndexJobs(response.data);
       })
       .catch(err => console.error(err));
 
+    //Запросы за сегодня
     axios.get("http://localhost:3001/search_queries")
     .then(response => {
       setSearchQueries(response.data);
     })
     .catch(err => console.error("Ошибка загрузки поисковых запросов:", err));
-  }, []);
 
+    //Имя
+    let currentName = location.state?.user?.full_name;
+
+    if (currentName) {
+      setUserName(currentName);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('userFullName', currentName);
+      }
+    } else if (typeof window !== 'undefined') {
+      const storedName = localStorage.getItem('userFullName');
+      if (storedName) {
+        setUserName(storedName);
+      }
+    }
+
+  }, [location.state]);
+
+  //Количество документов
   const newDocsCount = documents.filter(doc => {
     const docDate = new Date(doc.created_at);
     const dayAgo = new Date();
@@ -154,6 +182,7 @@ const HomePage = () => {
     return docDate > dayAgo;
   }).length;
   
+  //Количество индексированных док-ов
   const recentJobsCount = indexJobs.filter(job => {
   const jobDate = new Date(job.created_at);
   const dayAgo = new Date();
@@ -191,10 +220,10 @@ const HomePage = () => {
         </div>
 
         <div className="nav-link active"><i className="fa fa-home" /> Главная</div>
-        <div className="nav-link"><i className="fa fa-search" /> Поиск</div>
-        <div className="nav-link"><i className="fa fa-folder-open" /> Архив документов</div>
-        <div className="nav-link"><i className="fa fa-history" /> История запросов</div>
-        <div className="nav-link"><i className="fa fa-line-chart" /> Аналитика</div>
+        <Link to="/search" className='nav-link'><div><i className="fa fa-search" /> Поиск</div></Link>
+        <Link to="/collections" className='nav-link'><div><i className="fa fa-folder-open" /> Архив документов</div></Link>
+        <Link to="/history" className='nav-link'><div><i className="fa fa-history" /> История запросов</div></Link>
+        <Link to="/analytics" className='nav-link'><div><i className="fa fa-line-chart" /> Аналитика</div></Link>
         <Link to="/indexing" className='nav-link'><div><i className="fa fa-database" />Индексация</div></Link>
 
         <div className="sidebar-divider" />
@@ -218,7 +247,7 @@ const HomePage = () => {
               <div className="vertical-line" />
               <div className="user-profile">
                 <div className="user-info">
-                  <div className="user-name">Имя Фамилия</div>
+                  <div className="user-name">{userName || 'Пользователь'}</div>
                   <div className="user-post">Разработчик</div>
                 </div>
                 <div className="user-avatar"><i className="fa fa-user-circle" /></div>
@@ -326,6 +355,25 @@ const HomePage = () => {
 // СТРАНИЦА ПОИСКА
 
 const SearchPage = () => {
+  const [userName, setUserName] = React.useState('');
+  const location = useLocation();
+  React.useEffect(() => {
+    //Имя
+    let currentName = location.state?.user?.full_name;
+
+    if (currentName) {
+      setUserName(currentName);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('userFullName', currentName);
+      }
+    } else if (typeof window !== 'undefined') {
+      const storedName = localStorage.getItem('userFullName');
+      if (storedName) {
+        setUserName(storedName);
+      }
+    }
+
+  }, [location.state]);
   return (
     <div className="App">
       <aside className="sidebar">
@@ -334,15 +382,15 @@ const SearchPage = () => {
           <span className="logo-text">AI-поиск по документам</span>
         </div>
 
-        <div className="nav-link"><i className="fa fa-home" /> Главная</div>
+        <Link to="/home" className='nav-link'><div><i className="fa fa-home" /> Главная</div></Link>
         <div className="nav-link active"><i className="fa fa-search" /> Поиск</div>
-        <div className="nav-link"><i className="fa fa-folder-open" /> Архив документов</div>
-        <div className="nav-link"><i className="fa fa-history" /> История запросов</div>
-        <div className="nav-link"><i className="fa fa-line-chart" /> Аналитика</div>
-        <div className="nav-link"><i className="fa fa-database" /> Индексация</div>
+        <Link to="/collections" className='nav-link'><div><i className="fa fa-folder-open" /> Архив документов</div></Link>
+        <Link to="/history" className='nav-link'><div><i className="fa fa-history" /> История запросов</div></Link>
+        <Link to="/analytics" className='nav-link'><div><i className="fa fa-line-chart" /> Аналитика</div></Link>
+        <Link to="/indexing" className='nav-link'><div><i className="fa fa-database" />Индексация</div></Link>
 
         <div className="sidebar-divider" />
-        <div className="nav-link"><i className="fa fa-cog" /> Настройки</div>
+        <Link to="/settings" className='nav-link'><div><i className="fa fa-cog" /> Настройки</div></Link>
         <div className="logout"><i className="fa fa-sign-out" /><Link to="/" className='exit'> Выход</Link></div>
       </aside>
 
@@ -362,7 +410,7 @@ const SearchPage = () => {
               <div className="vertical-line" />
               <div className="user-profile">
                 <div className="user-info">
-                  <div className="user-name">Имя Фамилия</div>
+                  <div className="user-name">{userName || 'Пользователь'}</div>
                   <div className="user-post">Разработчик</div>
                 </div>
                 <div className="user-avatar"><i className="fa fa-user-circle" /></div>
@@ -371,8 +419,7 @@ const SearchPage = () => {
           </div>
           <div className="header-bottom-line" />
         </header>
-      </main>
-        <div className="search-page-content">
+         <div className="search-page-content">
 
           <div className="ai-status-badge">
             <i className="fa fa-sparkles"></i> 
@@ -450,6 +497,7 @@ const SearchPage = () => {
             </div>
           </div>
         </div>
+      </main>
     </div>
   )
 }
@@ -457,6 +505,26 @@ const SearchPage = () => {
 // СТРАНИЦА АРХИИВА
 
 const CollectionPage = () => {
+  const [userName, setUserName] = React.useState('');
+  const location = useLocation();
+  React.useEffect(() => {
+    //Имя
+    let currentName = location.state?.user?.full_name;
+
+    if (currentName) {
+      setUserName(currentName);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('userFullName', currentName);
+      }
+    } else if (typeof window !== 'undefined') {
+      const storedName = localStorage.getItem('userFullName');
+      if (storedName) {
+        setUserName(storedName);
+      }
+    }
+
+  }, [location.state]);
+
   return (
     <div className="App">
       <aside className="sidebar">
@@ -465,15 +533,15 @@ const CollectionPage = () => {
           <span className="logo-text">AI-поиск по документам</span>
         </div>
 
-        <div className="nav-link"><i className="fa fa-home" /> Главная</div>
-        <div className="nav-link"><i className="fa fa-search" /> Поиск</div>
+        <Link to="/home" className='nav-link'><div><i className="fa fa-home" /> Главная</div></Link>
+        <Link to="/search" className='nav-link'><div><i className="fa fa-search" /> Поиск</div></Link>
         <div className="nav-link active"><i className="fa fa-folder-open" /> Архив документов</div>
-        <div className="nav-link"><i className="fa fa-history" /> История запросов</div>
-        <div className="nav-link"><i className="fa fa-line-chart" /> Аналитика</div>
-        <div className="nav-link"><i className="fa fa-database" /> Индексация</div>
+        <Link to="/history" className='nav-link'><div><i className="fa fa-history" /> История запросов</div></Link>
+        <Link to="/analytics" className='nav-link'><div><i className="fa fa-line-chart" /> Аналитика</div></Link>
+        <Link to="/indexing" className='nav-link'><div><i className="fa fa-database" />Индексация</div></Link>
 
         <div className="sidebar-divider" />
-        <div className="nav-link"><i className="fa fa-cog" /> Настройки</div>
+        <Link to="/settings" className='nav-link'><div><i className="fa fa-cog" /> Настройки</div></Link>
         <div className="logout"><i className="fa fa-sign-out" /><Link to="/" className='exit'> Выход</Link></div>
       </aside>
 
@@ -493,7 +561,7 @@ const CollectionPage = () => {
               <div className="vertical-line" />
               <div className="user-profile">
                 <div className="user-info">
-                  <div className="user-name">Имя Фамилия</div>
+                  <div className="user-name">{userName || 'Пользователь'}</div>
                   <div className="user-post">Разработчик</div>
                 </div>
                 <div className="user-avatar"><i className="fa fa-user-circle" /></div>
@@ -502,8 +570,8 @@ const CollectionPage = () => {
           </div>
           <div className="header-bottom-line" />
         </header>
-      </main>
       {/* Дальше код писать сюда */}
+      </main>
     </div>
   )
 }
@@ -511,6 +579,25 @@ const CollectionPage = () => {
 // СТРАНИЦА ИСТОРИИ ЗАПРОСОВ
 
 const HistoryPage = () => {
+  const [userName, setUserName] = React.useState('');
+  const location = useLocation();
+  React.useEffect(() => {
+    //Имя
+    let currentName = location.state?.user?.full_name;
+
+    if (currentName) {
+      setUserName(currentName);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('userFullName', currentName);
+      }
+    } else if (typeof window !== 'undefined') {
+      const storedName = localStorage.getItem('userFullName');
+      if (storedName) {
+        setUserName(storedName);
+      }
+    }
+
+  }, [location.state]);
   return (
     <div className="App">
       <aside className="sidebar">
@@ -519,15 +606,15 @@ const HistoryPage = () => {
           <span className="logo-text">AI-поиск по документам</span>
         </div>
 
-        <div className="nav-link"><i className="fa fa-home" /> Главная</div>
-        <div className="nav-link"><i className="fa fa-search" /> Поиск</div>
-        <div className="nav-link"><i className="fa fa-folder-open" /> Архив документов</div>
-        <div className="nav-link active"><i className="fa fa-history" /> История запросов</div>
-        <div className="nav-link"><i className="fa fa-line-chart" /> Аналитика</div>
-        <div className="nav-link"><i className="fa fa-database" /> Индексация</div>
+        <Link to="/home" className='nav-link'><div><i className="fa fa-home" /> Главная</div></Link>
+        <Link to="/search" className='nav-link'><div><i className="fa fa-search" /> Поиск</div></Link>
+        <Link to="/collections" className='nav-link'><div><i className="fa fa-folder-open" /> Архив документов</div></Link>
+        <div className='nav-link active'><i className="fa fa-history" /> История запросов</div>
+        <Link to="/analytics" className='nav-link'><div><i className="fa fa-line-chart" /> Аналитика</div></Link>
+        <Link to="/indexing" className='nav-link'><div><i className="fa fa-database" />Индексация</div></Link>
 
         <div className="sidebar-divider" />
-        <div className="nav-link"><i className="fa fa-cog" /> Настройки</div>
+        <Link to="/settings" className='nav-link'><div><i className="fa fa-cog" /> Настройки</div></Link>
         <div className="logout"><i className="fa fa-sign-out" /><Link to="/" className='exit'> Выход</Link></div>
       </aside>
 
@@ -547,7 +634,7 @@ const HistoryPage = () => {
               <div className="vertical-line" />
               <div className="user-profile">
                 <div className="user-info">
-                  <div className="user-name">Имя Фамилия</div>
+                  <div className="user-name">{userName || 'Пользователь'}</div>
                   <div className="user-post">Разработчик</div>
                 </div>
                 <div className="user-avatar"><i className="fa fa-user-circle" /></div>
@@ -556,8 +643,8 @@ const HistoryPage = () => {
           </div>
           <div className="header-bottom-line" />
         </header>
-      </main>
       {/* Дальше код писать сюда */}
+      </main>
     </div>
   )
 }
@@ -565,6 +652,25 @@ const HistoryPage = () => {
 // СТРАНИЦА АНАЛИТИКИ
 
 const AnalyticsPage = () => {
+  const [userName, setUserName] = React.useState('');
+  const location = useLocation();
+  React.useEffect(() => {
+    //Имя
+    let currentName = location.state?.user?.full_name;
+
+    if (currentName) {
+      setUserName(currentName);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('userFullName', currentName);
+      }
+    } else if (typeof window !== 'undefined') {
+      const storedName = localStorage.getItem('userFullName');
+      if (storedName) {
+        setUserName(storedName);
+      }
+    }
+
+  }, [location.state]);
   return (
     <div className="App">
       <aside className="sidebar">
@@ -573,15 +679,15 @@ const AnalyticsPage = () => {
           <span className="logo-text">AI-поиск по документам</span>
         </div>
 
-        <div className="nav-link"><i className="fa fa-home" /> Главная</div>
-        <div className="nav-link"><i className="fa fa-search" /> Поиск</div>
-        <div className="nav-link"><i className="fa fa-folder-open" /> Архив документов</div>
-        <div className="nav-link"><i className="fa fa-history" /> История запросов</div>
-        <div className="nav-link active"><i className="fa fa-line-chart" /> Аналитика</div>
-        <div className="nav-link"><i className="fa fa-database" /> Индексация</div>
+        <Link to="/home" className='nav-link'><div><i className="fa fa-home" /> Главная</div></Link>
+        <Link to="/search" className='nav-link'><div><i className="fa fa-search" /> Поиск</div></Link>
+        <Link to="/collections" className='nav-link'><div><i className="fa fa-folder-open" /> Архив документов</div></Link>
+        <Link to="/history" className='nav-link'><div><i className="fa fa-history" /> История запросов</div></Link>
+        <div className='nav-link active'><i className="fa fa-line-chart" /> Аналитика</div>
+        <Link to="/indexing" className='nav-link'><div><i className="fa fa-database" />Индексация</div></Link>
 
         <div className="sidebar-divider" />
-        <div className="nav-link"><i className="fa fa-cog" /> Настройки</div>
+        <Link to="/settings" className='nav-link'><div><i className="fa fa-cog" /> Настройки</div></Link>
         <div className="logout"><i className="fa fa-sign-out" /><Link to="/" className='exit'> Выход</Link></div>
       </aside>
 
@@ -601,7 +707,7 @@ const AnalyticsPage = () => {
               <div className="vertical-line" />
               <div className="user-profile">
                 <div className="user-info">
-                  <div className="user-name">Имя Фамилия</div>
+                  <div className="user-name">{userName || 'Пользователь'}</div>
                   <div className="user-post">Разработчик</div>
                 </div>
                 <div className="user-avatar"><i className="fa fa-user-circle" /></div>
@@ -610,8 +716,8 @@ const AnalyticsPage = () => {
           </div>
           <div className="header-bottom-line" />
         </header>
-      </main>
       {/* Дальше код писать сюда */}
+      </main>
     </div>
   )
 }
@@ -619,6 +725,25 @@ const AnalyticsPage = () => {
 // СТРАНИЦА ИНДЕКСАЦИИ
 
 const IndexingPage = () => {
+  const [userName, setUserName] = React.useState('');
+  const location = useLocation();
+  React.useEffect(() => {
+    //Имя
+    let currentName = location.state?.user?.full_name;
+
+    if (currentName) {
+      setUserName(currentName);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('userFullName', currentName);
+      }
+    } else if (typeof window !== 'undefined') {
+      const storedName = localStorage.getItem('userFullName');
+      if (storedName) {
+        setUserName(storedName);
+      }
+    }
+
+  }, [location.state]);
   return (
     <div className="App">
       <aside className="sidebar">
@@ -627,15 +752,15 @@ const IndexingPage = () => {
           <span className="logo-text">AI-поиск по документам</span>
         </div>
 
-        <div className="nav-link"><i className="fa fa-home" /> Главная</div>
-        <div className="nav-link"><i className="fa fa-search" /> Поиск</div>
-        <div className="nav-link"><i className="fa fa-folder-open" /> Архив документов</div>
-        <div className="nav-link"><i className="fa fa-history" /> История запросов</div>
-        <div className="nav-link"><i className="fa fa-line-chart" /> Аналитика</div>
-        <div className="nav-link active"><i className="fa fa-database" /> Индексация</div>
+        <Link to="/home" className='nav-link'><div><i className="fa fa-home" /> Главная</div></Link>
+        <Link to="/search" className='nav-link'><div><i className="fa fa-search" /> Поиск</div></Link>
+        <Link to="/collections" className='nav-link'><div><i className="fa fa-folder-open" /> Архив документов</div></Link>
+        <Link to="/history" className='nav-link'><div><i className="fa fa-history" /> История запросов</div></Link>
+        <Link to="/analytics" className='nav-link'><div><i className="fa fa-line-chart" /> Аналитика</div></Link>
+        <div className='nav-link active'><i className="fa fa-database" />Индексация</div>
 
         <div className="sidebar-divider" />
-        <div className="nav-link"><i className="fa fa-cog" /> Настройки</div>
+        <Link to="/settings" className='nav-link'><div><i className="fa fa-cog" /> Настройки</div></Link>
         <div className="logout"><i className="fa fa-sign-out" /><Link to="/" className='exit'> Выход</Link></div>
       </aside>
 
@@ -655,7 +780,7 @@ const IndexingPage = () => {
               <div className="vertical-line" />
               <div className="user-profile">
                 <div className="user-info">
-                  <div className="user-name">Имя Фамилия</div>
+                  <div className="user-name">{userName || 'Пользователь'}</div>
                   <div className="user-post">Разработчик</div>
                 </div>
                 <div className="user-avatar"><i className="fa fa-user-circle" /></div>
@@ -664,8 +789,8 @@ const IndexingPage = () => {
           </div>
           <div className="header-bottom-line" />
         </header>
-      </main>
       {/* Дальше код писать сюда */}
+      </main>
     </div>
   )
 }
@@ -673,6 +798,25 @@ const IndexingPage = () => {
 // СТРАНИЦА НАСТРОЕК!!!
 
 const SettingsPage = () => {
+  const [userName, setUserName] = React.useState('');
+  const location = useLocation();
+  React.useEffect(() => {
+    //Имя
+    let currentName = location.state?.user?.full_name;
+
+    if (currentName) {
+      setUserName(currentName);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('userFullName', currentName);
+      }
+    } else if (typeof window !== 'undefined') {
+      const storedName = localStorage.getItem('userFullName');
+      if (storedName) {
+        setUserName(storedName);
+      }
+    }
+
+  }, [location.state]);
   return (
     <div className="App">
       <aside className="sidebar">
@@ -681,12 +825,12 @@ const SettingsPage = () => {
           <span className="logo-text">AI-поиск по документам</span>
         </div>
 
-        <div className="nav-link"><i className="fa fa-home" /> Главная</div>
-        <div className="nav-link"><i className="fa fa-search" /> Поиск</div>
-        <div className="nav-link"><i className="fa fa-folder-open" /> Архив документов</div>
-        <div className="nav-link"><i className="fa fa-history" /> История запросов</div>
-        <div className="nav-link"><i className="fa fa-line-chart" /> Аналитика</div>
-        <div className="nav-link "><i className="fa fa-database" /><Link to="/indexing ">Индексация</Link></div>
+        <Link to="/home" className='nav-link'><div><i className="fa fa-home" /> Главная</div></Link>
+        <Link to="/search" className='nav-link'><div><i className="fa fa-search" /> Поиск</div></Link>
+        <Link to="/collections" className='nav-link'><div><i className="fa fa-folder-open" /> Архив документов</div></Link>
+        <Link to="/history" className='nav-link'><div><i className="fa fa-history" /> История запросов</div></Link>
+        <Link to="/analytics" className='nav-link'><div><i className="fa fa-line-chart" /> Аналитика</div></Link>
+        <Link to="/indexing" className="nav-link "><div><i className="fa fa-database" />Индексация</div></Link>
 
         <div className="sidebar-divider" />
         <div className="nav-link active"><i className="fa fa-cog" /> Настройки</div>
@@ -709,7 +853,7 @@ const SettingsPage = () => {
               <div className="vertical-line" />
               <div className="user-profile">
                 <div className="user-info">
-                  <div className="user-name">Имя Фамилия</div>
+                  <div className="user-name">{userName || 'Пользователь'}</div>
                   <div className="user-post">Разработчик</div>
                 </div>
                 <div className="user-avatar"><i className="fa fa-user-circle" /></div>
@@ -718,8 +862,8 @@ const SettingsPage = () => {
           </div>
           <div className="header-bottom-line" />
         </header>
-      </main>
       {/* Дальше код писать сюда */}
+      </main>
     </div>
   )
 }
