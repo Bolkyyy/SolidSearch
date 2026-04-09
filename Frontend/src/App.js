@@ -23,7 +23,7 @@ const LoginPage = () => {
     if (!password) {
       newErrors.password = 'Введите пароль';
     } else if (password.length < 7){
-      newErrors.password = "Пароль должен содержать не менее 8 символов"
+      newErrors.password = "Пароль должен содержать не менее 7 символов"
     }
 
     setErrors(newErrors);
@@ -127,7 +127,7 @@ const LoginPage = () => {
   );
 };
 
-//ГЛАВНАЯЯ
+//ГЛАВНАЯ
 const HomePage = () => {
   const [documents, setDocuments] = React.useState([]);
   const [indexJobs, setIndexJobs] = React.useState([]);
@@ -800,6 +800,7 @@ const IndexingPage = () => {
 const SettingsPage = () => {
   const [userName, setUserName] = React.useState('');
   const location = useLocation();
+  const [activeTab, setActiveTab] = React.useState('users'); // ДОБАВИЛ ВОТ ЭТО !!!
   React.useEffect(() => {
     //Имя
     let currentName = location.state?.user?.full_name;
@@ -863,6 +864,198 @@ const SettingsPage = () => {
           <div className="header-bottom-line" />
         </header>
       {/* Дальше код писать сюда */}
+              <div className="settings-container">
+          <div className="settings-header-content">
+            <h1>Настройки</h1>
+            <p className="settings-subtitle">Управление пользователями, источниками и конфигурацией системы</p>
+          </div>
+
+          {/* НАВИГАЦИЯ ПО ВКЛАДКАМ */}
+          <div className="settings-tabs-nav">
+            {[
+              { id: 'users', icon: 'fa-users', label: 'Пользователи и роли' },
+              { id: 'sources', icon: 'fa-database', label: 'Источники' },
+              { id: 'collections', icon: 'fa-layer-group', label: 'Коллекции' },
+              { id: 'models', icon: 'fa-microchip', label: 'Модели' },
+              { id: 'rules', icon: 'fa-cog', label: 'Правила индексации' },
+              { id: 'integrations', icon: 'fa-plug', label: 'Интеграции' },
+              { id: 'interface', icon: 'fa-desktop', label: 'Интерфейс' },
+            ].map((tab) => (
+              <div 
+                key={tab.id}
+                className={`settings-tab-link ${activeTab === tab.id ? 'active' : ''}`}
+                onClick={() => setActiveTab(tab.id)}
+              >
+                <i className={`fa ${tab.icon}`}></i>
+                <span>{tab.label}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* ОСНОВНАЯ ПАНЕЛЬ КОНТЕНТА */}
+          <div className="settings-card-panel">
+            
+            {/* ВКЛАДКА: ПОЛЬЗОВАТЕЛИ */}
+            {activeTab === 'users' && (
+              <div className="settings-view-fade">
+                <div className="view-header-row">
+                  <h2>Управление пользователями</h2>
+                  <button className="settings-action-btn">+ Создать пользователя</button>
+                </div>
+                <table className="users-data-table">
+                  <thead>
+                    <tr>
+                      <th style={{width: '25%'}}>Имя</th>
+                      <th style={{width: '25%'}}>Email</th>
+                      <th style={{width: '20%'}}>Роль</th>
+                      <th style={{width: '15%'}}>Статус</th>
+                      <th style={{width: '15%'}}>Действия</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Иван Петров</td>
+                      <td className="text-muted">ivan@company.ru</td>
+                      <td>Администратор</td>
+                      <td><span className="badge-status success">Активен</span></td>
+                      <td className="table-actions">
+                        <i className="fa fa-edit"></i>
+                        <i className="fa fa-trash-alt"></i>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>Мария Сидорова</td>
+                      <td className="text-muted">maria@company.ru</td>
+                      <td>Пользователь</td>
+                      <td><span className="badge-status success">Активен</span></td>
+                      <td className="table-actions">
+                        <i className="fa fa-edit"></i>
+                        <i className="fa fa-trash-alt"></i>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>Ольга Иванова</td>
+                      <td className="text-muted">olga@company.ru</td>
+                      <td>Читатель</td>
+                      <td><span className="badge-status danger">Неактивен</span></td>
+                      <td className="table-actions">
+                        <i className="fa fa-edit"></i>
+                        <i className="fa fa-trash-alt"></i>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* ВКЛАДКА: ИСТОЧНИКИ */}
+            {activeTab === 'sources' && (
+              <div className="settings-view-fade">
+                <div className="view-header-row">
+                  <h2>Источники данных</h2>
+                  <button className="settings-action-btn">+ Добавить источник</button>
+                </div>
+                <div className="source-data-card">
+                  <div className="source-card-body">
+                    <div className="source-title-row">
+                      <h3>Основной архив</h3>
+                      <span className="badge-status success-light">Подключен</span>
+                    </div>
+                    <p className="source-meta">Тип: Локальное хранилище</p>
+                    <p className="source-path">Путь: <code>/mnt/archive</code></p>
+                  </div>
+                </div>
+                <div className="source-data-card">
+                  <div className="source-card-body">
+                    <div className="source-title-row">
+                      <h3>Сетевое хранилище</h3>
+                      <span className="badge-status danger-light">Ошибка</span>
+                    </div>
+                    <p className="source-meta">Тип: SMB</p>
+                    <p className="source-path">Путь: <code>\\server\docs</code></p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ВКЛАДКА: ПРАВИЛА ИНДЕКСАЦИИ */}
+            {activeTab === 'rules' && (
+              <div className="settings-view-fade">
+                <h2>Правила индексации</h2>
+                <div className="indexing-block">
+                  <label className="block-title">Автоматическая индексация новых документов</label>
+                  <div className="custom-checkbox-row">
+                    <i className="fa fa-check-square accent-color"></i>
+                    <span>Индексировать документы сразу после загрузки</span>
+                  </div>
+                </div>
+                
+                <div className="indexing-block">
+                  <label className="block-title">Размер чанка (токены)</label>
+                  <div className="input-group-custom">
+                    <div className="dark-field-input">512</div>
+                    <p className="field-hint">Оптимальный размер: 512-1024 токенов</p>
+                  </div>
+                </div>
+
+                <div className="indexing-block">
+                  <label className="block-title">Overlap между чанками (токены)</label>
+                  <div className="input-group-custom">
+                    <div className="dark-field-input">128</div>
+                    <p className="field-hint">Рекомендуется: 10-20% от размера чанка</p>
+                  </div>
+                </div>
+
+                <button className="save-config-btn">
+                  <i className="fa fa-save"></i> Сохранить настройки
+                </button>
+              </div>
+            )}
+
+            {/* ВКЛАДКА: ИНТЕГРАЦИИ */}
+            {activeTab === 'integrations' && (
+              <div className="settings-view-fade">
+                <h2>Интеграции</h2>
+                <div className="integrations-grid-layout">
+                  <div className="integration-item">
+                    <h3>OpenAI API</h3>
+                    <p>Используется для эмбеддингов и генерации ответов</p>
+                    <span className="badge-status success">Подключено</span>
+                  </div>
+                  <div className="integration-item">
+                    <h3>Slack уведомления</h3>
+                    <p>Получайте уведомления об ошибках индексации</p>
+                    <span className="badge-status muted">Не настроено</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ВКЛАДКА: ИНТЕРФЕЙС */}
+            {activeTab === 'interface' && (
+              <div className="settings-view-fade">
+                <h2>Интерфейс</h2>
+                <div className="interface-block">
+                  <label className="block-title">Тема</label>
+                  <div className="ui-toggle active">
+                    <div className="ui-toggle-thumb"></div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ЗАГЛУШКА ДЛЯ ОСТАЛЬНЫХ */}
+            {(activeTab === 'collections' || activeTab === 'models') && (
+              <div className="settings-view-fade">
+                <h2>{activeTab === 'collections' ? 'Коллекции' : 'Модели'}</h2>
+                <p className="empty-tab-text">
+                  Настройки данного раздела находятся в процессе разработки или перенесены в раздел "Индексация".
+                </p>
+              </div>
+            )}
+
+          </div>
+        </div>
       </main>
     </div>
   )
