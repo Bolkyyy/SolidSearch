@@ -12,6 +12,9 @@ const LoginPage = () => {
   
   const navigate = useNavigate();
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
   const validate = () => {
     const newErrors = {};
     if (!email) {
@@ -22,14 +25,15 @@ const LoginPage = () => {
 
     if (!password) {
       newErrors.password = 'Введите пароль';
-    } 
+    } else {
+      newErrors.password = "Пароль должен содержать не менее 8 символов"
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  
 
     if (!validate()) return;
 
