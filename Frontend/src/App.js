@@ -1260,7 +1260,147 @@ const IndexingPage = () => {
           <h1>Управление индексацией</h1>
           <p className="welcome-link">Загрузка и индексация новых документов</p>
         </section>
-        {/* Дальше код писать сюда */}
+                <div className="indexing-page-content">
+          
+          <div className="indexing-stats-grid">
+            <div className="stat-card orange">
+              <div className="stat-info">
+                <span className="stat-label">В очереди</span>
+                <span className="stat-value">1</span>
+              </div>
+              <i className="fa fa-clock stat-icon"></i>
+            </div>
+            <div className="stat-card purple">
+              <div className="stat-info">
+                <span className="stat-label">Обрабатывается</span>
+                <span className="stat-value">2</span>
+              </div>
+              <i className="fa fa-play-circle stat-icon"></i>
+            </div>
+            <div className="stat-card green">
+              <div className="stat-info">
+                <span className="stat-label">Проиндексировано</span>
+                <span className="stat-value">2</span>
+              </div>
+              <i className="fa fa-check-circle stat-icon"></i>
+            </div>
+            <div className="stat-card red">
+              <div className="stat-info">
+                <span className="stat-label">Ошибки</span>
+                <span className="stat-value">1</span>
+              </div>
+              <i className="fa fa-exclamation-circle stat-icon"></i>
+            </div>
+          </div>
+
+          <div className="upload-dropzone">
+            <div className="upload-icon-circle">
+              <i className="fa fa-upload"></i>
+            </div>
+            <h3>Загрузите документы для индексации</h3>
+            <p>Перетащите файлы сюда или нажмите для выбора</p>
+            <div className="upload-buttons">
+              <button className="btn-upload primary">Выбрать файлы</button>
+              <button className="btn-upload primary">Выбрать папку</button>
+            </div>
+            <span className="upload-hint">Поддерживаемые форматы: PDF, DOCX, TXT, XLSX</span>
+          </div>
+
+          <div className="indexing-queue-container">
+            <div className="queue-header">
+              <h3>Очередь индексации</h3>
+              <div className="queue-actions">
+                <button className="btn-action orange"><i className="fa fa-pause"></i> Приостановить все</button>
+                <button className="btn-action red"><i className="fa fa-times"></i> Очистить завершённые</button>
+              </div>
+            </div>
+
+            <div className="queue-list">
+              <div className="queue-item processing">
+                <div className="item-main">
+                  <div className="item-icon purple"><i className="fa fa-play-circle"></i></div>
+                  <div className="item-details">
+                    <div className="item-title">Договор_451_2019.pdf</div>
+                    <div className="item-meta">Архив 2024 <span className="status-text">Обрабатывается</span></div>
+                  </div>
+                  <div className="item-progress-info">
+                    <span className="step-name">Извлечение текста</span>
+                    <span className="time-info">Начало в 10:30</span>
+                  </div>
+                </div>
+                <div className="progress-container">
+                  <div className="progress-bar" style={{width: '45%'}}></div>
+                  <span className="progress-percent">45%</span>
+                </div>
+              </div>
+
+              <div className="queue-item processing">
+                <div className="item-main">
+                  <div className="item-icon purple"><i className="fa fa-play-circle"></i></div>
+                  <div className="item-details">
+                    <div className="item-title">Акт_выполненных_работ_128.docx</div>
+                    <div className="item-meta">Архив 2024 <span className="status-text">Обрабатывается</span></div>
+                  </div>
+                  <div className="item-progress-info">
+                    <span className="step-name">Создание векторов</span>
+                    <span className="time-info">Начало в 10:28</span>
+                  </div>
+                </div>
+                <div className="progress-container">
+                  <div className="progress-bar" style={{width: '78%'}}></div>
+                  <span className="progress-percent">78%</span>
+                </div>
+              </div>
+
+              <div className="queue-item waiting">
+                <div className="item-main">
+                  <div className="item-icon orange"><i className="fa fa-clock"></i></div>
+                  <div className="item-details">
+                    <div className="item-title">Смета_проект_2024.xlsx</div>
+                    <div className="item-meta">Текущие проекты <span className="status-tag orange">В очереди</span></div>
+                  </div>
+                  <div className="item-status-right">
+                    <span>В очереди</span>
+                    <span className="time-info">--:--</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="queue-item completed">
+                <div className="item-main">
+                  <div className="item-icon green"><i className="fa fa-check-circle"></i></div>
+                  <div className="item-details">
+                    <div className="item-title">Техническое_задание.pdf</div>
+                    <div className="item-meta">Текущие проекты <span className="status-tag green">Проиндексирован</span></div>
+                  </div>
+                  <div className="item-status-right">
+                    <span>Проиндексирован</span>
+                    <span className="time-info">Завершено в 10:25</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="queue-item error">
+                <div className="item-main">
+                  <div className="item-icon red"><i className="fa fa-exclamation-circle"></i></div>
+                  <div className="item-details">
+                    <div className="item-title">Скан_документа_неразборчиво.pdf</div>
+                    <div className="item-meta">Архив 2023 <span className="status-tag red">Ошибка</span></div>
+                  </div>
+                  <div className="item-status-right">
+                    <span>Проиндексирован</span>
+                    <span className="time-info">Завершено в 10:25</span>
+                  </div>
+                </div>
+                <div className="error-message-box">
+                   <p>Не удалось распознать текст</p>
+                   <button className="retry-link">Попробовать снова</button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
       </main>
     </div>
   );
@@ -1271,7 +1411,7 @@ const IndexingPage = () => {
 const SettingsPage = () => {
   const [userName, setUserName] = React.useState("");
   const location = useLocation();
-  const [activeTab, setActiveTab] = React.useState("users"); // ДОБАВИЛ ВОТ ЭТО !!!
+  const [activeTab, setActiveTab] = React.useState("users");
   React.useEffect(() => {
     //Имя
     let currentName = location.state?.user?.full_name;
@@ -1296,48 +1436,16 @@ const SettingsPage = () => {
           <span className="logo-text">AI-поиск по документам</span>
         </div>
 
-        <Link to="/home" className="nav-link">
-          <div>
-            <i className="fa fa-home" /> Главная
-          </div>
-        </Link>
-        <Link to="/search" className="nav-link">
-          <div>
-            <i className="fa fa-search" /> Поиск
-          </div>
-        </Link>
-        <Link to="/collections" className="nav-link">
-          <div>
-            <i className="fa fa-folder-open" /> Архив документов
-          </div>
-        </Link>
-        <Link to="/history" className="nav-link">
-          <div>
-            <i className="fa fa-history" /> История запросов
-          </div>
-        </Link>
-        <Link to="/analytics" className="nav-link">
-          <div>
-            <i className="fa fa-line-chart" /> Аналитика
-          </div>
-        </Link>
-        <Link to="/indexing" className="nav-link ">
-          <div>
-            <i className="fa fa-database" />
-            Индексация
-          </div>
-        </Link>
+        <Link to="/home" className="nav-link"><div><i className="fa fa-home" /> Главная</div></Link>
+        <Link to="/search" className="nav-link"><div><i className="fa fa-search" /> Поиск</div></Link>
+        <Link to="/collections" className="nav-link"><div><i className="fa fa-folder-open" /> Архив документов</div></Link>
+        <Link to="/history" className="nav-link"><div><i className="fa fa-history" /> История запросов</div></Link>
+        <Link to="/analytics" className="nav-link"><div><i className="fa fa-line-chart" /> Аналитика</div></Link>
+        <Link to="/indexing" className="nav-link "><div><i className="fa fa-database" />Индексация</div></Link>
 
         <div className="sidebar-divider" />
-        <div className="nav-link active">
-          <i className="fa fa-cog" /> Настройки
-        </div>
-        <div className="logout">
-          <i className="fa fa-sign-out" />
-          <Link to="/" className="exit">
-            {" "}
-            Выход
-          </Link>
+        <div className="nav-link active"><i className="fa fa-cog" /> Настройки</div>
+        <div className="logout"><i className="fa fa-sign-out" /><Link to="/" className="exit">{" "}Выход</Link>
         </div>
       </aside>
 
@@ -1377,14 +1485,15 @@ const SettingsPage = () => {
           <div className="header-bottom-line" />
         </header>
         <section className="welcome">
-          <h1>Управление индексацией</h1>
-          <p className="welcome-link">Загрузка и индексация новых документов</p>
+          <h1>Настройки</h1>
+          <p className="welcome-link">Управление пользователями, источниками и конфигурацией системы</p>
         </section>
-        {/* Дальше код писать сюда */}
         <div className="settings-container">
+
           {/* НАВИГАЦИЯ ПО ВКЛАДКАМ */}
-          <div className="settings-tabs-nav">
-            {[
+         
+          <div className="settings-card-panel">
+            <div className="settings-tabs-nav">{[
               { id: "users", icon: "fa-users", label: "Пользователи и роли" },
               { id: "sources", icon: "fa-database", label: "Источники" },
               { id: "collections", icon: "fa-layer-group", label: "Коллекции" },
@@ -1392,24 +1501,23 @@ const SettingsPage = () => {
               { id: "rules", icon: "fa-cog", label: "Правила индексации" },
               { id: "integrations", icon: "fa-plug", label: "Интеграции" },
               { id: "interface", icon: "fa-desktop", label: "Интерфейс" },
-            ].map((tab) => (
-              <div
-                key={tab.id}
+              ].map((tab) => (
+              <div key={tab.id}
                 className={`settings-tab-link ${activeTab === tab.id ? "active" : ""}`}
-                onClick={() => setActiveTab(tab.id)}
-              >
+                onClick={() => setActiveTab(tab.id)}>
                 <i className={`fa ${tab.icon}`}></i>
                 <span>{tab.label}</span>
               </div>
-            ))}
-          </div>
+              ))}
+            </div>
 
-          <div className="settings-card-panel">
+            <div className="sidebar-divider-settings" />
+
             {activeTab === "users" && (
               <div className="settings-view-fade">
                 <div className="view-header-row">
                   <h2>Управление пользователями</h2>
-                  <button className="settings-action-btn">
+                  <button className="create-collection-btn">
                     + Создать пользователя
                   </button>
                 </div>
@@ -1469,7 +1577,7 @@ const SettingsPage = () => {
               <div className="settings-view-fade">
                 <div className="view-header-row">
                   <h2>Источники данных</h2>
-                  <button className="settings-action-btn">
+                  <button className="create-collection-btn">
                     + Добавить источник
                   </button>
                 </div>
@@ -1477,9 +1585,13 @@ const SettingsPage = () => {
                   <div className="source-card-body">
                     <div className="source-title-row">
                       <h3>Основной архив</h3>
-                      <span className="badge-status success-light">
+                      <span className="badge-status success">
                         Подключен
                       </span>
+                      <div className="redact-delete-buttons">
+                        <button className="redact-collection-btn">Редактировать</button>
+                        <button className="delete-collection-btn">Удалить</button>
+                      </div>
                     </div>
                     <p className="source-meta">Тип: Локальное хранилище</p>
                     <p className="source-path">
@@ -1491,7 +1603,11 @@ const SettingsPage = () => {
                   <div className="source-card-body">
                     <div className="source-title-row">
                       <h3>Сетевое хранилище</h3>
-                      <span className="badge-status danger-light">Ошибка</span>
+                      <span className="badge-status danger">Ошибка</span>
+                      <div className="redact-delete-buttons">
+                        <button className="redact-collection-btn">Редактировать</button>
+                        <button className="delete-collection-btn">Удалить</button>
+                      </div>
                     </div>
                     <p className="source-meta">Тип: SMB</p>
                     <p className="source-path">
@@ -1537,7 +1653,7 @@ const SettingsPage = () => {
                   </div>
                 </div>
 
-                <button className="save-config-btn">
+                <button className="create-collection-btn">
                   <i className="fa fa-save"></i> Сохранить настройки
                 </button>
               </div>
@@ -1573,16 +1689,28 @@ const SettingsPage = () => {
               </div>
             )}
 
-            {(activeTab === "collections" || activeTab === "models") && (
+            {(activeTab === "models") && (
               <div className="settings-view-fade">
-                <h2>{activeTab === "collections" ? "Коллекции" : "Модели"}</h2>
+                <h2>Модели</h2>
                 <p className="empty-tab-text">
                   Настройки данного раздела находятся в процессе разработки или
                   перенесены в раздел "Индексация".
                 </p>
               </div>
             )}
+
+            {(activeTab === "collections" ) && (
+              <div className="settings-view-fade">
+                <h2>Коллекции</h2>
+                <div className="collection-text">
+                  <p className="empty-tab-text">
+                    Управление коллекциями доступно в разделе <Link to="/collections" className="coll-endpoint">Архив документов</Link>
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
+          
         </div>
       </main>
     </div>
