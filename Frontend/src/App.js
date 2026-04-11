@@ -290,7 +290,7 @@ const HomePage = () => {
                   <div className="user-name">{userName || "Пользователь"}</div>
                   <div className="user-post">Разработчик</div>
                 </div>
-                <div className="user-avatar">
+                <div className="us er-avatar">
                   <i className="fa fa-user-circle" />
                 </div>
               </div>
@@ -1262,31 +1262,30 @@ const IndexingPage = () => {
           <h1>Управление индексацией</h1>
           <p className="welcome-link">Загрузка и индексация новых документов</p>
         </section>
-                <div className="indexing-page-content">
-          
+        <div className="indexing-page-content">   
           <div className="indexing-stats-grid">
-            <div className="stat-card orange">
+            <div className="stat-card-indexing orange">
               <div className="stat-info">
                 <span className="stat-label">В очереди</span>
                 <span className="stat-value">1</span>
               </div>
               <i className="fa fa-clock stat-icon"></i>
             </div>
-            <div className="stat-card purple">
+            <div className="stat-card-indexing purple">
               <div className="stat-info">
                 <span className="stat-label">Обрабатывается</span>
                 <span className="stat-value">2</span>
               </div>
               <i className="fa fa-play-circle stat-icon"></i>
             </div>
-            <div className="stat-card green">
+            <div className="stat-card-indexing green">
               <div className="stat-info">
                 <span className="stat-label">Проиндексировано</span>
                 <span className="stat-value">2</span>
               </div>
               <i className="fa fa-check-circle stat-icon"></i>
             </div>
-            <div className="stat-card red">
+            <div className="stat-card-indexing red">
               <div className="stat-info">
                 <span className="stat-label">Ошибки</span>
                 <span className="stat-value">1</span>
@@ -1302,8 +1301,8 @@ const IndexingPage = () => {
             <h3>Загрузите документы для индексации</h3>
             <p>Перетащите файлы сюда или нажмите для выбора</p>
             <div className="upload-buttons">
-              <button className="btn-upload primary">Выбрать файлы</button>
-              <button className="btn-upload primary">Выбрать папку</button>
+              <button className="btn-upload-file primary">Выбрать файлы</button>
+              <button className="btn-upload-folder primary">Выбрать папку</button>
             </div>
             <span className="upload-hint">Поддерживаемые форматы: PDF, DOCX, TXT, XLSX</span>
           </div>
@@ -1318,7 +1317,7 @@ const IndexingPage = () => {
             </div>
 
             <div className="queue-list">
-              <div className="queue-item processing">
+              <div className="queue-item-processing">
                 <div className="item-main">
                   <div className="item-icon purple"><i className="fa fa-play-circle"></i></div>
                   <div className="item-details">
@@ -1336,7 +1335,7 @@ const IndexingPage = () => {
                 </div>
               </div>
 
-              <div className="queue-item processing">
+              <div className="queue-item-processing">
                 <div className="item-main">
                   <div className="item-icon purple"><i className="fa fa-play-circle"></i></div>
                   <div className="item-details">
@@ -1354,7 +1353,7 @@ const IndexingPage = () => {
                 </div>
               </div>
 
-              <div className="queue-item waiting">
+              <div className="queue-item-waiting">
                 <div className="item-main">
                   <div className="item-icon orange"><i className="fa fa-clock"></i></div>
                   <div className="item-details">
@@ -1368,7 +1367,7 @@ const IndexingPage = () => {
                 </div>
               </div>
 
-              <div className="queue-item completed">
+              <div className="queue-item-completed">
                 <div className="item-main">
                   <div className="item-icon green"><i className="fa fa-check-circle"></i></div>
                   <div className="item-details">
@@ -1382,7 +1381,7 @@ const IndexingPage = () => {
                 </div>
               </div>
 
-              <div className="queue-item error">
+              <div className="queue-item-error">
                 <div className="item-main">
                   <div className="item-icon red"><i className="fa fa-exclamation-circle"></i></div>
                   <div className="item-details">
@@ -1628,15 +1627,14 @@ const SettingsPage = () => {
                     Автоматическая индексация новых документов
                   </label>
                   <div className="custom-checkbox-row">
-                    <i className="fa fa-check-square accent-color"></i>
-                    <span>Индексировать документы сразу после загрузки</span>
+                    <input type="checkbox" className="custom-checkbox"/><span> Индексировать документы сразу после загрузки</span>
                   </div>
                 </div>
 
                 <div className="indexing-block">
                   <label className="block-title">Размер чанка (токены)</label>
                   <div className="input-group-custom">
-                    <div className="dark-field-input">512</div>
+                    <input type="text" className="dark-field-input" placeholder="512"/>
                     <p className="field-hint">
                       Оптимальный размер: 512-1024 токенов
                     </p>
@@ -1648,7 +1646,7 @@ const SettingsPage = () => {
                     Overlap между чанками (токены)
                   </label>
                   <div className="input-group-custom">
-                    <div className="dark-field-input">128</div>
+                    <input type="text" className="dark-field-input" placeholder="128"/>
                     <p className="field-hint">
                       Рекомендуется: 10-20% от размера чанка
                     </p>
