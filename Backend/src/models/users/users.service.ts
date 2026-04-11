@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Users } from './users.entity';
 import { Repository } from 'typeorm';
@@ -14,26 +14,17 @@ export class UsersService {
         return await this.usersRepository.find();
     }
 
-    async loginOrCreate(email: any, password: any): Promise<Users> {
+    async login(email: string, password: string): Promise<Users | undefined> {
         let user = await this.usersRepository.findOne({ where: { email } });
 
         if (!user) {
-            user = this.usersRepository.create({
-            email: email,
-            full_name: 'New User',
-            password_hash: password,
-            role_id: 1,
-            status: 'active',
-        });
-            
-        try {
-            await this.usersRepository.save(user);
-        } catch (err: any) {
-            console.error("ОШИБКА ТУТ:", err.message); 
-            throw err;
-            }
+            throw new UnauthorizedException('Неверный email');
         }
-
+        
+        if (user.password_hash !== password) {
+            throw new UnauthorizedException('Неверный пароль');
+        }
+        
         return user;
-    }
+    } 
 }
