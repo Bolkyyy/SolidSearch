@@ -14,6 +14,14 @@ import { DocumentSourcesModule } from './models/document_sources/document_source
 import { IndexJobsService } from './models/index_jobs/index_jobs.service';
 import { IndexJobsController } from './models/index_jobs/index_jobs.controller';
 import { IndexJobsModule } from './models/index_jobs/index_jobs.module';
+import { AnswerCitationsModule } from './answer_citations/answer_citations.module';
+import { GeneratedAnswersController } from './generated_answers/generated_answers.controller';
+import { GeneratedAnswersService } from './generated_answers/generated_answers.service';
+import { GeneratedAnswersModule } from './generated_answers/generated_answers.module';
+import { AuditLogsModule } from './audit_logs/audit_logs.module';
+import { EntitiesController } from './entities/entities.controller';
+import { EntitiesService } from './entities/entities.service';
+import { EntitiesModule } from './entities/entities.module';
 
 @Module({
   imports: [
@@ -37,9 +45,13 @@ import { IndexJobsModule } from './models/index_jobs/index_jobs.module';
     DocumentCollectionModule,
     DocumentFilesModule,
     DocumentSourcesModule,
-    IndexJobsModule
+    IndexJobsModule,
+    AnswerCitationsModule,
+    GeneratedAnswersModule,
+    AuditLogsModule,
+    EntitiesModule
   ],
-  controllers: [AppController, UsersController, DocumentSourcesController, IndexJobsController],
-  providers: [AppService],
+  controllers: [AppController, UsersController, DocumentSourcesController, IndexJobsController, GeneratedAnswersController, EntitiesController],
+  providers: [AppService, GeneratedAnswersService, EntitiesService],
 })
 export class AppModule {}

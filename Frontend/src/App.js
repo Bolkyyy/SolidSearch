@@ -290,7 +290,7 @@ const HomePage = () => {
                   <div className="user-name">{userName || "Пользователь"}</div>
                   <div className="user-post">Разработчик</div>
                 </div>
-                <div className="us er-avatar">
+                <div className="user-avatar">
                   <i className="fa fa-user-circle" />
                 </div>
               </div>
@@ -1691,11 +1691,53 @@ const SettingsPage = () => {
 
             {(activeTab === "models") && (
               <div className="settings-view-fade">
-                <h2>Модели</h2>
-                <p className="empty-tab-text">
-                  Настройки данного раздела находятся в процессе разработки или
-                  перенесены в раздел "Индексация".
-                </p>
+                <div className="view-header-row">
+                  <h2>Конфигурация моделей</h2>
+                  <button className="create-collection-btn">
+                    + Добавить модель
+                  </button>
+                </div>
+                <div className="source-data-card">
+                  <div className="source-card-body">
+                    <div className="source-title-row">
+                      <h3>text-embedding-ada-002</h3>
+                      <span className="badge-status success">
+                        Активна
+                      </span>
+                      <div className="redact-delete-buttons">
+                        <button className="redact-collection-btn">Настроить</button>
+                      </div>
+                    </div>
+                    <p className="source-meta">Тип: Эмбеддинги</p>
+                    <p className="source-path">Провайдер: OpenAI</p>
+                  </div>
+                </div>
+                <div className="source-data-card">
+                  <div className="source-card-body">
+                    <div className="source-title-row">
+                      <h3>gpt-4</h3>
+                      <span className="badge-status success">Активна</span>
+                      <div className="redact-delete-buttons">
+                        <button className="redact-collection-btn">Настроить</button>
+                      </div>
+                    </div>
+                    <p className="source-meta">Тип: Генерация ответов</p>
+                    <p className="source-path">Провайдер: OpenAI</p>
+                  </div>
+                </div>
+                <div className="source-data-card">
+                  <div className="source-card-body">
+                    <div className="source-title-row">
+                      <h3>multilingual-e5-large</h3>
+                      <span className="badge-status muted">Неактивна</span>
+                      <div className="redact-delete-buttons">
+                        <button className="redact-collection-btn">Настроить</button>
+                      </div>
+                    </div>
+                    <p className="source-meta">Тип: Эмбеддинги</p>
+                    <p className="source-path">Провайдер: HuggingFace</p>
+                  </div>
+                </div>
               </div>
             )}
 

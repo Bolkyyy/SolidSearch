@@ -916,7 +916,6 @@ body {
   font-size: 18px;
 }
 
-/* Поисковая строка */
 .ai-search-container {
   width: 100%;
   margin-bottom: 60px;
@@ -2195,7 +2194,6 @@ body {
   font-weight: bolder;
   font-size: 18px;
   color: #fff;
-
 }
 
 .view-header-row {
@@ -2410,4 +2408,16 @@ body {
   font-size: 18px;
   font-weight: 700;
   max-width: 450px;
+  transition: all .3s;
+  outline: none;
+}
+
+.dark-field-input:hover {
+  border-color: #14b8a689;
+  box-shadow: 0 0 20px rgba(20, 184, 166, 0.15);
+}
+
+.dark-field-input:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 20px rgba(20, 184, 166, 0.15);
 }
