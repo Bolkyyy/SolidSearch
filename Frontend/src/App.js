@@ -366,7 +366,7 @@ const HomePage = () => {
               </div>
             </div>
 
-            <div className="view-all-history">Вся история →</div>
+            <div><Link to="/history" className="view-all-history">Вся история →</Link></div>
           </div>
 
           <div className="panel">
@@ -396,7 +396,7 @@ const HomePage = () => {
               Текущие проекты <span className="label orange">Индексация</span>
             </button>
 
-            <div className="view-all-bottom">Все коллекции →</div>
+            <div><Link to="/collections" className="view-all-bottom">Все коллекции →</Link></div>
           </div>
         </div>
       </main>
@@ -764,7 +764,7 @@ const CollectionPage = () => {
               </div>
               <div className="archive-buttons">
                 <button className="btn-open">Открыть</button>
-                <button className="btn-reindex">Переиндексировать</button>
+                <Link to='/indexing' className="btn-reindex"><button className="indbtn">Переиндексировать</button></Link>
               </div>
             </div>
 
@@ -783,7 +783,7 @@ const CollectionPage = () => {
               </div>
               <div className="archive-buttons">
                 <button className="btn-open">Открыть</button>
-                <button className="btn-reindex">Переиндексировать</button>
+                <Link to='/indexing' className="btn-reindex"><button className="indbtn">Переиндексировать</button></Link>
               </div>
             </div>
 
@@ -803,7 +803,7 @@ const CollectionPage = () => {
               </div>
               <div className="archive-buttons">
                 <button className="btn-open">Открыть</button>
-                <button className="btn-reindex">Переиндексировать</button>
+                <Link to='/indexing' className="btn-reindex"><button className="indbtn">Переиндексировать</button></Link>
               </div>
             </div>
 
@@ -822,7 +822,7 @@ const CollectionPage = () => {
               </div>
               <div className="archive-buttons">
                 <button className="btn-open">Открыть</button>
-                <button className="btn-reindex">Переиндексировать</button>
+                <Link to='/indexing' className="btn-reindex"><button className="indbtn">Переиндексировать</button></Link>
               </div>
             </div>
 
@@ -841,7 +841,7 @@ const CollectionPage = () => {
               </div>
               <div className="archive-buttons">
                 <button className="btn-open">Открыть</button>
-                <button className="btn-reindex">Переиндексировать</button>
+                <Link to='/indexing' className="btn-reindex"><button className="indbtn">Переиндексировать</button></Link>
               </div>
             </div>
           </div>

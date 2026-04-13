@@ -401,6 +401,7 @@ body {
   cursor: pointer;
   margin-top: 20px;
   font-weight: bold;
+  text-decoration: none;
 }
 
 .green {
@@ -597,6 +598,7 @@ body {
   transition: transform 0.2s ease-out, color 0.2s ease-out;
   display: inline-block;
   white-space: nowrap;
+  text-decoration: none;
 }
 
 .view-all-history:hover {
@@ -1103,9 +1105,13 @@ body {
 }
 
 /* Страница архива*/
+.indexinglink {
+  text-decoration: none;
+  color: #000;
+}
 
 .archive-page {
-  padding: 24px 32px;
+  padding: 15px 0;
   background: linear-gradient(135deg, #1e1e1e 0%, #1e1e1e 100%);
   min-height: calc(100vh - 70px);
 }
@@ -1257,7 +1263,10 @@ body {
   border: none;
   transition: all 0.2s ease;
   flex: 1;
+  color: white;
   text-align: center;
+  text-decoration: none;
+  font-family: Montserrat;
 }
 
 .btn-open {
@@ -1268,6 +1277,10 @@ body {
 .btn-open:hover {
   background: #14B8A6;
   transform: translateY(-1px);
+}
+
+.indbtn {
+  all: unset
 }
 
 .btn-reindex {
@@ -1845,6 +1858,7 @@ body {
   font-size: 12px;
   cursor: pointer;
   color: #888;
+  font-family: Montserrat;
 }
 
 .btn-action.orange {
@@ -2042,6 +2056,7 @@ body {
   background: rgba(239, 68, 68, 0.05);
   padding: 10px;
   border-radius: 6px;
+  font-family: Montserrat;
 }
 
 .error-message-box p {
@@ -2057,6 +2072,7 @@ body {
   text-decoration: underline;
   font-size: 11px;
   cursor: pointer;
+  font-family: Montserrat;
 }
 
 /* СТРАНИЦА НАСТРОЕК */
