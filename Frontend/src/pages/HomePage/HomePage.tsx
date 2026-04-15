@@ -1,29 +1,29 @@
-import { useEffect, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import axios from 'axios';
+// import { useEffect, useState } from 'react';
+import { Link, /*useLocation*/ } from 'react-router-dom';
+// import axios from 'axios';
 import Layout from '../../components/Layout/Layout';
 
-interface Document {
-  id: number;
-  created_at: string;
-  status: string;
-}
+// interface Document {
+//   id: number;
+//   created_at: string;
+//   status: string;
+// }
 
-interface IndexJob {
-  id: number;
-  created_at: string;
-}
+// interface IndexJob {
+//   id: number;
+//   created_at: string;
+// }
 
-interface SearchQuery {
-  id: number;
-  created_at: string;
-}
+// interface SearchQuery {
+//   id: number;
+//   created_at: string;
+// }
 
 const HomePage = () => {
-  const [documents, setDocuments] = useState<Document[]>([]);
-  const [indexJobs, setIndexJobs] = useState<IndexJob[]>([]);
-  const [searchQueries, setSearchQueries] = useState<SearchQuery[]>([]);
-  const location = useLocation();
+//   const [documents, setDocuments] = useState<Document[]>([]);
+//   const [indexJobs, setIndexJobs] = useState<IndexJob[]>([]);
+//   const [searchQueries, setSearchQueries] = useState<SearchQuery[]>([]);
+//   const location = useLocation();
 
   return (
     <Layout>
@@ -36,7 +36,7 @@ const HomePage = () => {
         <div className="stat-card">
           <i className="fa fa-file-text card-icon blue" />
           <p>Всего документов</p>
-          <h2>{documents.length}</h2>
+          <h2>{/*documents.length*/}</h2>
           <span className="trend-up">+{/*newDocsCount*/}</span>
         </div>
         <div className="stat-card-green">

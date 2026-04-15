@@ -37,7 +37,7 @@ const Sidebar = () => {
       </Link>
 
       <div className="logout">
-        <Link to="/" className="exit"><i className="fa fa-sign-out" /> Выход</Link>
+        <Link to="/login" className="exit"><i className="fa fa-sign-out" /> Выход</Link>
       </div>
     </aside>
   );
