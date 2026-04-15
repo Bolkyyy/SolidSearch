@@ -2443,3 +2443,47 @@ body {
   border-color: var(--accent);
   box-shadow: 0 0 20px #F1F3F426;
 }
+/* АНИМАЦИЮ НАСТРОЕК ДОБАВИЛ ТУТ */
+
+.settings-tab-link {
+    position: relative; 
+    overflow: hidden;   
+    z-index: 1;
+}
+
+.settings-tab-link.active {
+    background: transparent !important;
+    border-bottom: 1px inset #F1F3F4 !important;
+}
+
+.settings-tab-link::before,
+.settings-tab-link::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 0; 
+    background: #F1F3F470; 
+    transition: width 0.4s ease-in-out; 
+    z-index: -1; 
+}
+
+.settings-tab-link::before {
+    left: 0;
+}
+
+.settings-tab-link::after {
+    right: 0;
+}
+
+.settings-tab-link.active::before,
+.settings-tab-link.active::after {
+    width: 50%; 
+}
+
+.settings-tab-link:hover:not(.active)::before {
+    width: 5%; 
+}
+.settings-tab-link:hover:not(.active)::after {
+    width: 5%;
+}
