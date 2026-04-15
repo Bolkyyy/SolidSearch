@@ -20,21 +20,30 @@ import { DocumentMetadataModule } from './models/document_metadata/document_meta
 import { DocumentPagesModule } from './models/document_pages/document_pages.module';
 import { EmbeddingsModule } from './models/embeddings/embeddings.module';
 import { SearchResultsModule } from './models/search_results/search_results.module';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
   imports: [
-    TypeOrmModule.forRoot({
-      type: 'postgres',
-      url: 'postgresql://postgres.iufzexibjyajleprlpip:ks54bestgrup@aws-0-eu-west-1.pooler.supabase.com:6543/postgres?pgbouncer=true',
-      autoLoadEntities: true,
-      synchronize: false,
-      ssl: true,
-      logging: true,
-      extra: {
-        ssl: {
-          rejectUnauthorized: false,
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: '.env',
+    }),
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        type: 'postgres',
+        url: configService.get<string>('DATABASE_URL'),
+        autoLoadEntities: true,
+        synchronize: false,
+        ssl: true,
+        logging: true,
+        extra: {
+          ssl: {
+            rejectUnauthorized: false,
+          },
         },
-      },
+      }),
+      inject: [ConfigService],
     }),
     RolesModule,
     DocumentsModule,
@@ -53,8 +62,6 @@ import { SearchResultsModule } from './models/search_results/search_results.modu
     DocumentMetadataModule,
     DocumentPagesModule,
     EmbeddingsModule,
-    EntitiesModule,
-    GeneratedAnswersModule,
     SearchResultsModule
   ],
   controllers: [AppController],
