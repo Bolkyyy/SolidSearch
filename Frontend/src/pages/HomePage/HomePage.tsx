@@ -25,55 +25,6 @@ const HomePage = () => {
   const [searchQueries, setSearchQueries] = useState<SearchQuery[]>([]);
   const location = useLocation();
 
-  useEffect(() => {
-    axios.get('http://localhost:3001/documents')
-      .then(res => setDocuments(res.data))
-      .catch(err => console.error('Ошибка загрузки документов:', err));
-
-    axios.get('http://localhost:3001/index_jobs')
-      .then(res => setIndexJobs(res.data))
-      .catch(err => console.error('Ошибка загрузки заданий индексации:', err));
-
-    axios.get('http://localhost:3001/search_queries')
-      .then(res => setSearchQueries(res.data))
-      .catch(err => console.error('Ошибка загрузки поисковых запросов:', err));
-  }, []);
-
-  // Вычисления статистики
-  const newDocsCount = documents.filter(doc => {
-    const docDate = new Date(doc.created_at);
-    const dayAgo = new Date();
-    dayAgo.setDate(dayAgo.getDate() - 1);
-    return docDate > dayAgo;
-  }).length;
-
-  const indexedDocs = documents.filter(doc => doc.status === 'indexed').length;
-
-  const recentJobsCount = indexJobs.filter(job => {
-    const jobDate = new Date(job.created_at);
-    const dayAgo = new Date();
-    dayAgo.setDate(dayAgo.getDate() - 1);
-    return jobDate > dayAgo;
-  }).length;
-
-  const now = new Date();
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const yesterdayStart = new Date(todayStart);
-  yesterdayStart.setDate(yesterdayStart.getDate() - 1);
-
-  const jobsToday = searchQueries.filter(q => new Date(q.created_at) >= todayStart).length;
-  const jobsYesterday = searchQueries.filter(q => {
-    const d = new Date(q.created_at);
-    return d >= yesterdayStart && d < todayStart;
-  }).length;
-
-  let jobDiffPercent = 0;
-  if (jobsYesterday > 0) {
-    jobDiffPercent = Math.round(((jobsToday - jobsYesterday) / jobsYesterday) * 100);
-  } else if (jobsToday > 0) {
-    jobDiffPercent = 100;
-  }
-
   return (
     <Layout>
       <section className="welcome">
@@ -86,20 +37,20 @@ const HomePage = () => {
           <i className="fa fa-file-text card-icon blue" />
           <p>Всего документов</p>
           <h2>{documents.length}</h2>
-          <span className="trend-up">+{newDocsCount}</span>
+          <span className="trend-up">+{/*newDocsCount*/}</span>
         </div>
         <div className="stat-card-green">
           <i className="fa fa-check-circle card-icon green" />
           <p>Проиндексировано</p>
-          <h2>{indexedDocs}</h2>
-          <span className="trend-up-index">+{recentJobsCount}</span>
+          <h2>{/*indexedDocs*/}</h2>
+          <span className="trend-up-index">+{/*recentJobsCount*/}</span>
         </div>
         <div className="stat-card-viol">
           <i className="fa fa-bolt card-icon purple" />
           <p>Запросов сегодня</p>
-          <h2>{jobsToday}</h2>
-          <span className={jobDiffPercent >= 0 ? 'trend-up-request' : 'trend-down'}>
-            {jobDiffPercent >= 0 ? `+${jobDiffPercent}` : jobDiffPercent}%
+          <h2>{/*jobsToday*/}</h2>
+          <span className={/*jobDiffPercent >= 0 ? 'trend-up-request' :*/ 'trend-down'}>
+            {/*jobDiffPercent >= 0 ? `+${jobDiffPercent}` : jobDiffPercent*/}%
           </span>
         </div>
         <div className="stat-card-orange">
