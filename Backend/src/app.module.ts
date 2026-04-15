@@ -4,16 +4,22 @@ import { AppService } from './app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { RolesModule } from './models/roles/roles.module';
 import { DocumentsModule } from './models/documents/documents.module';
-import { UsersController } from './models/users/users.controller';
 import { UsersModule } from './models/users/users.module';
 import { SearchQueriesModule } from './models/search_queries/search_queries.module';
 import { DocumentCollectionModule } from './models/document_collection/document_collection.module';
 import { DocumentFilesModule } from './models/document_files/document_files.module';
-import { DocumentSourcesController } from './models/document_sources/document_sources.controller';
 import { DocumentSourcesModule } from './models/document_sources/document_sources.module';
-import { IndexJobsService } from './models/index_jobs/index_jobs.service';
-import { IndexJobsController } from './models/index_jobs/index_jobs.controller';
 import { IndexJobsModule } from './models/index_jobs/index_jobs.module';
+import { AnswerCitationsModule } from './models/answer_citations/answer_citations.module';
+import { GeneratedAnswersModule } from './models/generated_answers/generated_answers.module';
+import { AuditLogsModule } from './models/audit_logs/audit_logs.module';
+import { EntitiesModule } from './models/entities/entities.module';
+import { DocumentChunksModule } from './models/document_chunks/document_chunks.module';
+import { DocumentEntitiesModule } from './models/document_entities/document_entities.module';
+import { DocumentMetadataModule } from './models/document_metadata/document_metadata.module';
+import { DocumentPagesModule } from './models/document_pages/document_pages.module';
+import { EmbeddingsModule } from './models/embeddings/embeddings.module';
+import { SearchResultsModule } from './models/search_results/search_results.module';
 
 @Module({
   imports: [
@@ -37,9 +43,21 @@ import { IndexJobsModule } from './models/index_jobs/index_jobs.module';
     DocumentCollectionModule,
     DocumentFilesModule,
     DocumentSourcesModule,
-    IndexJobsModule
+    IndexJobsModule,
+    AnswerCitationsModule,
+    GeneratedAnswersModule,
+    AuditLogsModule,
+    EntitiesModule,
+    DocumentChunksModule,
+    DocumentEntitiesModule,
+    DocumentMetadataModule,
+    DocumentPagesModule,
+    EmbeddingsModule,
+    EntitiesModule,
+    GeneratedAnswersModule,
+    SearchResultsModule
   ],
-  controllers: [AppController, UsersController, DocumentSourcesController, IndexJobsController],
+  controllers: [AppController],
   providers: [AppService],
 })
 export class AppModule {}
