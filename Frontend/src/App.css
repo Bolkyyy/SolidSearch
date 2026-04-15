@@ -475,7 +475,7 @@ body {
 }
 
 .results-count {
-  color: var(--accent);
+  color: #10b981;
   font-size: 12px;
 
 }
@@ -1825,7 +1825,7 @@ body {
 
 .btn-upload-file:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.2);
+  box-shadow: 0 8px 20px #F1F3F433;
 }
 
 .btn-upload-folder:hover {
@@ -2116,21 +2116,15 @@ body {
   padding: 15px 20px;
   color: #aaa;
   cursor: pointer;
-  font-size: 15px;
+  font-size: 14px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   transition: 0.5s;
   flex: 1;
   justify-content: center;
   white-space: nowrap;
   border-bottom: 1px inset #080808;
-}
-
-.settings-tab-link:hover {
-  color: #e0e0e0;
-  background: #F1F3F42a;
-  border-bottom: 1px inset #F1F3F42f;
 }
 
 .settings-tab-link.active {
@@ -2442,4 +2436,47 @@ body {
 .dark-field-input:focus-within {
   border-color: var(--accent);
   box-shadow: 0 0 20px #F1F3F426;
+}
+/* АНИМАЦИЮ НАСТРОЕК ДОБАВИЛ ТУТ */
+
+.settings-tab-link {
+    position: relative;  
+    z-index: 1;
+}
+
+.settings-tab-link.active {
+    background: transparent !important;
+    border-bottom: 1px inset #F1F3F4 !important;
+}
+
+.settings-tab-link::before,
+.settings-tab-link::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 0; 
+    background: #F1F3F470; 
+    transition: width 0.4s ease-in-out; 
+    z-index: -1; 
+}
+
+.settings-tab-link::before {
+    left: 0;
+}
+
+.settings-tab-link::after {
+    right: 0;
+}
+
+.settings-tab-link.active::before,
+.settings-tab-link.active::after {
+    width: 50%; 
+}
+
+.settings-tab-link:hover:not(.active)::before {
+    width: 5%; 
+}
+.settings-tab-link:hover:not(.active)::after {
+    width: 5%;
 }
