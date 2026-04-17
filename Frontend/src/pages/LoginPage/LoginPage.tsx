@@ -38,7 +38,8 @@ const LoginPage = () => {
     try {
       const response = await axios.post('http://localhost:3001/users/login', {
         email,
-        password,
+        password,    
+        
       });
       const userData = response.data;
       if (userData?.full_name) {

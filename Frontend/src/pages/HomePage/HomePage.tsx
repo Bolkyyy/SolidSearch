@@ -1,29 +1,22 @@
-// import { useEffect, useState } from 'react';
-import { Link, /*useLocation*/ } from 'react-router-dom';
-// import axios from 'axios';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import Layout from '../../components/Layout/Layout';
-
-// interface Document {
-//   id: number;
-//   created_at: string;
-//   status: string;
-// }
-
-// interface IndexJob {
-//   id: number;
-//   created_at: string;
-// }
-
-// interface SearchQuery {
-//   id: number;
-//   created_at: string;
-// }
+import { fetchDashboardData, DashboardData } from '@/api/dashboard';
 
 const HomePage = () => {
-//   const [documents, setDocuments] = useState<Document[]>([]);
-//   const [indexJobs, setIndexJobs] = useState<IndexJob[]>([]);
-//   const [searchQueries, setSearchQueries] = useState<SearchQuery[]>([]);
-//   const location = useLocation();
+  const [data, setData] = useState<DashboardData | null>(null);
+
+  useEffect(() => {
+    fetchDashboardData().then(setData);
+  }, []);
+  
+  const totalDocuments = data?.totalDocuments ?? 0;
+  const totalDocumentsToday = data?.totalDocumentsToday ?? 0;
+  const totalIndexed = data?.totalIndexed ?? 0;
+  const totalIndexedToday = data?.totalIndexedToday ?? 0;
+  const totalSearch = data?.totalSearch ?? 0;
+  const totalSearchToday = data?.totalSearchToday ?? 0;
+
 
   return (
     <Layout>
@@ -36,21 +29,21 @@ const HomePage = () => {
         <div className="stat-card">
           <i className="fa fa-file-text card-icon blue" />
           <p>Всего документов</p>
-          <h2>{/*documents.length*/}</h2>
-          <span className="trend-up">+{/*newDocsCount*/}</span>
+          <h2>{totalDocuments}</h2>
+          <span className="trend-up">+{totalDocumentsToday}</span>
         </div>
         <div className="stat-card-green">
           <i className="fa fa-check-circle card-icon green" />
           <p>Проиндексировано</p>
-          <h2>{/*indexedDocs*/}</h2>
-          <span className="trend-up-index">+{/*recentJobsCount*/}</span>
+          <h2>{totalIndexed}</h2>
+          <span className="trend-up-index">+{totalIndexedToday}</span>
         </div>
         <div className="stat-card-viol">
           <i className="fa fa-bolt card-icon purple" />
           <p>Запросов сегодня</p>
-          <h2>{/*jobsToday*/}</h2>
-          <span className={/*jobDiffPercent >= 0 ? 'trend-up-request' :*/ 'trend-down'}>
-            {/*jobDiffPercent >= 0 ? `+${jobDiffPercent}` : jobDiffPercent*/}%
+          <h2>{totalSearch}</h2>
+          <span className={totalSearchToday >= 0 ? 'trend-up-request' : 'trend-down'}>
+            {totalSearchToday >= 0 ? `+${totalSearchToday}` : totalSearchToday}%
           </span>
         </div>
         <div className="stat-card-orange">

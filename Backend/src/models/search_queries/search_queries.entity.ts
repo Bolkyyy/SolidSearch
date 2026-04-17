@@ -1,7 +1,7 @@
 import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
 
 @Entity({ name:'search_queries', schema: 'solidsearchdb'})
-export class SearchQuerie {
+export class SearchQueries {
     @PrimaryGeneratedColumn()
     id!: number;
 
