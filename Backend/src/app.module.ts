@@ -49,7 +49,7 @@ import { DashboardModule } from './models/dashboard/dashboard.module';
     AuthModule,
     DashboardModule
   ],
-  controllers: [AppController, AuthController],
+  controllers: [AppController],
   providers: [AppService],
 })
 export class AppModule {}
