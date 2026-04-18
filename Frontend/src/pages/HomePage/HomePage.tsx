@@ -1,22 +1,21 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import Layout from '../../components/Layout/Layout';
-import { fetchDashboardData, DashboardData } from '@/api/dashboard';
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import Layout from "../../components/Layout/Layout";
+import { fetchDashboardData, DashboardData } from "@/api/dashboard";
 
 const HomePage = () => {
   const [data, setData] = useState<DashboardData | null>(null);
 
   useEffect(() => {
-    fetchDashboardData().then(setData);
+    fetchDashboardData().then(setData)
   }, []);
-  
-  const totalDocuments = data?.totalDocuments ?? 0;
-  const totalDocumentsToday = data?.totalDocumentsToday ?? 0;
-  const totalIndexed = data?.totalIndexed ?? 0;
-  const totalIndexedToday = data?.totalIndexedToday ?? 0;
-  const totalSearch = data?.totalSearch ?? 0;
-  const totalSearchToday = data?.totalSearchToday ?? 0;
 
+  const totalDocuments = data?.totalDocuments ?? 0
+  const totalDocumentsToday = data?.totalDocumentsToday ?? 0
+  const totalIndexed = data?.totalIndexed ?? 0
+  const totalIndexedToday = data?.totalIndexed ?? 0
+  const totalSearch = data?.totalSearch ?? 0
+  const totalSearchToday = data?.totalSearchToday ?? 0
 
   return (
     <Layout>
@@ -42,7 +41,11 @@ const HomePage = () => {
           <i className="fa fa-bolt card-icon purple" />
           <p>Запросов сегодня</p>
           <h2>{totalSearch}</h2>
-          <span className={totalSearchToday >= 0 ? 'trend-up-request' : 'trend-down'}>
+          <span
+            className={
+              totalSearchToday >= 0 ? "trend-up-request" : "trend-down"
+            }
+          >
             {totalSearchToday >= 0 ? `+${totalSearchToday}` : totalSearchToday}%
           </span>
         </div>
@@ -81,7 +84,9 @@ const HomePage = () => {
             </div>
           </div>
           <div>
-            <Link to="/history" className="view-all-history">Вся история →</Link>
+            <Link to="/history" className="view-all-history">
+              Вся история →
+            </Link>
           </div>
         </div>
 
@@ -110,7 +115,9 @@ const HomePage = () => {
             Текущие проекты <span className="label orange">Индексация</span>
           </button>
           <div>
-            <Link to="/collections" className="view-all-bottom">Все коллекции →</Link>
+            <Link to="/collections" className="view-all-bottom">
+              Все коллекции →
+            </Link>
           </div>
         </div>
       </div>

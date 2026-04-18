@@ -1,26 +1,30 @@
-import { Injectable } from '@nestjs/common';
-import { CreateAuthDto } from './dto/create-auth.dto';
-import { UpdateAuthDto } from './dto/update-auth.dtp';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Users } from '../users/users.entity';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class AuthService {
-  create(createAuthDto: CreateAuthDto) {
-    return 'This action adds a new auth';
+  constructor(
+  @InjectRepository(Users)
+    private readonly usersRepository: Repository<Users>,
+  ) {}
+
+  async findall(): Promise<Users[]> {
+    return await this.usersRepository.find();
   }
 
-  findAll() {
-    return `This action returns all auth`;
-  }
+  async login(email: string, password: string): Promise<Users | undefined> {
+    let user = await this.usersRepository.findOne({ where: { email } });
 
-  findOne(id: number) {
-    return `This action returns a #${id} auth`;
-  }
+    if (!user) {
+      throw new UnauthorizedException('Неверный email');
+    }
 
-  update(id: number, updateAuthDto: UpdateAuthDto) {
-    return `This action updates a #${id} auth`;
-  }
+    if (user.password_hash !== password) {
+      throw new UnauthorizedException('Неверный пароль');
+    }
 
-  remove(id: number) {
-    return `This action removes a #${id} auth`;
+    return user;
   }
 }
