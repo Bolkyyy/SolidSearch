@@ -11,7 +11,6 @@ import { DocumentFilesModule } from './models/document_files/document_files.modu
 import { DocumentSourcesModule } from './models/document_sources/document_sources.module';
 import { IndexJobsModule } from './models/index_jobs/index_jobs.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { AuthController } from './models/auth/auth.controller';
 import { AuthModule } from './models/auth/auth.module';
 import { DashboardModule } from './models/dashboard/dashboard.module';
 
