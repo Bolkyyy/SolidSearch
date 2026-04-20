@@ -11,8 +11,11 @@ import { DocumentFilesModule } from './models/document_files/document_files.modu
 import { DocumentSourcesModule } from './models/document_sources/document_sources.module';
 import { IndexJobsModule } from './models/index_jobs/index_jobs.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { AuthModule } from './models/auth/auth.module';
-import { DashboardModule } from './models/dashboard/dashboard.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { AnswerCitationsModule } from './models/answer_citations/answer_citations.module';
+import { DocumentMetadataModule } from './models/document_metadata/document_metadata.module';
+import { SearchResultsModule } from './models/search_results/search_results.module';
 
 @Module({
   imports: [
@@ -46,7 +49,10 @@ import { DashboardModule } from './models/dashboard/dashboard.module';
     DocumentSourcesModule,
     IndexJobsModule,
     AuthModule,
-    DashboardModule
+    DashboardModule,
+    AnswerCitationsModule,
+    DocumentMetadataModule,
+    SearchResultsModule
   ],
   controllers: [AppController],
   providers: [AppService],
