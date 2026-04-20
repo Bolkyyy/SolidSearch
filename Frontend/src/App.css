@@ -603,7 +603,7 @@ body {
 
 .view-all-history:hover {
   transform: scale(1.05);
-  color: var(--accent);
+  color: #0d9b6c;
 }
 
 .view-all-bottom:hover {
