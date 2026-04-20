@@ -7,6 +7,8 @@ import HistoryPage from './pages/HistoryPage/HistoryPage';
 import AnalyticsPage from './pages/AnalyticsPage/AnalyticsPage';
 import IndexingPage from './pages/IndexingPage/IndexingPage';
 import SettingsPage from './pages/SettingsPage/SettingsPage';
+import SearchResults from './pages/SearchResults/SearchResults';
+import DocumentCard from './pages/DocumentCard/DocumentCard';
 import './App.css';
 
 function App() {
@@ -22,6 +24,8 @@ function App() {
         <Route path="/analytics" element={<AnalyticsPage />} />
         <Route path="/indexing" element={<IndexingPage />} />
         <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/search/results" element={<SearchResults />} />
+        <Route path="/document/doc-id" element={<DocumentCard />} />
       </Routes>
     </Router>
   );
