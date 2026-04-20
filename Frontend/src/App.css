@@ -475,7 +475,7 @@ body {
 }
 
 .results-count {
-  color: var(--accent);
+  color: #10b981;
   font-size: 12px;
 
 }
@@ -637,6 +637,7 @@ body {
 }
 
 .login-container {
+  font-family: Montserrat;
   min-height: 100vh;
   display: flex;
   justify-content: center;
@@ -810,6 +811,10 @@ body {
 .demo-box strong {
   font-size: 14px;
   color: #e6e9ef;
+}
+
+.demo-box p {
+  font-size: 8px;
 }
 
 .divider {
@@ -1825,7 +1830,7 @@ body {
 
 .btn-upload-file:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.2);
+  box-shadow: 0 8px 20px #F1F3F433;
 }
 
 .btn-upload-folder:hover {
@@ -2116,21 +2121,15 @@ body {
   padding: 15px 20px;
   color: #aaa;
   cursor: pointer;
-  font-size: 15px;
+  font-size: 14px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   transition: 0.5s;
   flex: 1;
   justify-content: center;
   white-space: nowrap;
   border-bottom: 1px inset #080808;
-}
-
-.settings-tab-link:hover {
-  color: #e0e0e0;
-  background: #F1F3F42a;
-  border-bottom: 1px inset #F1F3F42f;
 }
 
 .settings-tab-link.active {
