@@ -2486,8 +2486,6 @@ body {
 .settings-tab-link:hover:not(.active)::after {
     width: 5%;
 }
-<<<<<<< HEAD
-=======
 
 /* ===== СТРАНИЦА РЕЗУЛЬТАТОВ ПОИСКА ===== */
 
@@ -2788,4 +2786,3 @@ body {
   color: #f59e0b;
   line-height: 1.5;
 };
->>>>>>> 1e714256f60394eeed6f5621af67788375edd127
