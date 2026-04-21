@@ -45,30 +45,48 @@ const SearchPage = () => {
               <label>Тип документа</label>
               <select className="filter-select">
                 <option>Все</option>
+                <option>Договор</option>
+                <option>Акт</option>
+                <option>Смета</option>
+                <option>Отчет</option>
               </select>
             </div>
             <div className="filter-item">
               <label>Период</label>
               <select className="filter-select">
                 <option>Все время</option>
+                <option>2025</option>
+                <option>2024</option>
+                <option>2023</option>
+                <option>2022</option>
               </select>
             </div>
             <div className="filter-item">
               <label>Источник</label>
               <select className="filter-select">
                 <option>Все</option>
+                <option>Архив</option>
+                <option>Текущие</option>
+                <option>Импорт</option>
               </select>
             </div>
             <div className="filter-item">
               <label>Подразделение</label>
               <select className="filter-select">
                 <option>Все</option>
+                <option>ФЭС</option>
+                <option>ТЭЧ</option>
+                <option>АХО</option>
+                <option>ПТО</option>
               </select>
             </div>
             <div className="filter-item">
               <label>Формат</label>
               <select className="filter-select">
                 <option>Все</option>
+                <option>PDF</option>
+                <option>DOCX</option>
+                <option>TXT</option>
               </select>
             </div>
           </div>
