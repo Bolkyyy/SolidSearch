@@ -2485,3 +2485,309 @@ body {
 .settings-tab-link:hover:not(.active)::after {
     width: 5%;
 }
+
+/* ===== СТРАНИЦА РЕЗУЛЬТАТОВ ПОИСКА ===== */
+
+.search-results-wrapper {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.search-results-main {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Заголовок */
+.search-results-heading {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.search-results-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.search-results-count {
+  color: #10b981;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Блок ответа системы */
+.ai-answer-block {
+  background: var(--bg-card);
+  border: 1px solid #333;
+  border-radius: 16px;
+  padding: 22px;
+  margin-bottom: 28px;
+}
+
+.ai-answer-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.ai-answer-icon {
+  font-size: 18px;
+  color: var(--accent);
+}
+
+.ai-answer-label {
+  font-weight: 700;
+  font-size: 15px;
+  color: #fff;
+}
+
+.ai-answer-text {
+  margin: 0 0 18px 0;
+  font-size: 14px;
+  line-height: 1.7;
+  color: #ccc;
+}
+
+.ai-answer-text strong {
+  color: #fff;
+}
+
+.ai-answer-meta-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.ai-meta-item {
+  background: #1e1e1e;
+  border-radius: 10px;
+  padding: 12px 16px;
+  border: 1px solid #2a2a2a;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.ai-meta-label {
+  font-size: 11px;
+  color: #666;
+}
+
+.ai-meta-value {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.ai-meta-blue .ai-meta-value   { color: #3b82f6; }
+.ai-meta-green .ai-meta-value  { color: #10b981; }
+.ai-meta-purple .ai-meta-value { color: #a855f7; }
+.ai-meta-orange .ai-meta-value { color: #f59e0b; }
+
+.ai-answer-footer {
+  margin: 14px 0 0 0;
+  font-size: 11px;
+  color: #444;
+}
+
+/* Заголовок раздела */
+.relevant-docs-title {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+}
+
+/* Карточки документов */
+.doc-card {
+  background: var(--bg-card);
+  border: 1px solid #2a2a2a;
+  border-radius: 14px;
+  padding: 20px;
+  margin-bottom: 16px;
+  transition: border-color 0.25s, transform 0.25s;
+}
+
+.doc-card:hover {
+  border-color: #444;
+  transform: translateY(-2px);
+}
+
+.doc-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.doc-card-title {
+  font-weight: 700;
+  font-size: 15px;
+  color: #fff;
+}
+
+.doc-match-badge {
+  border-radius: 20px;
+  padding: 2px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.doc-match-green  { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
+.doc-match-blue   { background: rgba(59, 130, 246, 0.15);  color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3); }
+.doc-match-purple { background: rgba(168, 85, 247, 0.15); color: #a855f7; border: 1px solid rgba(168, 85, 247, 0.3); }
+
+.doc-card-meta {
+  font-size: 12px;
+  color: #555;
+  margin-bottom: 10px;
+}
+
+.doc-card-desc {
+  margin: 0 0 12px 0;
+  font-size: 13px;
+  color: #aaa;
+  line-height: 1.6;
+}
+
+.doc-card-tags {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.doc-tag {
+  background: #1e1e1e;
+  border: 1px solid #333;
+  border-radius: 20px;
+  padding: 3px 12px;
+  font-size: 11px;
+  color: #888;
+}
+
+.doc-card-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.doc-action-btn {
+  background: transparent;
+  border: 1px solid #3a3a3a;
+  color: var(--text-secondary);
+  border-radius: 8px;
+  padding: 7px 18px;
+  font-size: 13px;
+  font-family: 'Montserrat', sans-serif;
+  cursor: pointer;
+  transition: all 0.25s;
+}
+
+.doc-action-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ===== ПРАВАЯ ПАНЕЛЬ — ИСТОЧНИКИ ===== */
+
+.search-results-sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  background: var(--bg-card);
+  border: 1px solid #2a2a2a;
+  border-radius: 16px;
+  padding: 20px;
+  position: sticky;
+  top: 80px;
+}
+
+.sources-title {
+  margin: 0 0 18px 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.source-item {
+  border-bottom: 1px solid #2a2a2a;
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+}
+
+.source-item-last {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.source-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.source-item-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  line-height: 1.4;
+  flex: 1;
+}
+
+.source-match {
+  border-radius: 12px;
+  padding: 1px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.source-match-green  { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
+.source-match-blue   { background: rgba(59, 130, 246, 0.15);  color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3); }
+.source-match-purple { background: rgba(168, 85, 247, 0.15); color: #a855f7; border: 1px solid rgba(168, 85, 247, 0.3); }
+
+.source-item-page {
+  font-size: 11px;
+  color: #555;
+  margin-bottom: 4px;
+}
+
+.source-item-snippet {
+  margin: 0 0 8px 0;
+  font-size: 11px;
+  color: #777;
+  line-height: 1.5;
+}
+
+.source-item-link {
+  font-size: 11px;
+  color: #3b82f6;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.source-item-link:hover {
+  color: #60a5fa;
+  text-decoration: underline;
+}
+
+.sources-tip {
+  margin-top: 18px;
+  background: rgba(245, 158, 11, 0.07);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 11px;
+  color: #f59e0b;
+  line-height: 1.5;
+};
