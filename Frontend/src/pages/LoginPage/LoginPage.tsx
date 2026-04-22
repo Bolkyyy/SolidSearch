@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import logo from '../../assets/images/BlackLogo.svg';
+import { authApi, LoginCredentials } from '../../api/auth'; 
 
 interface Errors {
   email?: string;
@@ -36,14 +36,13 @@ const LoginPage = () => {
     if (!validate()) return;
 
     try {
-      const response = await axios.post('http://localhost:3001/users/login', {
-        email,
-        password,
-      });
-      const userData = response.data;
+      const credentials: LoginCredentials = { email, password };
+      const userData = await authApi.login(credentials);
+
       if (userData?.full_name) {
         localStorage.setItem('userFullName', userData.full_name);
       }
+
       navigate('/home', { state: { user: userData } });
     } catch (error: any) {
       console.error('Ошибка при логине:', error);

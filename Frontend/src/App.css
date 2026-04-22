@@ -603,7 +603,7 @@ body {
 
 .view-all-history:hover {
   transform: scale(1.05);
-  color: var(--accent);
+  color: #0d9b6c;
 }
 
 .view-all-bottom:hover {
@@ -2484,4 +2484,365 @@ body {
 }
 .settings-tab-link:hover:not(.active)::after {
     width: 5%;
+}
+
+/* DocumentCard */
+/* Search Results Page */
+.search-results-page {
+  padding: 24px 32px;
+  background: linear-gradient(135deg, #1e1e1e 0%, #1e1e1e 100%);
+  min-height: calc(100vh - 70px);
+}
+
+/* Query Section */
+.query-section {
+  margin-bottom: 32px;
+}
+
+.query-title {
+  font-size: 20px;
+  font-weight: 500;
+  color: #ffffff;
+  margin: 0;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Two Column Layout */
+.two-column-layout {
+  display: flex;
+  gap: 32px;
+}
+
+.left-column {
+  flex: 2;
+  min-width: 0;
+}
+
+.right-column {
+  flex: 1;
+  min-width: 280px;
+}
+
+/* Response Section */
+.response-section {
+  background: rgba(45, 45, 45, 1);
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.response-section:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.response-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0 0 16px 0;
+}
+
+.response-text {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.6;
+  margin: 0 0 20px 0;
+}
+
+.response-details {
+  display: flex;
+  gap: 32px;
+  flex-wrap: wrap;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.detail-label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Цветные значения */
+.detail-item:nth-child(1) .detail-value {
+  color: #3b82f6; /* Синий - Дата договора */
+}
+
+.detail-item:nth-child(2) .detail-value {
+  color: #8b5cf6; /* Фиолетовый - Сумма */
+}
+
+.detail-item:nth-child(3) .detail-value {
+  color: #10b981; /* Зеленый - Подписи */
+}
+
+.detail-value {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* Sources Section (Right Column) */
+.right-column {
+  position: sticky;
+  top: 20px;
+  align-self: flex-start;
+}
+
+.sources-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0 0 20px 0;
+}
+
+.sources-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.source-card {
+  background: rgba(45, 45, 45, 1);
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.source-card:hover {
+  transform: translateX(-4px);
+  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.source-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.source-header h4 {
+  font-size: 15px;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0;
+}
+
+.source-page {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.1);
+  padding: 4px 10px;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+.source-description {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.5;
+  margin: 0 0 16px 0;
+}
+
+.open-doc-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 6px 16px;
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.open-doc-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+/* Documents Tables (Left Column) */
+.documents-tables {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.doc-card {
+  background: rgba(45, 45, 45, 1);
+  border-radius: 16px;
+  padding: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.doc-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.doc-card-header {
+  margin-bottom: 16px;
+}
+
+.doc-card-header h4 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0 0 8px 0;
+}
+
+.doc-date {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.doc-description {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.5;
+  margin: 0 0 20px 0;
+}
+
+.doc-actions {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.action-btn {
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+/* Кнопка Открыть - зеленая */
+.action-btn.open {
+  background: rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #10b981;
+}
+
+.action-btn.open:hover {
+  background: rgba(16, 185, 129, 0.3);
+  transform: translateY(-1px);
+}
+
+/* Кнопка Показать факт - синяя */
+.action-btn.fact {
+  background: rgba(59, 130, 246, 0.2);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: #3b82f6;
+}
+
+.action-btn.fact:hover {
+  background: rgba(59, 130, 246, 0.3);
+  transform: translateY(-1px);
+}
+
+/* Кнопка Добавить в сравнение - фиолетовая */
+.action-btn.compare {
+  background: rgba(139, 92, 246, 0.2);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  color: #8b5cf6;
+}
+
+.action-btn.compare:hover {
+  background: rgba(139, 92, 246, 0.3);
+  transform: translateY(-1px);
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .two-column-layout {
+    flex-direction: column;
+    gap: 32px;
+  }
+  
+  .right-column {
+    position: static;
+  }
+  
+  .sources-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .search-results-page {
+    padding: 20px;
+  }
+  
+  .response-details {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .doc-actions {
+    flex-direction: column;
+  }
+  
+  .action-btn {
+    width: 100%;
+    text-align: center;
+  }
+  
+  .query-title {
+    font-size: 18px;
+  }
+  
+  .response-title,
+  .sources-title {
+    font-size: 16px;
+  }
+  
+  .doc-card-header h4 {
+    font-size: 16px;
+  }
+  
+  .source-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .source-page {
+    white-space: normal;
+  }
+}
+
+@media (max-width: 480px) {
+  .search-results-page {
+    padding: 16px;
+  }
+  
+  .response-section,
+  .source-card,
+  .doc-card {
+    padding: 16px;
+  }
+  
+  .sources-list {
+    grid-template-columns: 1fr;
+  }
 }
