@@ -69,7 +69,9 @@ const SearchResults = () => {
               <span className="doc-card-title">
                 Договор №451/2019 на ремонт железнодорожных путей
               </span>
-              <span className="doc-match-badge doc-match-green">↑ 95%</span>
+              <span className="doc-match-badge doc-match-green">
+                <i className="fa fa-arrow-up" aria-hidden="true"></i> 95<span className="percent-symbol">%</span>
+              </span>
             </div>
             <div className="doc-card-meta">
               Договор &nbsp;•&nbsp; 15.03.2019 &nbsp;•&nbsp; ДГВ-2019-0451
@@ -85,10 +87,10 @@ const SearchResults = () => {
             </div>
             <div className="doc-card-actions">
               <button className="btn-open">
-                <i className="fas fa-lock-open"></i> Открыть
+                <i className="fa fa-external-link" aria-hidden="true"></i> Открыть
               </button>
               <button className="doc-action-btn">Показать фрагмент</button>
-              <button className="doc-action-btn">+ Добавить в сравнение</button>
+              <button className="doc-action-btn"><i className="fa fa-plus" aria-hidden="true"></i> Добавить в сравнение</button>
             </div>
           </div>
 
@@ -97,7 +99,9 @@ const SearchResults = () => {
               <span className="doc-card-title">
                 Акт выполненных работ №128-2019
               </span>
-              <span className="doc-match-badge doc-match-blue">↑ 89%</span>
+              <span className="doc-match-badge doc-match-green">
+                <i className="fa fa-arrow-up" aria-hidden="true"></i> 89<span className="percent-symbol">%</span>
+              </span>
             </div>
             <div className="doc-card-meta">
               Акт &nbsp;•&nbsp; 20.08.2019 &nbsp;•&nbsp; АРК-2019-0752
@@ -112,10 +116,10 @@ const SearchResults = () => {
             </div>
             <div className="doc-card-actions">
               <button className="btn-open">
-                <i className="fas fa-lock-open"></i> Открыть
+                <i className="fa fa-external-link" aria-hidden="true"></i> Открыть
               </button>
               <button className="doc-action-btn">Показать фрагмент</button>
-              <button className="doc-action-btn">+ Добавить в сравнение</button>
+              <button className="doc-action-btn"><i className="fa fa-plus" aria-hidden="true"></i> Добавить в сравнение</button>
             </div>
           </div>
 
@@ -124,7 +128,9 @@ const SearchResults = () => {
               <span className="doc-card-title">
                 Техническое задание к договору №451/2019
               </span>
-              <span className="doc-match-badge doc-match-purple">↑ 82%</span>
+              <span className="doc-match-badge doc-match-green">
+                <i className="fa fa-arrow-up" aria-hidden="true"></i> 82<span className="percent-symbol">%</span>
+              </span>
             </div>
             <div className="doc-card-meta">
               Спецификация &nbsp;•&nbsp; 10.03.2019 &nbsp;•&nbsp; АРК-2019-0438
@@ -139,10 +145,10 @@ const SearchResults = () => {
             </div>
             <div className="doc-card-actions">
               <button className="btn-open">
-                <i className="fas fa-lock-open"></i> Открыть
+                <i className="fa fa-external-link" aria-hidden="true"></i> Открыть
               </button>
               <button className="doc-action-btn">Показать фрагмент</button>
-              <button className="doc-action-btn">+ Добавить в сравнение</button>
+              <button className="doc-action-btn"><i className="fa fa-plus" aria-hidden="true"></i> Добавить в сравнение</button>
             </div>
           </div>
         </div>
@@ -156,7 +162,9 @@ const SearchResults = () => {
               <span className="source-item-name">
                 Договор №451/2019 на ремонт ж/д путей
               </span>
-              <span className="source-match source-match-green">95%</span>
+              <span className="doc-match-badge doc-match-green">
+                <i className="fa fa-arrow-up" aria-hidden="true"></i> 95<span className="percent-symbol">%</span>
+              </span>
             </div>
             <div className="source-item-page">Страница 3</div>
             <p className="source-item-snippet">
@@ -164,7 +172,7 @@ const SearchResults = () => {
               участка км 15-25 общей протяжённостью 10 км.
             </p>
             <a href="#" className="source-item-link">
-              Открыть документ ↗
+              <i className="fa fa-folder-open" aria-hidden="true"></i> Открыть документ 
             </a>
           </div>
 
@@ -173,7 +181,9 @@ const SearchResults = () => {
               <span className="source-item-name">
                 Акт выполненных работ №128-2019
               </span>
-              <span className="source-match source-match-blue">89%</span>
+              <span className="doc-match-badge doc-match-green">
+                <i className="fa fa-arrow-up" aria-hidden="true"></i> 89<span className="percent-symbol">%</span>
+              </span>
             </div>
             <div className="source-item-page">Страница 1</div>
             <p className="source-item-snippet">
@@ -181,7 +191,7 @@ const SearchResults = () => {
               000 рублей.
             </p>
             <a href="#" className="source-item-link">
-              Открыть документ ↗
+              <i className="fa fa-folder-open" aria-hidden="true"></i> Открыть документ
             </a>
           </div>
 
@@ -190,7 +200,9 @@ const SearchResults = () => {
               <span className="source-item-name">
                 Техническое задание к договору №451/2019
               </span>
-              <span className="source-match source-match-purple">82%</span>
+              <span className="doc-match-badge doc-match-green">
+                <i className="fa fa-arrow-up" aria-hidden="true"></i> 82<span className="percent-symbol">%</span>
+              </span>
             </div>
             <div className="source-item-page">Страница 7</div>
             <p className="source-item-snippet">
@@ -198,7 +210,7 @@ const SearchResults = () => {
               работ путевого хозяйства.
             </p>
             <a href="#" className="source-item-link">
-              Открыть документ ↗
+              <i className="fa fa-folder-open" aria-hidden="true"></i> Открыть документ
             </a>
           </div>
 
