@@ -2814,7 +2814,6 @@ body {
   color: #f59e0b;
   line-height: 1.5;
 };
-
 /* карточка документа */
 /* Document Card Page */
 .document-card-page {
@@ -3308,47 +3307,6 @@ body {
 
 .format-xlsx:hover {
   background: rgba(255,255,255,0.15);
-}
-
-/* Responsive */
-@media (max-width: 1024px) {
-  .document-layout {
-    flex-direction: column;
-  }
-  
-  .document-sidebar {
-    width: 100%;
-    position: static;
-    max-height: none;
-  }
-  
-  .metadata-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 768px) {
-  .document-card-page {
-    padding: 16px;
-  }
-
-  .document-header h1 {
-    font-size: 22px;
-  }
-
-  .document-tabs {
-    overflow-x: auto;
-    flex-wrap: nowrap;
-  }
-
-  .tab-btn {
-    white-space: nowrap;
-    padding: 8px 16px;
-  }
-  
-  .fulltext-content {
-    padding: 20px;
-  }
 }
 
 /* Responsive */
