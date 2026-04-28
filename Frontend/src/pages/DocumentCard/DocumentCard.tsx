@@ -7,9 +7,7 @@ const DocumentCard = () => {
   return (
     <Layout>
       <div className="document-card-page">
-        <div className="document-layout">
-          {/* Левая колонка - основной контент */}
-          <div className="document-content">
+            {/* Кнопка назад */}
             <div className="back-button">
               <i className="fa fa-arrow-left"></i> Назад к результатам
             </div>
@@ -21,39 +19,48 @@ const DocumentCard = () => {
             </div>
 
             {/* Вкладки */}
-            <div className="document-tabs">
-              <button 
-                className={`tab-btn ${activeTab === 'overview' ? 'active' : ''}`}
-                onClick={() => setActiveTab('overview')}
-              >
-                Обзор
-              </button>
-              <button 
-                className={`tab-btn ${activeTab === 'fragments' ? 'active' : ''}`}
-                onClick={() => setActiveTab('fragments')}
-              >
-                Фрагменты
-              </button>
-              <button 
-                className={`tab-btn ${activeTab === 'fulltext' ? 'active' : ''}`}
-                onClick={() => setActiveTab('fulltext')}
-              >
-                Полный текст
-              </button>
-              <button 
-                className={`tab-btn ${activeTab === 'metadata' ? 'active' : ''}`}
-                onClick={() => setActiveTab('metadata')}
-              >
-                Метаданные
-              </button>
-              <button 
-                className={`tab-btn ${activeTab === 'history' ? 'active' : ''}`}
-                onClick={() => setActiveTab('history')}
-              >
-                История
-              </button>
-            </div>
+      <div className="document-tabs">
+        <button
+          className={`tab-btn ${activeTab === 'overview' ? 'active' : ''}`}
+          onClick={() => setActiveTab('overview')}
+        >
+          Обзор
+        </button>
+        <button
+          className={`tab-btn ${activeTab === 'fragments' ? 'active' : ''}`}
+          onClick={() => setActiveTab('fragments')}
+        >
+          Фрагменты
+        </button>
+        <button
+          className={`tab-btn ${activeTab === 'fulltext' ? 'active' : ''}`}
+          onClick={() => setActiveTab('fulltext')}
+        >
+          Полный текст
+        </button>
+        <button
+          className={`tab-btn ${activeTab === 'metadata' ? 'active' : ''}`}
+          onClick={() => setActiveTab('metadata')}
+        >
+          Метаданные
+        </button>
+        <button
+          className={`tab-btn ${activeTab === 'history' ? 'active' : ''}`}
+          onClick={() => setActiveTab('history')}
+        >
+          История
+        </button>
+        
+        {/* Новая кнопка скачивания */}
+        <button className="tab-btn download-btn-tab">
+          <i className="fa fa-cloud-download" aria-hidden="true" style={{marginRight: '8px'}}></i>
+          Скачать
+        </button>
+      </div>
 
+      <div className="document-layout">
+          {/* Левая колонка - основной контент */}
+      <div className="document-content">
             {/* Контент вкладок */}
             <div className="tab-content">
               {/* Обзор */}
@@ -241,6 +248,7 @@ const DocumentCard = () => {
 
           {/* Правая колонка - фиксированная информация */}
           <div className="document-sidebar">
+            {/* Основная информация */}
             <div className="info-section">
               <h2>Основная информация</h2>
               <div className="info-grid">
@@ -275,6 +283,7 @@ const DocumentCard = () => {
               </div>
             </div>
 
+            {/* Связанные сущности */}
             <div className="related-section">
               <h2>Связанные сущности</h2>
               <div className="related-grid">
