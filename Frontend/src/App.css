@@ -2898,7 +2898,7 @@ body {
 
 .document-tabs {
     display: flex;
-    width: 100%; /* Теперь растягивается на все 100% страницы */
+    width: 100%; 
     gap: 12px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     margin-bottom: 32px;
@@ -2907,7 +2907,7 @@ body {
 }
 
 .tab-btn {
-    flex: 1; /* Все кнопки, включая "Скачать", делят ширину поровну */
+    flex: 1; 
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid transparent;
     padding: 12px 24px;
@@ -2944,7 +2944,7 @@ body {
 }
 
 .download-btn-tab i {
-    color: #3b82f6; /* Делаем иконку облака сразу синей */
+    color: #3b82f6; 
 }
 
 .tab-btn:hover:not(.active) {
