@@ -10,7 +10,6 @@ const DocumentCard = () => {
         <div className="document-layout">
           {/* Левая колонка - основной контент */}
           <div className="document-content">
-            {/* Кнопка назад */}
             <div className="back-button">
               <i className="fa fa-arrow-left"></i> Назад к результатам
             </div>
@@ -242,7 +241,6 @@ const DocumentCard = () => {
 
           {/* Правая колонка - фиксированная информация */}
           <div className="document-sidebar">
-            {/* Основная информация */}
             <div className="info-section">
               <h2>Основная информация</h2>
               <div className="info-grid">
@@ -277,7 +275,6 @@ const DocumentCard = () => {
               </div>
             </div>
 
-            {/* Связанные сущности */}
             <div className="related-section">
               <h2>Связанные сущности</h2>
               <div className="related-grid">
