@@ -2729,12 +2729,8 @@ body {
   padding: 20px;
   align-self: flex-start;
   position: sticky;
-<<<<<<< HEAD
-  top: 160px;
-=======
   top: 70px;
   margin-top: 96px;
->>>>>>> 1f34e3fab06e35cc36605e5473e8e759e15b1fc6
 }
 
 .sources-title {
@@ -2819,8 +2815,6 @@ body {
   color: #f59e0b;
   line-height: 1.5;
 };
-<<<<<<< HEAD
-=======
 
 /* КАРТОЧКА ДОКУМЕНТА */
 .document-card-page {
@@ -2841,12 +2835,15 @@ body {
 }
 
 .document-sidebar {
-  width: 360px;
-  flex-shrink: 0;
-  position: sticky;
-  top: 24px;
-  max-height: calc(100vh - 48px);
-  overflow-y: auto;
+    width: 360px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 24px; 
+    margin-top: 224px; 
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    max-height: calc(100vh - 48px);
 }
 
 .document-sidebar::-webkit-scrollbar {
@@ -2900,24 +2897,26 @@ body {
 }
 
 .document-tabs {
-  display: flex;
-  gap: 8px;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
-  margin-bottom: 32px;
-  padding-bottom: 12px;
-  flex-wrap: wrap;
+    display: flex;
+    width: 100%; 
+    gap: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 32px;
+    padding-bottom: 16px;
 }
 
 .tab-btn {
-  background: transparent;
-  border: none;
-  padding: 10px 24px;
-  font-size: 14px;
-  font-weight: 500;
-  color: rgba(255,255,255,0.6);
-  cursor: pointer;
-  transition: all 0.3s ease;
-  border-radius: 8px;
+    flex: 1; 
+    background: rgba(255, 255, 255, 0.03); 
+    border: 1px solid transparent; 
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.6);
+    cursor: pointer;
+    transition: all 0.3s ease; 
+    border-radius: 8px;
+    text-align: center;
 }
 
 .tab-btn:hover {
@@ -2926,8 +2925,15 @@ body {
 }
 
 .tab-btn.active {
-  color: #3b82f6;
-  background: rgba(59, 130, 246, 0.15);
+    color: #ffffff;
+    background: rgba(59, 130, 246, 0.1); 
+    border: 1px solid #3b82f6; 
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.5); 
+}
+
+.tab-btn:hover:not(.active) {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
 }
 
 .tab-content {
@@ -3255,4 +3261,3 @@ body {
 .format-badge:hover {
   transform: scale(1.05);
 }
->>>>>>> 1f34e3fab06e35cc36605e5473e8e759e15b1fc6
