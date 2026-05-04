@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import logo from '../../assets/images/BlackLogo.svg';
-import { authApi, LoginCredentials } from '../../api/auth'; 
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import logo from "../../assets/images/BlackLogo.svg";
+import { authApi, LoginCredentials } from "../../api/auth";
 
 interface Errors {
   email?: string;
@@ -10,22 +10,22 @@ interface Errors {
 }
 
 const LoginPage = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<Errors>({});
   const navigate = useNavigate();
 
   const validate = (): boolean => {
     const newErrors: Errors = {};
     if (!email) {
-      newErrors.email = 'Введите Email';
+      newErrors.email = "Введите Email";
     } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = 'Некорректный формат почты';
+      newErrors.email = "Некорректный формат почты";
     }
     if (!password) {
-      newErrors.password = 'Введите пароль';
+      newErrors.password = "Введите пароль";
     } else if (password.length < 7) {
-      newErrors.password = 'Пароль должен содержать не менее 7 символов';
+      newErrors.password = "Пароль должен содержать не менее 7 символов";
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -40,14 +40,20 @@ const LoginPage = () => {
       const userData = await authApi.login(credentials);
 
       if (userData?.full_name) {
-        localStorage.setItem('userFullName', userData.full_name);
+        localStorage.setItem("userFullName", userData.full_name);
       }
 
-      navigate('/home', { state: { user: userData } });
+      localStorage.setItem("userId", String(userData.id));
+
+      console.log("userId сохранён:", userData.id);
+      
+      navigate("/home", { state: { user: userData } });
     } catch (error: any) {
-      console.error('Ошибка при логине:', error);
+      console.error("Ошибка при логине:", error);
       setErrors({
-        server: error.response?.data?.message || 'Ошибка авторизации. Проверьте данные.',
+        server:
+          error.response?.data?.message ||
+          "Ошибка авторизации. Проверьте данные.",
       });
     }
   };
@@ -73,14 +79,16 @@ const LoginPage = () => {
             <input
               type="email"
               placeholder="example@company.com"
-              className={`input-field ${errors.email ? 'input-error' : ''}`}
+              className={`input-field ${errors.email ? "input-error" : ""}`}
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value);
-                if (errors.email) setErrors({ ...errors, email: '' });
+                if (errors.email) setErrors({ ...errors, email: "" });
               }}
             />
-            {errors.email && <span className="error-message">{errors.email}</span>}
+            {errors.email && (
+              <span className="error-message">{errors.email}</span>
+            )}
           </div>
 
           <div className="input-group">
@@ -88,14 +96,16 @@ const LoginPage = () => {
             <input
               type="password"
               placeholder="*************"
-              className={`input-field ${errors.password ? 'input-error' : ''}`}
+              className={`input-field ${errors.password ? "input-error" : ""}`}
               value={password}
               onChange={(e) => {
                 setPassword(e.target.value);
-                if (errors.password) setErrors({ ...errors, password: '' });
+                if (errors.password) setErrors({ ...errors, password: "" });
               }}
             />
-            {errors.password && <span className="error-message">{errors.password}</span>}
+            {errors.password && (
+              <span className="error-message">{errors.password}</span>
+            )}
           </div>
 
           {errors.server && <div className="server-error">{errors.server}</div>}

@@ -5,7 +5,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { RolesModule } from './models/roles/roles.module';
 import { DocumentsModule } from './models/documents/documents.module';
 import { UsersModule } from './models/users/users.module';
-import { SearchQueriesModule } from './models/search_queries/search_queries.module';
 import { DocumentCollectionModule } from './models/document_collection/document_collection.module';
 import { DocumentFilesModule } from './models/document_files/document_files.module';
 import { DocumentSourcesModule } from './models/document_sources/document_sources.module';
@@ -16,6 +15,8 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { AnswerCitationsModule } from './models/answer_citations/answer_citations.module';
 import { DocumentMetadataModule } from './models/document_metadata/document_metadata.module';
 import { SearchResultsModule } from './models/search_results/search_results.module';
+import { AiModule } from './modules/ai/ai.module';
+import { HistoryModule } from './modules/history/history.module';
 
 @Module({
   imports: [
@@ -43,7 +44,6 @@ import { SearchResultsModule } from './models/search_results/search_results.modu
     RolesModule,
     DocumentsModule,
     UsersModule,
-    SearchQueriesModule,
     DocumentCollectionModule,
     DocumentFilesModule,
     DocumentSourcesModule,
@@ -52,7 +52,9 @@ import { SearchResultsModule } from './models/search_results/search_results.modu
     DashboardModule,
     AnswerCitationsModule,
     DocumentMetadataModule,
-    SearchResultsModule
+    SearchResultsModule,
+    HistoryModule,
+    AiModule
   ],
   controllers: [AppController],
   providers: [AppService],

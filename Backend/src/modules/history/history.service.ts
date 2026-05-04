@@ -1,26 +1,29 @@
 import { Injectable } from '@nestjs/common';
 import { CreateHistoryDto } from './dto/create-history.dto';
-import { UpdateHistoryDto } from './dto/update-history.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { SearchQueries } from './entities/search_queries.entity';
 
 @Injectable()
 export class HistoryService {
-  create(createHistoryDto: CreateHistoryDto) {
-    return 'This action adds a new history';
+  constructor(
+    @InjectRepository(SearchQueries)
+    private readonly searchQueriesRepository: Repository<SearchQueries>,
+  ) {}
+  
+  async create(dto: CreateHistoryDto) {
+    const post = this.searchQueriesRepository.create(dto);
+    return this.searchQueriesRepository.save(post);
   }
 
-  findAll() {
-    return `This action returns all history`;
+  async findAll() : Promise<SearchQueries[]> {
+    return await this.searchQueriesRepository.find();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} history`;
+  async findAllById(user_id: number) {
+    return this.searchQueriesRepository.find({
+      where: { user_id: +user_id}
+    })
   }
 
-  update(id: number, updateHistoryDto: UpdateHistoryDto) {
-    return `This action updates a #${id} history`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} history`;
-  }
 }
