@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import Layout from "../../components/Layout/Layout";
-import { HistoryItem, historyApi } from "@/api/history_api";
+import { HistoryItem, historyApi } from "@/api/historyApi";
 
 const HistoryPage = () => {
   const [history, setHistory] = useState<HistoryItem[]>([]);

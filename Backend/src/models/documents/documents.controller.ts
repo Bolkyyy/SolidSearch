@@ -5,8 +5,8 @@ import { DocumentFilesService } from './documents.service';
 export class DocumentsController {
     constructor(private readonly documentsService: DocumentFilesService) {}
 
-    @Get()
-    async findall() {
+    @Get(':id')
+    async findAll() {
         return await this.documentsService.findall();
     }
 }

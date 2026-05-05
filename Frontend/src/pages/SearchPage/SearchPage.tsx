@@ -1,6 +1,8 @@
 import Layout from '../../components/Layout/Layout';
 
 const SearchPage = () => {
+  // TS Коды 
+  
   return (
     <Layout>
       <div className="search-page-content">
@@ -12,14 +14,19 @@ const SearchPage = () => {
         <div className="hero-section">
           <h1 className="hero-title">Найдите любой документ за секунды</h1>
           <p className="hero-subtitle">
-            Задавайте вопросы на естественном языке и получайте точные ответы с цитатами
+            Задавайте вопросы на естественном языке и получайте точные ответы с
+            цитатами
           </p>
         </div>
 
         <div className="ai-search-container">
           <div className="ai-search-box">
             <i className="fa fa-search search-icon-main"></i>
-            <input type="text" placeholder="Введите запрос" className="ai-input" />
+            <input
+              type="text"
+              placeholder="Введите запрос"
+              className="ai-input"
+            />
             <div className="ai-search-actions">
               <i className="fa fa-microphone mic-icon"></i>
               <button className="ai-search-btn">
@@ -31,9 +38,15 @@ const SearchPage = () => {
           <div className="query-examples">
             <span className="examples-label">Примеры запросов:</span>
             <div className="chips-container">
-              <span className="chip">Найти договор на ремонт путей за 2019 год</span>
-              <span className="chip">Показать акты с подрядчиком за 2021 год</span>
-              <span className="chip">Какие документы содержат сумму выше 5 млн рублей</span>
+              <span className="chip">
+                Найти договор на ремонт путей за 2019 год
+              </span>
+              <span className="chip">
+                Показать акты с подрядчиком за 2021 год
+              </span>
+              <span className="chip">
+                Какие документы содержат сумму выше 5 млн рублей
+              </span>
             </div>
           </div>
         </div>
@@ -94,17 +107,23 @@ const SearchPage = () => {
 
         <div className="features-grid">
           <div className="feature-card blue-card">
-            <div className="feature-icon"><i className="fa fa-question-circle"></i></div>
+            <div className="feature-icon">
+              <i className="fa fa-question-circle"></i>
+            </div>
             <h4>Естественный язык</h4>
             <p>Спрашивайте как обычно: "Найди договор с компанией Х"</p>
           </div>
           <div className="feature-card purple-card">
-            <div className="feature-icon"><i className="fa fa-check-double"></i></div>
+            <div className="feature-icon">
+              <i className="fa fa-check-double"></i>
+            </div>
             <h4>Точные цитаты</h4>
             <p>Каждый ответ подкреплен ссылками на источники</p>
           </div>
           <div className="feature-card teal-card">
-            <div className="feature-icon"><i className="fa fa-bolt"></i></div>
+            <div className="feature-icon">
+              <i className="fa fa-bolt"></i>
+            </div>
             <h4>Быстро</h4>
             <p>Ответ за 1-2 секунды из миллионов документов</p>
           </div>
