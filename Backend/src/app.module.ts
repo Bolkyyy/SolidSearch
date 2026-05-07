@@ -17,6 +17,7 @@ import { DocumentMetadataModule } from './models/document_metadata/document_meta
 import { SearchResultsModule } from './models/search_results/search_results.module';
 import { AiModule } from './modules/ai/ai.module';
 import { HistoryModule } from './modules/history/history.module';
+import { SearchQueriesModule } from './models/search_queries/search-queries.module';
 
 @Module({
   imports: [
@@ -54,7 +55,7 @@ import { HistoryModule } from './modules/history/history.module';
     DocumentMetadataModule,
     SearchResultsModule,
     HistoryModule,
-    AiModule
+    SearchQueriesModule
   ],
   controllers: [AppController],
   providers: [AppService],
