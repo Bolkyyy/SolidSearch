@@ -23,6 +23,11 @@ body {
   font-family: 'Montserrat';
 }
 
+.router-link {
+  text-decoration: none;
+  color: white;
+}
+
 .exit {
   color: #e4585a;
   text-decoration: none;
@@ -1209,6 +1214,7 @@ body {
   background: rgba(45, 45, 45, 1);
   backdrop-filter: blur(10px);
   border-radius: 16px;
+  min-width: 0; 
   padding: 20px;
   border: 1px solid #222;
   transition: all 0.3s ease;
@@ -1277,6 +1283,7 @@ body {
 .btn-open {
   background: #3b82f633;
   color: #ffffff;
+  width: 350px;
   border: 1px solid rgba(59, 130, 246, 0.3);
 }
 
@@ -2698,7 +2705,7 @@ body {
 
 .doc-card-actions {
   display: flex;
-  width: 750px;
+  width: 100%;
   gap: 10px;
   flex-wrap: wrap;
 }

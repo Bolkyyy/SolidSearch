@@ -25,7 +25,7 @@ function App() {
         <Route path="/indexing" element={<IndexingPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/search/results" element={<SearchResults />} />
-        <Route path="/document/id" element={<DocumentCard />} />
+        <Route path="/document/:id" element={<DocumentCard />} />
       </Routes>
     </Router>
   );

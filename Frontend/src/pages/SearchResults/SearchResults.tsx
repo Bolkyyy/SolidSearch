@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import Layout from "../../components/Layout/Layout";
 
 const SearchResults = () => {
@@ -86,9 +87,9 @@ const SearchResults = () => {
               <span className="doc-tag">Сумма: 12 500 000 ₽</span>
             </div>
             <div className="doc-card-actions">
-              <button className="btn-open">
+              <Link to='/document/:id' className="router-link"><button className="btn-open">
                 <i className="fa fa-external-link" aria-hidden="true"></i> Открыть
-              </button>
+              </button></Link>
               <button className="doc-action-btn">Показать фрагмент</button>
               <button className="doc-action-btn"><i className="fa fa-plus" aria-hidden="true"></i> Добавить в сравнение</button>
             </div>
@@ -115,9 +116,9 @@ const SearchResults = () => {
               <span className="doc-tag">Статус: Принято</span>
             </div>
             <div className="doc-card-actions">
-              <button className="btn-open">
+              <Link to='/document/:id' className="router-link"><button className="btn-open">
                 <i className="fa fa-external-link" aria-hidden="true"></i> Открыть
-              </button>
+              </button></Link>
               <button className="doc-action-btn">Показать фрагмент</button>
               <button className="doc-action-btn"><i className="fa fa-plus" aria-hidden="true"></i> Добавить в сравнение</button>
             </div>
@@ -144,9 +145,9 @@ const SearchResults = () => {
               <span className="doc-tag">Приложений: 5</span>
             </div>
             <div className="doc-card-actions">
-              <button className="btn-open">
+              <Link to='/document/:id' className="router-link"><button className="btn-open">
                 <i className="fa fa-external-link" aria-hidden="true"></i> Открыть
-              </button>
+              </button></Link>
               <button className="doc-action-btn">Показать фрагмент</button>
               <button className="doc-action-btn"><i className="fa fa-plus" aria-hidden="true"></i> Добавить в сравнение</button>
             </div>
@@ -171,9 +172,9 @@ const SearchResults = () => {
               Договор на выполнение работ по капитальному ремонту ж/д путей
               участка км 15-25 общей протяжённостью 10 км.
             </p>
-            <a href="#" className="source-item-link">
+            <Link to='/document/:id' className="router-link"><a href="#" className="source-item-link">
               <i className="fa fa-folder-open" aria-hidden="true"></i> Открыть документ 
-            </a>
+            </a></Link>
           </div>
 
           <div className="source-item">
@@ -190,9 +191,9 @@ const SearchResults = () => {
               Приёмка выполненных работ по договору №451/2019 на сумму 12 500
               000 рублей.
             </p>
-            <a href="#" className="source-item-link">
+            <Link to='/document/:id' className="router-link"><a href="#" className="source-item-link">
               <i className="fa fa-folder-open" aria-hidden="true"></i> Открыть документ
-            </a>
+            </a></Link>
           </div>
 
           <div className="source-item source-item-last">
@@ -209,9 +210,9 @@ const SearchResults = () => {
               Требования к качеству материалов и срокам выполнения ремонтных
               работ путевого хозяйства.
             </p>
-            <a href="#" className="source-item-link">
+            <Link to='/document/:id' className="router-link"><a href="#" className="source-item-link">
               <i className="fa fa-folder-open" aria-hidden="true"></i> Открыть документ
-            </a>
+            </a></Link>
           </div>
 
           <div className="sources-tip">

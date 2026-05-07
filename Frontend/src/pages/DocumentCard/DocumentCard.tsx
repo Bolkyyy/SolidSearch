@@ -1,109 +1,124 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Layout from '../../components/Layout/Layout';
+import { Link, useParams } from 'react-router-dom';
+import { DocumentsApi } from '@/api/documentsApi';
 
 const DocumentCard = () => {
   const [activeTab, setActiveTab] = useState('overview'); // overview, fragments, fulltext, metadata, history
 
+  const params = useParams()
+  const documentId = params.id;
+  
+  async function getDocument() {
+    const data = await DocumentsApi.getById(Number(documentId))
+    console.log(data)
+  }
+
+  useEffect(() => {
+    if (!documentId) return
+    getDocument()
+  }, [])
+
   return (
     <Layout>
       <div className="document-card-page">
-            {/* Кнопка назад */}
-            <div className="back-button">
-              <i className="fa fa-arrow-left"></i> Назад к результатам
-            </div>
+        {/* Кнопка назад */}
+        <Link to='/search/results' className='router-link'><div className="back-button">
+          <i className="fa fa-arrow-left"></i> Назад к результатам
+        </div></Link>
 
-            {/* Заголовок документа */}
-            <div className="document-header">
-              <h1>Договор №451/2019 на ремонт железнодорожных путей</h1>
-              <div className="document-type">Договор • 15.03.2019</div>
-            </div>
+        {/* Заголовок документа */}
+        <div className="document-header">
+          <h1>Договор №451/2019 на ремонт железнодорожных путей</h1>
+          <div className="document-type">Договор • 15.03.2019</div>
+        </div>
 
-            {/* Вкладки */}
-      <div className="document-tabs">
-        <button
-          className={`tab-btn ${activeTab === 'overview' ? 'active' : ''}`}
-          onClick={() => setActiveTab('overview')}
-        >
-          Обзор
-        </button>
-        <button
-          className={`tab-btn ${activeTab === 'fragments' ? 'active' : ''}`}
-          onClick={() => setActiveTab('fragments')}
-        >
-          Фрагменты
-        </button>
-        <button
-          className={`tab-btn ${activeTab === 'fulltext' ? 'active' : ''}`}
-          onClick={() => setActiveTab('fulltext')}
-        >
-          Полный текст
-        </button>
-        <button
-          className={`tab-btn ${activeTab === 'metadata' ? 'active' : ''}`}
-          onClick={() => setActiveTab('metadata')}
-        >
-          Метаданные
-        </button>
-        <button
-          className={`tab-btn ${activeTab === 'history' ? 'active' : ''}`}
-          onClick={() => setActiveTab('history')}
-        >
-          История
-        </button>
-        
-        {/* Новая кнопка скачивания */}
-        <button className="tab-btn download-btn-tab">
-          <i className="fa fa-cloud-download" aria-hidden="true" style={{marginRight: '8px'}}></i>
-          Скачать
-        </button>
-      </div>
+        {/* Вкладки */}
+        <div className="document-tabs">
+          <button
+            className={`tab-btn ${activeTab === 'overview' ? 'active' : ''}`}
+            onClick={() => setActiveTab('overview')}
+          >
+            Обзор
+          </button>
+          <button
+            className={`tab-btn ${activeTab === 'fragments' ? 'active' : ''}`}
+            onClick={() => setActiveTab('fragments')}
+          >
+            Фрагменты
+          </button>
+          <button
+            className={`tab-btn ${activeTab === 'fulltext' ? 'active' : ''}`}
+            onClick={() => setActiveTab('fulltext')}
+          >
+            Полный текст
+          </button>
+          <button
+            className={`tab-btn ${activeTab === 'metadata' ? 'active' : ''}`}
+            onClick={() => setActiveTab('metadata')}
+          >
+            Метаданные
+          </button>
+          <button
+            className={`tab-btn ${activeTab === 'history' ? 'active' : ''}`}
+            onClick={() => setActiveTab('history')}
+          >
+            История
+          </button>
 
-      <div className="document-layout">
+          {/* Новая кнопка скачивания */}
+          <button className="tab-btn download-btn-tab">
+            <i className="fa fa-cloud-download" aria-hidden="true" style={{ marginRight: '8px' }}></i>
+            Скачать
+          </button>
+        </div>
+
+        <div className="document-layout">
           {/* Левая колонка - основной контент */}
-      <div className="document-content">
+          <div className="document-content">
             {/* Контент вкладок */}
             <div className="tab-content">
               {/* Обзор */}
-{activeTab === 'overview' && (
-  <div className="overview-tab">
-    <div className="overview-card">
-      <h2>Обзор документа</h2>
-      <div className="overview-content">
-        <div className="overview-section">
-          <h3>Описание договора</h3>
-          <p>
-            Договор на выполнение работ по капитальному ремонту железнодорожных путей 
-            участка км 15-25 общей протяженностью 10 км, заключенный между заказчиком 
-            и ООО "СтройПуть".
-          </p>
-        </div>
-        
-        <div className="overview-section">
-          <h3>Условия договора</h3>
-          <p>
-            Общая стоимость работ составляет 12 500 000 (двенадцать миллионов пятьсот тысяч) рублей. 
-            Срок выполнения работ: с 01.04.2019 по 31.08.2019.
-          </p>
-        </div>
-        
-        <div className="overview-section">
-          <h3>Выполнение работ</h3>
-          <p>
-            Все работы выполнены в полном объеме и в соответствии с техническим заданием. 
-            Подписан акт приемки №128-2019 от 20.08.2019.
-          </p>
-        </div>
-      </div>
-    </div>
-  </div>
-)}
+              {activeTab === 'overview' && (
+                <div className="overview-tab">
+                  <div className="overview-card">
+                    <h2>Обзор документа</h2>
+                    <div className="overview-content">
+                      <div className="overview-section">
+                        <h3>Описание договора</h3>
+                        <p>
+                          Договор на выполнение работ по капитальному ремонту железнодорожных путей
+                          участка км 15-25 общей протяженностью 10 км, заключенный между заказчиком
+                          и ООО "СтройПуть".
+                        </p>
+                      </div>
+
+                      <div className="overview-section">
+                        <h3>Условия договора</h3>
+                        <p>
+                          Общая стоимость работ составляет 12 500 000 (двенадцать миллионов пятьсот тысяч) рублей.
+                          Срок выполнения работ: с 01.04.2019 по 31.08.2019.
+                        </p>
+                      </div>
+
+                      <div className="overview-section">
+                        <h3>Выполнение работ</h3>
+                        <p>
+                          Все работы выполнены в полном объеме и в соответствии с техническим заданием.
+                          Подписан акт приемки №128-2019 от 20.08.2019.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Фрагменты */}
               {activeTab === 'fragments' && (
                 <div className="fragments-tab">
                   <div className="key-fragments">
                     <h2>Ключевые фрагменты</h2>
-                    
+
                     <div className="fragment-item">
                       <div className="fragment-header">
                         <span className="fragment-page">Страница 1</span>
@@ -144,22 +159,22 @@ const DocumentCard = () => {
                     <h2>ДОГОВОР №451/2019</h2>
                     <p className="fulltext-place">г. Москва, 15 марта 2019 г.</p>
                     <p>
-                      Заказчик, в лице директора Иванова П.С., действующего на основании Устава, с одной стороны, 
-                      и Подрядчик ООО "СтройПуть", в лице генерального директора Петрова А.В., действующего на 
+                      Заказчик, в лице директора Иванова П.С., действующего на основании Устава, с одной стороны,
+                      и Подрядчик ООО "СтройПуть", в лице генерального директора Петрова А.В., действующего на
                       основании Устава, с другой стороны, заключили настоящий договор о нижеследующем:
                     </p>
-                    
+
                     <h3>1. ПРЕДМЕТ ДОГОВОРА</h3>
                     <p>
-                      1.1. Подрядчик обязуется выполнить работы по капитальному ремонту железнодорожных путей 
+                      1.1. Подрядчик обязуется выполнить работы по капитальному ремонту железнодорожных путей
                       участка км 15-25 общей протяженностью 10 км, а Заказчик обязуется принять и оплатить эти работы.
                     </p>
-                    
+
                     <h3>2. СТОИМОСТЬ РАБОТ</h3>
                     <p>
                       2.1. Общая стоимость работ составляет 12 500 000 (двенадцать миллионов пятьсот тысяч) рублей.
                     </p>
-                    
+
                     <h3>3. СРОКИ ВЫПОЛНЕНИЯ</h3>
                     <p>
                       3.1. Срок выполнения работ: с 01.04.2019 по 31.08.2019.
