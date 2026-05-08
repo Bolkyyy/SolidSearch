@@ -10,6 +10,7 @@ import SettingsPage from './pages/SettingsPage/SettingsPage';
 import SearchResults from './pages/SearchResults/SearchResults';
 import DocumentCard from './pages/DocumentCard/DocumentCard';
 import './App.css';
+import ErrorPage from './pages/ErrorPage/ErrorPage';
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/search/results" element={<SearchResults />} />
         <Route path="/document/:id" element={<DocumentCard />} />
+        <Route path="/error" element={<ErrorPage />} /> 
       </Routes>
     </Router>
   );
