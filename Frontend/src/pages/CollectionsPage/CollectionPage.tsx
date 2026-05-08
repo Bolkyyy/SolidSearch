@@ -91,6 +91,27 @@ const CollectionPage = () => {
 
           <div className="archive-item">
             <div className="archive-item-header">
+              <h3>Архив 2023</h3>
+            </div>
+            <div className="archive-info">
+              <span>8 134 документов</span>
+              <div className="file-formats">
+                <span className="format-badge format-pdf">PDF</span>
+                <span className="format-badge format-docx">DOCX</span>
+                <span className="format-badge format-txt">TXT</span>
+              </div>
+              <span>5.8 ГБ</span>
+            </div>
+            <div className="archive-buttons">
+              <button className="btn-open">Открыть</button>
+              <Link to="/indexing" className="btn-reindex">
+                <button className="indbtn">Переиндексировать</button>
+              </Link>
+            </div>
+          </div>
+
+          <div className="archive-item">
+            <div className="archive-item-header">
               <h3>Текущие проекты</h3>
             </div>
             <div className="archive-info">
