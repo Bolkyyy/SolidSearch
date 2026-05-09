@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import Layout from '../../components/Layout/Layout';
 
 const SettingsPage = () => {
-  const [activeTab, setActiveTab] = useState('users');
+  const [activeTab, setActiveTab] = useState('users'); 
+  const [showModal, setShowModal] = useState(false); 
 
   return (
     <Layout>
@@ -195,22 +196,32 @@ const SettingsPage = () => {
           )}
 
           {activeTab === "integrations" && (
-            <div className="settings-view-fade">
-              <h2>Интеграции</h2>
-              <div className="integrations-grid-layout">
-                <div className="integration-item">
-                  <h3>OpenAI API</h3>
-                  <p>Используется для эмбеддингов и генерации ответов</p>
-                  <span className="badge-status success">Подключено</span>
-                </div>
-                <div className="integration-item">
-                  <h3>Slack уведомления</h3>
-                  <p>Получайте уведомления об ошибках индексации</p>
-                  <span className="badge-status muted">Не настроено</span>
-                </div>
-              </div>
-            </div>
-          )}
+  <div className={`settings-view-fade ${showModal ? 'blur-content' : ''}`}>
+    <div className="view-header-row">
+      <h2>Интеграции</h2>
+      <button className="add-model-btn-y" onClick={() => setShowModal(true)}>
+        Добавить модель
+      </button>
+    </div>
+
+    <div className="integrations-grid-layout">
+      <div className="integration-card-large">
+        <div className="integration-card-header">
+          <h3>OpenAI API</h3>
+        </div>
+        
+        <p className="integration-card-desc">
+          Используется для эмбеддингов и генерации ответов
+        </p>
+        
+        <div className="integration-card-actions">
+          <span className="badge-status success">Подключено</span>
+          <button className="redact-btn-y">Редактировать</button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
 
           {activeTab === "interface" && (
             <div className="settings-view-fade">
@@ -295,6 +306,49 @@ const SettingsPage = () => {
           )}
         </div>
       </div>
+      {showModal && (
+  <div className="modal-overlay" onClick={() => setShowModal(false)}>
+    <div className="modal-window" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-header">
+        <h2>Настройка<br/>конфигурации модели</h2>
+        <button className="modal-close" onClick={() => setShowModal(false)}>&times;</button>
+      </div>
+      
+      <div className="modal-body">
+        <div className="input-group-custom" style={{marginBottom: '20px'}}>
+          <label className="block-title">Код провайдера</label>
+          <input type="text" className="dark-field-input" placeholder="По умолчанию deepseek" />
+        </div>
+
+        <div className="input-group-custom" style={{marginBottom: '20px'}}>
+          <label className="block-title">Название модели</label>
+          <input type="text" className="dark-field-input" placeholder="По умолчанию deepseek-v3" />
+        </div>
+
+        <div className="input-group-custom" style={{marginBottom: '20px'}}>
+          <label className="block-title">Api ключ</label>
+          <input type="password" className="dark-field-input" placeholder="Введите api ключ" />
+        </div>
+
+        <div className="input-group-custom">
+          <label className="block-title">Подключение</label>
+          <div style={{display: 'flex', alignItems: 'center', gap: '12px', marginTop: '10px'}}>
+            <div className="ui-toggle active">
+               <div className="ui-toggle-thumb"></div>
+            </div>
+            <span style={{color: '#888', fontSize: '12px'}}>Активировать модель после сохранения</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="modal-footer">
+        <button className="save-settings-btn" onClick={() => setShowModal(false)}>
+          Сохранить настройки
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </Layout>
   );
 };

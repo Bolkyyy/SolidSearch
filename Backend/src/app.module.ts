@@ -37,7 +37,6 @@ import { SearchQueriesModule } from './models/search_queries/search-queries.modu
     DashboardModule,
     HistoryModule,
     DocumentsModule,
-    AiModule,
     SearchQueriesModule
   ],
   controllers: [AppController],

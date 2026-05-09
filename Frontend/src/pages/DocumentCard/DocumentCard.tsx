@@ -1,17 +1,25 @@
 import { useEffect, useState } from 'react';
 import Layout from '../../components/Layout/Layout';
-import { Link, useParams } from 'react-router-dom';
-import { DocumentsApi } from '@/api/documentsApi';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Document, DocumentsApi } from '@/api/documentsApi';
 
 const DocumentCard = () => {
   const [activeTab, setActiveTab] = useState('overview'); // overview, fragments, fulltext, metadata, history
-
+  const [documentData, setDocumentData] = useState<Document | null>(null);
   const params = useParams()
   const documentId = params.id;
-  
+  const navigator = useNavigate();
+
   async function getDocument() {
-    const data = await DocumentsApi.getById(Number(documentId))
-    console.log(data)
+    try {
+      const data = await DocumentsApi.getById(Number(documentId))
+      console.log(data)
+      setDocumentData(data);
+    }
+    catch (e) {
+      console.error('Error fetching document:', e);
+      navigator('/error'); 
+    }
   }
 
   useEffect(() => {
@@ -22,62 +30,6 @@ const DocumentCard = () => {
   return (
     <Layout>
       <div className="document-card-page">
-<<<<<<< HEAD
-            {/* Кнопка назад */}
-            <div className="back-button">
-              <i className="fa fa-arrow-left"></i> Назад к результатам
-            </div>
-
-            {/* Заголовок документа */}
-            <div className="document-header">
-              <h1>Договор №451/2019 на ремонт железнодорожных путей</h1>
-              <div className="document-type">Договор • 15.03.2019</div>
-            </div>
-
-            {/* Вкладки */}
-      <div className="document-tabs">
-        <button
-          className={`tab-btn ${activeTab === 'overview' ? 'active' : ''}`}
-          onClick={() => setActiveTab('overview')}
-        >
-          Обзор
-        </button>
-        <button
-          className={`tab-btn ${activeTab === 'fragments' ? 'active' : ''}`}
-          onClick={() => setActiveTab('fragments')}
-        >
-          Фрагменты
-        </button>
-        <button
-          className={`tab-btn ${activeTab === 'fulltext' ? 'active' : ''}`}
-          onClick={() => setActiveTab('fulltext')}
-        >
-          Полный текст
-        </button>
-        <button
-          className={`tab-btn ${activeTab === 'metadata' ? 'active' : ''}`}
-          onClick={() => setActiveTab('metadata')}
-        >
-          Метаданные
-        </button>
-        <button
-          className={`tab-btn ${activeTab === 'history' ? 'active' : ''}`}
-          onClick={() => setActiveTab('history')}
-        >
-          История
-        </button>
-        
-        {/* Новая кнопка скачивания */}
-        <button className="tab-btn download-btn-tab">
-          <i className="fa fa-cloud-download" aria-hidden="true" style={{marginRight: '8px'}}></i>
-          Скачать
-        </button>
-      </div>
-
-      <div className="document-layout">
-          {/* Левая колонка - основной контент */}
-      <div className="document-content">
-=======
         {/* Кнопка назад */}
         <Link to='/search/results' className='router-link'><div className="back-button">
           <i className="fa fa-arrow-left"></i> Назад к результатам
@@ -132,7 +84,6 @@ const DocumentCard = () => {
         <div className="document-layout">
           {/* Левая колонка - основной контент */}
           <div className="document-content">
->>>>>>> 04ad9534f32f14b8bad03b4ed0b5a1d22992c89a
             {/* Контент вкладок */}
             <div className="tab-content">
               {/* Обзор */}
@@ -321,62 +272,64 @@ const DocumentCard = () => {
           {/* Правая колонка - фиксированная информация */}
           <div className="document-sidebar">
             {/* Основная информация */}
-            <div className="info-section">
-              <h2>Основная информация</h2>
-              <div className="info-grid">
-                <div className="info-row">
-                  <span className="info-label">Название документа:</span>
-                  <span className="info-value">Договор №451/2019 на ремонт железнодорожных путей</span>
+            {documentData &&
+              <div className="info-section">
+                <h2>Основная информация</h2>
+                <div className="info-grid">
+                  <div className="info-row">
+                    <span className="info-label">Название документа:</span>
+                    <span className="info-value">{documentData.title}</span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-label">Тип:</span>
+                    <span className="info-value">{documentData.document_type}</span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-label">Дата:</span>
+                    <span className="info-value">{documentData.document_date}</span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-label">Номер:</span>
+                    <span className="info-value">{documentData.archive_number}</span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-label">Ответственное лицо:</span>
+                    <span className="info-value">'В таблице нет такой информации'</span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-label">Сумма:</span>
+                    <span className="info-value">'В таблице нет такой информации'</span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-label">Подрядчик:</span>
+                    <span className="info-value">{documentData.author_name}</span>
+                  </div>
                 </div>
-                <div className="info-row">
-                  <span className="info-label">Тип:</span>
-                  <span className="info-value">Договор</span>
-                </div>
-                <div className="info-row">
-                  <span className="info-label">Дата:</span>
-                  <span className="info-value">15.03.2019</span>
-                </div>
-                <div className="info-row">
-                  <span className="info-label">Номер:</span>
-                  <span className="info-value">№451/2019</span>
-                </div>
-                <div className="info-row">
-                  <span className="info-label">Ответственное лицо:</span>
-                  <span className="info-value">Иванов Петр Сергеевич</span>
-                </div>
-                <div className="info-row">
-                  <span className="info-label">Сумма:</span>
-                  <span className="info-value">12 500 000 ₽</span>
-                </div>
-                <div className="info-row">
-                  <span className="info-label">Подрядчик:</span>
-                  <span className="info-value">ООО "СтройПуть"</span>
-                </div>
-              </div>
-            </div>
+              </div>}
 
             {/* Связанные сущности */}
-            <div className="related-section">
-              <h2>Связанные сущности</h2>
-              <div className="related-grid">
-                <div className="related-item">
-                  <span className="related-label">Подрядчик</span>
-                  <span className="related-value">ООО "СтройПуть"</span>
+            {documentData &&
+              <div className="related-section">
+                <h2>Связанные сущности</h2>
+                <div className="related-grid">
+                  <div className="related-item">
+                    <span className="related-label">Подрядчик</span>
+                    <span className="related-value">{documentData.author_name}</span>
+                  </div>
+                  <div className="related-item">
+                    <span className="related-label">Акт приемки</span>
+                    <span className="related-value">№128-2019</span>
+                  </div>
+                  <div className="related-item">
+                    <span className="related-label">Смета</span>
+                    <span className="related-value">№451-C</span>
+                  </div>
+                  <div className="related-item">
+                    <span className="related-label">Ответственный</span>
+                    <span className="related-value">Иванов П.С.</span>
+                  </div>
                 </div>
-                <div className="related-item">
-                  <span className="related-label">Акт приемки</span>
-                  <span className="related-value">№128-2019</span>
-                </div>
-                <div className="related-item">
-                  <span className="related-label">Смета</span>
-                  <span className="related-value">№451-C</span>
-                </div>
-                <div className="related-item">
-                  <span className="related-label">Ответственный</span>
-                  <span className="related-value">Иванов П.С.</span>
-                </div>
-              </div>
-            </div>
+              </div>}
           </div>
         </div>
       </div>
