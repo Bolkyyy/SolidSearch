@@ -3351,200 +3351,95 @@ body {
 }
  
 /* скролбар */
-/* Кастомный скроллбар для всего приложения */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+/* ===== СКРОЛЛБАР С ОТСТУПОМ СПРАВА ===== */
+
+/* Для всех страниц с контентом */
+.main-content,
+.search-results-page,
+.archive-page,
+.document-card-page,
+.home-page,
+.analytics-page,
+.history-page,
+.indexing-page,
+.settings-page {
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* Добавляем отступ справа для контента */
+  padding-right: 8px;
 }
 
+/* Webkit браузеры */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+/* Track - фоновая дорожка */
 ::-webkit-scrollbar-track {
   background: rgba(255, 255, 255, 0.05);
-  border-radius: 3px;
+  border-radius: 10px;
+  /* Отступ справа - 4px */
+  margin-right: 4px;
 }
 
+/* Thumb - ползунок серый */
 ::-webkit-scrollbar-thumb {
-  background: rgba(59, 130, 246, 0.4);
-  border-radius: 3px;
-  transition: all 0.3s ease;
+  background: #555555;
+  border-radius: 10px;
+  min-height: 40px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(59, 130, 246, 0.6);
+  background: #6b6b6b;
 }
 
-/* Для Firefox */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(59, 130, 246, 0.4) rgba(255, 255, 255, 0.05);
+/* Стрелки скролла */
+::-webkit-scrollbar-button:vertical:start:decrement {
+  background: #444444;
+  height: 14px;
+  width: 10px;
+  border-radius: 6px;
+  margin-bottom: 6px;
+  margin-right: 4px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 24 24' fill='none' stroke='%23999999' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='18 15 12 9 6 15'></polyline></svg>");
+  background-repeat: no-repeat;
+  background-position: center;
 }
 
-/* Чтобы скроллбар был ВНУТРИ контента, а не снаружи */
-html, body {
+::-webkit-scrollbar-button:vertical:end:increment {
+  background: #444444;
+  height: 14px;
+  width: 10px;
+  border-radius: 6px;
+  margin-top: 6px;
+  margin-right: 4px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 24 24' fill='none' stroke='%23999999' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>");
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+::-webkit-scrollbar-button:hover {
+  background: #5a5a5a;
+}
+
+/* Убираем лишние кнопки */
+::-webkit-scrollbar-button:vertical:start:increment,
+::-webkit-scrollbar-button:vertical:end:decrement {
+  display: none;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Отключаем двойной скролл */
+body {
   overflow-y: auto;
-  overflow-x: hidden;
 }
 
-/* Для основного контента - скролл внутри */
+.search-results-page,
 .main-content {
-  overflow-y: auto;
-  overflow-x: hidden;
-  height: 100vh;
-  scrollbar-width: thin;
-}
-
-/* Для всех блоков с прокруткой */
-.sidebar,
-.right-column,
-.sources-list,
-.documents-tables,
-.tab-content,
-.archives-grid,
-.stats-cards {
-  overflow-y: auto;
-  scrollbar-width: thin;
-}
-
-/* Скрыть скроллбар для body, чтобы он не дублировался */
-body {
-  overflow-y: hidden;
-}
-
-/* Контейнер приложения - скролл внутри */
-.App {
-  height: 100vh;
-  overflow: hidden;
-  display: flex;
-}
-
-/* Боковая панель - индивидуальный скролл */
-.sidebar {
-  overflow-y: auto;
-  height: 100vh;
-  scrollbar-width: thin;
-}
-
-/* Правая колонка на странице поиска - скролл внутри */
-.right-column {
-  overflow-y: auto;
-  max-height: calc(100vh - 100px);
-  scrollbar-gutter: stable;
-}
-
-/* Левая колонка - тоже скролл внутри */
-.left-column {
-  overflow-y: auto;
-  max-height: calc(100vh - 100px);
-  scrollbar-gutter: stable;
-}
-
-/* Для всех контейнеров, которые могут иметь прокрутку */
-.archives-grid,
-.sources-list,
-.documents-tables,
-.timeline,
-.key-fragments {
-  overflow-y: auto;
-  max-height: calc(100vh - 200px);
-  padding-right: 8px;
-  scrollbar-gutter: stable;
-}
-
-/* Красивое оформление для WebKit браузеров (Chrome, Edge, Safari) */
-.archives-grid::-webkit-scrollbar,
-.sources-list::-webkit-scrollbar,
-.documents-tables::-webkit-scrollbar,
-.right-column::-webkit-scrollbar,
-.left-column::-webkit-scrollbar,
-.sidebar::-webkit-scrollbar,
-.tab-content::-webkit-scrollbar {
-  width: 6px;
-}
-
-.archives-grid::-webkit-scrollbar-track,
-.sources-list::-webkit-scrollbar-track,
-.documents-tables::-webkit-scrollbar-track,
-.right-column::-webkit-scrollbar-track,
-.left-column::-webkit-scrollbar-track,
-.sidebar::-webkit-scrollbar-track,
-.tab-content::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 3px;
-}
-
-.archives-grid::-webkit-scrollbar-thumb,
-.sources-list::-webkit-scrollbar-thumb,
-.documents-tables::-webkit-scrollbar-thumb,
-.right-column::-webkit-scrollbar-thumb,
-.left-column::-webkit-scrollbar-thumb,
-.sidebar::-webkit-scrollbar-thumb,
-.tab-content::-webkit-scrollbar-thumb {
-  background: rgba(59, 130, 246, 0.4);
-  border-radius: 3px;
-}
-
-.archives-grid::-webkit-scrollbar-thumb:hover,
-.sources-list::-webkit-scrollbar-thumb:hover,
-.documents-tables::-webkit-scrollbar-thumb:hover,
-.right-column::-webkit-scrollbar-thumb:hover,
-.left-column::-webkit-scrollbar-thumb:hover,
-.sidebar::-webkit-scrollbar-thumb:hover,
-.tab-content::-webkit-scrollbar-thumb:hover {
-  background: rgba(59, 130, 246, 0.6);
-}
-
-/* Для контейнера архивов на главной странице */
-.archives-container,
-.activity-list,
-.popular-topics {
-  overflow-y: auto;
-  max-height: 400px;
-  padding-right: 8px;
-  scrollbar-gutter: stable;
-}
-
-/* Убираем внешний скролл у body */
-body {
-  overflow: hidden;
-}
-
-/* Адаптивность для мобильных */
-@media (max-width: 768px) {
-  .App {
-    flex-direction: column;
-  }
-  
-  .sidebar {
-    height: auto;
-    max-height: 60px;
-    overflow-y: hidden;
-  }
-  
-  .main-content {
-    height: calc(100vh - 60px);
-  }
-  
-  .right-column,
-  .left-column {
-    max-height: none;
-    overflow-y: visible;
-  }
-}
-
-/* Для страницы DocumentCard чтобы скролл был внутри */
-.document-layout {
-  height: calc(100vh - 100px);
-  overflow: hidden;
-}
-
-.document-content {
-  overflow-y: auto;
-  height: 100%;
-  padding-right: 16px;
-  scrollbar-gutter: stable;
-}
-
-.document-sidebar {
-  overflow-y: auto;
-  height: 100%;
-  scrollbar-gutter: stable;
+  overflow-y: visible !important;
+  height: auto !important;
 }
