@@ -3349,3 +3349,202 @@ body {
     padding: 20px;
   }
 }
+ 
+/* скролбар */
+/* Кастомный скроллбар для всего приложения */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(59, 130, 246, 0.4);
+  border-radius: 3px;
+  transition: all 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(59, 130, 246, 0.6);
+}
+
+/* Для Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(59, 130, 246, 0.4) rgba(255, 255, 255, 0.05);
+}
+
+/* Чтобы скроллбар был ВНУТРИ контента, а не снаружи */
+html, body {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Для основного контента - скролл внутри */
+.main-content {
+  overflow-y: auto;
+  overflow-x: hidden;
+  height: 100vh;
+  scrollbar-width: thin;
+}
+
+/* Для всех блоков с прокруткой */
+.sidebar,
+.right-column,
+.sources-list,
+.documents-tables,
+.tab-content,
+.archives-grid,
+.stats-cards {
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+/* Скрыть скроллбар для body, чтобы он не дублировался */
+body {
+  overflow-y: hidden;
+}
+
+/* Контейнер приложения - скролл внутри */
+.App {
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+}
+
+/* Боковая панель - индивидуальный скролл */
+.sidebar {
+  overflow-y: auto;
+  height: 100vh;
+  scrollbar-width: thin;
+}
+
+/* Правая колонка на странице поиска - скролл внутри */
+.right-column {
+  overflow-y: auto;
+  max-height: calc(100vh - 100px);
+  scrollbar-gutter: stable;
+}
+
+/* Левая колонка - тоже скролл внутри */
+.left-column {
+  overflow-y: auto;
+  max-height: calc(100vh - 100px);
+  scrollbar-gutter: stable;
+}
+
+/* Для всех контейнеров, которые могут иметь прокрутку */
+.archives-grid,
+.sources-list,
+.documents-tables,
+.timeline,
+.key-fragments {
+  overflow-y: auto;
+  max-height: calc(100vh - 200px);
+  padding-right: 8px;
+  scrollbar-gutter: stable;
+}
+
+/* Красивое оформление для WebKit браузеров (Chrome, Edge, Safari) */
+.archives-grid::-webkit-scrollbar,
+.sources-list::-webkit-scrollbar,
+.documents-tables::-webkit-scrollbar,
+.right-column::-webkit-scrollbar,
+.left-column::-webkit-scrollbar,
+.sidebar::-webkit-scrollbar,
+.tab-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.archives-grid::-webkit-scrollbar-track,
+.sources-list::-webkit-scrollbar-track,
+.documents-tables::-webkit-scrollbar-track,
+.right-column::-webkit-scrollbar-track,
+.left-column::-webkit-scrollbar-track,
+.sidebar::-webkit-scrollbar-track,
+.tab-content::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+.archives-grid::-webkit-scrollbar-thumb,
+.sources-list::-webkit-scrollbar-thumb,
+.documents-tables::-webkit-scrollbar-thumb,
+.right-column::-webkit-scrollbar-thumb,
+.left-column::-webkit-scrollbar-thumb,
+.sidebar::-webkit-scrollbar-thumb,
+.tab-content::-webkit-scrollbar-thumb {
+  background: rgba(59, 130, 246, 0.4);
+  border-radius: 3px;
+}
+
+.archives-grid::-webkit-scrollbar-thumb:hover,
+.sources-list::-webkit-scrollbar-thumb:hover,
+.documents-tables::-webkit-scrollbar-thumb:hover,
+.right-column::-webkit-scrollbar-thumb:hover,
+.left-column::-webkit-scrollbar-thumb:hover,
+.sidebar::-webkit-scrollbar-thumb:hover,
+.tab-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(59, 130, 246, 0.6);
+}
+
+/* Для контейнера архивов на главной странице */
+.archives-container,
+.activity-list,
+.popular-topics {
+  overflow-y: auto;
+  max-height: 400px;
+  padding-right: 8px;
+  scrollbar-gutter: stable;
+}
+
+/* Убираем внешний скролл у body */
+body {
+  overflow: hidden;
+}
+
+/* Адаптивность для мобильных */
+@media (max-width: 768px) {
+  .App {
+    flex-direction: column;
+  }
+  
+  .sidebar {
+    height: auto;
+    max-height: 60px;
+    overflow-y: hidden;
+  }
+  
+  .main-content {
+    height: calc(100vh - 60px);
+  }
+  
+  .right-column,
+  .left-column {
+    max-height: none;
+    overflow-y: visible;
+  }
+}
+
+/* Для страницы DocumentCard чтобы скролл был внутри */
+.document-layout {
+  height: calc(100vh - 100px);
+  overflow: hidden;
+}
+
+.document-content {
+  overflow-y: auto;
+  height: 100%;
+  padding-right: 16px;
+  scrollbar-gutter: stable;
+}
+
+.document-sidebar {
+  overflow-y: auto;
+  height: 100%;
+  scrollbar-gutter: stable;
+}
