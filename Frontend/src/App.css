@@ -3365,17 +3365,17 @@ body {
 .settings-page {
   overflow-y: auto;
   overflow-x: hidden;
-  /* Добавляем отступ справа для контента */
+
   padding-right: 8px;
 }
 
-/* Webkit браузеры */
+
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
 }
 
-/* Track - фоновая дорожка */
+
 ::-webkit-scrollbar-track {
   background: rgba(255, 255, 255, 0.05);
   border-radius: 10px;
@@ -3383,7 +3383,7 @@ body {
   margin-right: 4px;
 }
 
-/* Thumb - ползунок серый */
+
 ::-webkit-scrollbar-thumb {
   background: #555555;
   border-radius: 10px;
@@ -3423,7 +3423,6 @@ body {
   background: #5a5a5a;
 }
 
-/* Убираем лишние кнопки */
 ::-webkit-scrollbar-button:vertical:start:increment,
 ::-webkit-scrollbar-button:vertical:end:decrement {
   display: none;
@@ -3433,7 +3432,6 @@ body {
   background: transparent;
 }
 
-/* Отключаем двойной скролл */
 body {
   overflow-y: auto;
 }
