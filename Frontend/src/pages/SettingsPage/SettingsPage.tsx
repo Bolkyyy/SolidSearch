@@ -4,9 +4,7 @@ import Layout from '../../components/Layout/Layout';
 
 const SettingsPage = () => {
   const [activeTab, setActiveTab] = useState('users'); 
-  const [showModal, setShowModal] = useState(false); 
-
-  return (
+  const [modalMode, setModalMode] = useState<'add' | 'edit' | null>(null);  return (
     <Layout>
       <section className="welcome">
         <h1>Настройки</h1>
@@ -196,10 +194,10 @@ const SettingsPage = () => {
           )}
 
           {activeTab === "integrations" && (
-  <div className={`settings-view-fade ${showModal ? 'blur-content' : ''}`}>
+  <div className={`settings-view-fade ${modalMode ? 'blur-content' : ''}`}>
     <div className="view-header-row">
       <h2>Интеграции</h2>
-      <button className="add-model-btn-y" onClick={() => setShowModal(true)}>
+      <button className="add-model-btn-y" onClick={() => setModalMode('add')}>
         Добавить модель
       </button>
     </div>
@@ -209,14 +207,14 @@ const SettingsPage = () => {
         <div className="integration-card-header">
           <h3>OpenAI API</h3>
         </div>
-        
         <p className="integration-card-desc">
           Используется для эмбеддингов и генерации ответов
         </p>
-        
         <div className="integration-card-actions">
           <span className="badge-status success">Подключено</span>
-          <button className="redact-btn-y">Редактировать</button>
+          <button className="redact-btn-y" onClick={() => setModalMode('edit')}>
+            Редактировать
+          </button>
         </div>
       </div>
     </div>
@@ -306,44 +304,45 @@ const SettingsPage = () => {
           )}
         </div>
       </div>
-      {showModal && (
-  <div className="modal-overlay" onClick={() => setShowModal(false)}>
+      {modalMode && (
+  <div className="modal-overlay" onClick={() => setModalMode(null)}>
     <div className="modal-window" onClick={(e) => e.stopPropagation()}>
       <div className="modal-header">
-        <h2>Настройка<br/>конфигурации модели</h2>
-        <button className="modal-close" onClick={() => setShowModal(false)}>&times;</button>
+        <h2>
+          {modalMode === 'add' ? 'Добавление новой модели' : 'Настройка конфигурации модели'}
+        </h2>
+        <button className="modal-close" onClick={() => setModalMode(null)}>&times;</button>
       </div>
       
       <div className="modal-body">
-        <div className="input-group-custom" style={{marginBottom: '20px'}}>
+        <div className="input-group-custom" style={{marginBottom: '16px'}}>
           <label className="block-title">Код провайдера</label>
-          <input type="text" className="dark-field-input" placeholder="По умолчанию deepseek" />
+          <input type="text" className="dark-field-input" placeholder="Например, openai или deepseek" />
         </div>
 
-        <div className="input-group-custom" style={{marginBottom: '20px'}}>
+        <div className="input-group-custom" style={{marginBottom: '16px'}}>
           <label className="block-title">Название модели</label>
-          <input type="text" className="dark-field-input" placeholder="По умолчанию deepseek-v3" />
+          <input type="text" className="dark-field-input" placeholder="Введите название" />
         </div>
 
-        <div className="input-group-custom" style={{marginBottom: '20px'}}>
+        <div className="input-group-custom" style={{marginBottom: '16px'}}>
           <label className="block-title">Api ключ</label>
-          <input type="password" className="dark-field-input" placeholder="Введите api ключ" />
+          <input type="password" className="dark-field-input" placeholder="sk-..." />
         </div>
 
         <div className="input-group-custom">
-          <label className="block-title">Подключение</label>
-          <div style={{display: 'flex', alignItems: 'center', gap: '12px', marginTop: '10px'}}>
+          <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
             <div className="ui-toggle active">
                <div className="ui-toggle-thumb"></div>
             </div>
-            <span style={{color: '#888', fontSize: '12px'}}>Активировать модель после сохранения</span>
+            <span style={{color: '#888', fontSize: '12px'}}>Активировать сразу</span>
           </div>
         </div>
       </div>
 
       <div className="modal-footer">
-        <button className="save-settings-btn" onClick={() => setShowModal(false)}>
-          Сохранить настройки
+        <button className="save-settings-btn" onClick={() => setModalMode(null)}>
+          {modalMode === 'add' ? 'Добавить модель' : 'Сохранить изменения'}
         </button>
       </div>
     </div>

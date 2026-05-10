@@ -2590,12 +2590,13 @@ body {
 }
 
 .modal-window {
-    background: #222; 
-    width: 480px;
-    border-radius: 28px;
-    padding: 40px;
+    background: #1e1e1e; 
+    width: 400px; 
+    border-radius: 24px;
+    padding: 30px; 
     border: 1px solid #333;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+    position: relative;
 }
 
 .modal-header {
@@ -2606,10 +2607,74 @@ body {
 }
 
 .modal-header h2 {
-    font-size: 22px;
+    font-size: 18px; 
     color: #fff;
     margin: 0;
     line-height: 1.3;
+    max-width: 80%;
+}
+
+.modal-window .dark-field-input {
+    background: rgba(255, 255, 255, 0.05) !important; 
+    border: 1px solid #333 !important; 
+    color: #fff !important; 
+    padding: 10px 14px !important;
+    font-size: 14px !important;
+    border-radius: 10px !important;
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 4px;
+}
+
+.modal-window .block-title {
+    font-size: 12px !important;
+    color: #888 !important;
+    margin-bottom: 4px !important;
+    display: block;
+    text-transform: none !important; 
+    letter-spacing: normal !important;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: center;
+    margin-top: 24px;
+}
+
+.modal-footer .save-settings-btn {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.1); 
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 12px;
+    border-radius: 14px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.modal-footer .save-settings-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.modal-window span {
+    font-size: 11px !important;
+    color: #666 !important;
+}
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
 }
 
 .modal-close {
