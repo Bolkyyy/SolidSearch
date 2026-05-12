@@ -1,10 +1,10 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import Layout from '../../components/Layout/Layout';
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import Layout from "../../components/Layout/Layout";
 
 const SettingsPage = () => {
-  const [activeTab, setActiveTab] = useState('users');
-
+  const [activeTab, setActiveTab] = useState("users");
+  const [modalMode, setModalMode] = useState<"add" | "edit" | null>(null);
   return (
     <Layout>
       <section className="welcome">
@@ -20,7 +20,6 @@ const SettingsPage = () => {
               { id: "users", icon: "fa-users", label: "Пользователи и роли" },
               { id: "sources", icon: "fa-database", label: "Источники" },
               { id: "collections", icon: "fa-layer-group", label: "Коллекции" },
-              { id: "models", icon: "fa-microchip", label: "Модели" },
               { id: "rules", icon: "fa-cog", label: "Правила индексации" },
               { id: "integrations", icon: "fa-plug", label: "Интеграции" },
               { id: "interface", icon: "fa-desktop", label: "Интерфейс" },
@@ -195,18 +194,28 @@ const SettingsPage = () => {
           )}
 
           {activeTab === "integrations" && (
-            <div className="settings-view-fade">
-              <h2>Интеграции</h2>
+            <div className={`settings-view-fade ${modalMode ? "blur-content" : ""}`}>
+              <div className="view-header-row">
+                <h2>Интеграции</h2>
+                <button className="add-model-btn-y" onClick={() => setModalMode("add")}>
+                  Добавить модель
+                </button>
+              </div>
+
               <div className="integrations-grid-layout">
-                <div className="integration-item">
-                  <h3>OpenAI API</h3>
-                  <p>Используется для эмбеддингов и генерации ответов</p>
-                  <span className="badge-status success">Подключено</span>
-                </div>
-                <div className="integration-item">
-                  <h3>Slack уведомления</h3>
-                  <p>Получайте уведомления об ошибках индексации</p>
-                  <span className="badge-status muted">Не настроено</span>
+                <div className="integration-card-large">
+                  <div className="integration-card-header">
+                    <h3>Deepseek</h3>
+                  </div>
+                  <p className="integration-card-desc">
+                    Используется для эмбеддингов и генерации ответов
+                  </p>
+                  <div className="integration-card-actions">
+                    <span className="badge-status-success">Подключено</span>
+                    <button className="redact-btn-y" onClick={() => setModalMode("edit")}>
+                      Редактировать
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -219,62 +228,6 @@ const SettingsPage = () => {
                 <label className="block-title">Тема</label>
                 <div className="ui-toggle active">
                   <div className="ui-toggle-thumb"></div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === "models" && (
-            <div className="settings-view-fade">
-              <div className="view-header-row">
-                <h2>Конфигурация моделей</h2>
-                <button className="create-collection-btn">
-                  + Добавить модель
-                </button>
-              </div>
-              <div className="source-data-card">
-                <div className="source-card-body">
-                  <div className="source-title-row">
-                    <h3>text-embedding-ada-002</h3>
-                    <span className="badge-status success">Активна</span>
-                    <div className="redact-delete-buttons">
-                      <button className="redact-collection-btn">
-                        Настроить
-                      </button>
-                    </div>
-                  </div>
-                  <p className="source-meta">Тип: Эмбеддинги</p>
-                  <p className="source-path">Провайдер: OpenAI</p>
-                </div>
-              </div>
-              <div className="source-data-card">
-                <div className="source-card-body">
-                  <div className="source-title-row">
-                    <h3>gpt-4</h3>
-                    <span className="badge-status success">Активна</span>
-                    <div className="redact-delete-buttons">
-                      <button className="redact-collection-btn">
-                        Настроить
-                      </button>
-                    </div>
-                  </div>
-                  <p className="source-meta">Тип: Генерация ответов</p>
-                  <p className="source-path">Провайдер: OpenAI</p>
-                </div>
-              </div>
-              <div className="source-data-card">
-                <div className="source-card-body">
-                  <div className="source-title-row">
-                    <h3>multilingual-e5-large</h3>
-                    <span className="badge-status muted">Неактивна</span>
-                    <div className="redact-delete-buttons">
-                      <button className="redact-collection-btn">
-                        Настроить
-                      </button>
-                    </div>
-                  </div>
-                  <p className="source-meta">Тип: Эмбеддинги</p>
-                  <p className="source-path">Провайдер: HuggingFace</p>
                 </div>
               </div>
             </div>
@@ -295,6 +248,59 @@ const SettingsPage = () => {
           )}
         </div>
       </div>
+
+      {modalMode && (
+        <div className="modal-overlay" onClick={() => setModalMode(null)}>
+          <div className="modal-window" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>
+                {modalMode === "add"
+                  ? "Добавление новой модели"
+                  : "Настройка конфигурации модели"}
+              </h2>
+              <button className="modal-close" onClick={() => setModalMode(null)}>
+                &times;
+              </button>
+            </div>
+
+            <div className="modal-body">
+              <div className="input-group-custom" style={{ marginBottom: "16px" }}>
+                <label className="block-title">Код провайдера</label>
+                <input type="text" className="dark-field-input" placeholder="Например, openai или deepseek"/>
+              </div>
+
+              <div className="input-group-custom" style={{ marginBottom: "16px" }}>
+                <label className="block-title">Название модели</label>
+                <input type="text" className="dark-field-input" placeholder="Введите название"/>
+              </div>
+
+              <div className="input-group-custom" style={{ marginBottom: "16px" }}>
+                <label className="block-title">Api ключ</label>
+                <input type="password" className="dark-field-input" placeholder="sk-..."/>
+              </div>
+
+              <div className="input-group-custom">
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <div className="ui-toggle active">
+                    <div className="ui-toggle-thumb"></div>
+                  </div>
+                  <span style={{ color: "#888", fontSize: "12px" }}>
+                    Активировать сразу
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button className="save-settings-btn" onClick={() => setModalMode(null)}>
+                {modalMode === "add"
+                  ? "Добавить модель"
+                  : "Сохранить изменения"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 };
