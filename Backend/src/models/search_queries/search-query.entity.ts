@@ -5,10 +5,13 @@ export class SearchQuery {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ name: 'user_id', type: 'int' })
+  @Column({ name: 'user_id', type: 'int', nullable: true })
   userId: number;
 
-  @Column({ name: 'query_text', type: 'text' })
+  @Column({ nullable: true, default: 'manual' })
+  query_type: string;
+
+  @Column({ name: 'query_text', type: 'text', nullable: true })
   queryText: string;
 
   @CreateDateColumn({ name: 'created_at' })

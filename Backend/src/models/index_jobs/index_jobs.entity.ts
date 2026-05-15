@@ -5,21 +5,21 @@ export class IndexJobs {
     @PrimaryGeneratedColumn()
     id!: number;
 
-    @Column()
+    @Column({ nullable: true })
     document_id!: number;
 
-    @Column()
+    @Column({ nullable: true })
     status!: string;
 
-    @Column()
+    @Column({ nullable: true })
     parser_type!: string;
 
     @Column({ type: 'timestamp' })
     started_at!: Date
 
-    @Column({ type: 'timestamp' })
+    @Column({ type: 'timestamp', nullable: true })
     finished_at!: Date
 
-    @Column()
+    @Column({ nullable: true })
     error_message!: string;
 }

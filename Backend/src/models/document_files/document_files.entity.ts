@@ -1,28 +1,42 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { Documents } from "../documents/documents.entity";
 
-@Entity({ name:'document_files', schema: 'solidsearchdb'})
+@Entity({ name: 'document_files', schema: 'solidsearchdb' })
 export class DocumentFiles {
     @PrimaryGeneratedColumn()
     id!: number;
 
-    @Column()
-    document_id!: number;
+    @Column({ nullable: true })
+    document_id: number;
 
-    @Column()
-    file_name!: string;
+    @Column({ nullable: true })
+    file_name: string;
 
-    @Column()
-    file_type!: string;
+    @Column({ nullable: true })
+    file_type: string;
 
-    @Column()
-    file_path!: string;
+    @Column({ type: 'text', nullable: true })
+    file_path: string;
 
-    @Column()
-    file_size!: number;
+    @Column({ nullable: true })
+    file_size: number;
 
-    @Column()
-    page_count!: number;
+    @Column({ nullable: true })
+    page_count: number;
 
-    @CreateDateColumn({ type: 'timestamp', name: 'uploaded_at' })
+    @UpdateDateColumn({ type: 'timestamp', name: 'uploaded_at' })
     uploaded_at!: Date;
+
+    @Column({ type: 'text', nullable: true })
+    extracted_text: string;
+
+    @Column({ type: 'text', nullable: true })
+    normalized_text: string;
+
+    @Column({ nullable: true })
+    extraction_status: string;
+
+    @ManyToOne(() => Documents, doc => doc.files)
+    @JoinColumn({ name: 'document_id' })
+    document: Documents;
 }

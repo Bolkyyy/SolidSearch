@@ -1,9 +1,17 @@
-import { IsNumber, IsString } from "class-validator";
+import { IsNumber, IsOptional, IsString } from "class-validator";
 
 export class CreateHistoryDto {
+    @IsOptional()
     @IsNumber()
-    user_id: number
-    
+    user_id?: number;
+
     @IsString()
-    query_text: string
+    query_text: string;
+
+    @IsOptional()
+    @IsString()
+    query_type?: string;
+
+    @IsOptional()
+    filters_json?: any;
 }

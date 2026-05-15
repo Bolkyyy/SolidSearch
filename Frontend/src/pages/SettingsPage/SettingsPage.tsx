@@ -1,10 +1,81 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Layout from "../../components/Layout/Layout";
+import { aiApi, type AiSettings } from "../../api/AI_api";
 
 const SettingsPage = () => {
   const [activeTab, setActiveTab] = useState("users");
   const [modalMode, setModalMode] = useState<"add" | "edit" | null>(null);
+
+  // --- AI Settings state ---
+  const [aiSettings, setAiSettings] = useState<AiSettings | null>(null);
+  const [loadingSettings, setLoadingSettings] = useState(false);
+  const [formProvider, setFormProvider] = useState("");
+  const [formModel, setFormModel] = useState("");
+  const [formApiKey, setFormApiKey] = useState("");
+  const [formIsActive, setFormIsActive] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (activeTab === "integrations") fetchSettings();
+  }, [activeTab]);
+
+  async function fetchSettings() {
+    setLoadingSettings(true);
+    try {
+      const data = await aiApi.getAiSettings();
+      if (data?.length > 0) setAiSettings(data[0]);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingSettings(false);
+    }
+  }
+
+  function openModal(mode: "add" | "edit") {
+    setSaveError(null);
+    if (mode === "edit" && aiSettings) {
+      setFormProvider(aiSettings.provider_code || "");
+      setFormModel(aiSettings.model_name || "");
+      setFormApiKey("");
+      setFormIsActive(aiSettings.is_active || false);
+    } else {
+      setFormProvider("");
+      setFormModel("");
+      setFormApiKey("");
+      setFormIsActive(false);
+    }
+    setModalMode(mode);
+  }
+
+  async function handleSave() {
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const dto = {
+        provider_code: formProvider,
+        model_name: formModel,
+        is_active: formIsActive,
+        ...(formApiKey ? { api_key: formApiKey } : {}),
+      };
+
+      if (modalMode === "add") {
+        await aiApi.createAiSettings(dto);
+      } else {
+        await aiApi.saveAiSettings(dto);
+      }
+
+      await fetchSettings();
+      setModalMode(null);
+    } catch (e: any) {
+      setSaveError(e.message || "Ошибка сохранения");
+    } finally {
+      setSaving(false);
+    }
+  }
+  // --- конец AI Settings ---
+
   return (
     <Layout>
       <section className="welcome">
@@ -156,37 +227,20 @@ const SettingsPage = () => {
                   <span> Индексировать документы сразу после загрузки</span>
                 </div>
               </div>
-
               <div className="indexing-block">
                 <label className="block-title">Размер чанка (токены)</label>
                 <div className="input-group-custom">
-                  <input
-                    type="text"
-                    className="dark-field-input"
-                    placeholder="512"
-                  />
-                  <p className="field-hint">
-                    Оптимальный размер: 512-1024 токенов
-                  </p>
+                  <input type="text" className="dark-field-input" placeholder="512" />
+                  <p className="field-hint">Оптимальный размер: 512-1024 токенов</p>
                 </div>
               </div>
-
               <div className="indexing-block">
-                <label className="block-title">
-                  Overlap между чанками (токены)
-                </label>
+                <label className="block-title">Overlap между чанками (токены)</label>
                 <div className="input-group-custom">
-                  <input
-                    type="text"
-                    className="dark-field-input"
-                    placeholder="128"
-                  />
-                  <p className="field-hint">
-                    Рекомендуется: 10-20% от размера чанка
-                  </p>
+                  <input type="text" className="dark-field-input" placeholder="128" />
+                  <p className="field-hint">Рекомендуется: 10-20% от размера чанка</p>
                 </div>
               </div>
-
               <button className="create-collection-btn">
                 <i className="fa fa-save"></i> Сохранить настройки
               </button>
@@ -197,27 +251,35 @@ const SettingsPage = () => {
             <div className={`settings-view-fade ${modalMode ? "blur-content" : ""}`}>
               <div className="view-header-row">
                 <h2>Интеграции</h2>
-                <button className="add-model-btn-y" onClick={() => setModalMode("add")}>
+                <button className="add-model-btn-y" onClick={() => openModal("add")}>
                   Добавить модель
                 </button>
               </div>
 
-              <div className="integrations-grid-layout">
-                <div className="integration-card-large">
-                  <div className="integration-card-header">
-                    <h3>Deepseek</h3>
-                  </div>
-                  <p className="integration-card-desc">
-                    Используется для эмбеддингов и генерации ответов
-                  </p>
-                  <div className="integration-card-actions">
-                    <span className="badge-status-success">Подключено</span>
-                    <button className="redact-btn-y" onClick={() => setModalMode("edit")}>
-                      Редактировать
-                    </button>
+              {loadingSettings ? (
+                <p style={{ color: "#888" }}>Загрузка...</p>
+              ) : aiSettings ? (
+                <div className="integrations-grid-layout">
+                  <div className="integration-card-large">
+                    <div className="integration-card-header">
+                      <h3>{aiSettings.provider_code}</h3>
+                    </div>
+                    <p className="integration-card-desc">
+                      Модель: <strong>{aiSettings.model_name}</strong>
+                    </p>
+                    <div className="integration-card-actions">
+                      <span className={aiSettings.is_active ? "badge-status-success" : "badge-status-danger"}>
+                        {aiSettings.is_active ? "Подключено" : "Неактивно"}
+                      </span>
+                      <button className="redact-btn-y" onClick={() => openModal("edit")}>
+                        Редактировать
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <p style={{ color: "#888" }}>Настройки не найдены</p>
+              )}
             </div>
           )}
 
@@ -266,22 +328,44 @@ const SettingsPage = () => {
             <div className="modal-body">
               <div className="input-group-custom" style={{ marginBottom: "16px" }}>
                 <label className="block-title">Код провайдера</label>
-                <input type="text" className="dark-field-input" placeholder="Например, openai или deepseek"/>
+                <input
+                  type="text"
+                  className="dark-field-input"
+                  placeholder="Deepseek"
+                  value={formProvider}
+                  onChange={(e) => setFormProvider(e.target.value)}
+                />
               </div>
 
               <div className="input-group-custom" style={{ marginBottom: "16px" }}>
                 <label className="block-title">Название модели</label>
-                <input type="text" className="dark-field-input" placeholder="Введите название"/>
+                <input
+                  type="text"
+                  className="dark-field-input"
+                  placeholder="Введите название"
+                  value={formModel}
+                  onChange={(e) => setFormModel(e.target.value)}
+                />
               </div>
 
               <div className="input-group-custom" style={{ marginBottom: "16px" }}>
                 <label className="block-title">Api ключ</label>
-                <input type="password" className="dark-field-input" placeholder="sk-..."/>
+                <input
+                  type="password"
+                  className="dark-field-input"
+                  placeholder={modalMode === "edit" ? "Оставьте пустым, чтобы не менять" : "sk-..."}
+                  value={formApiKey}
+                  onChange={(e) => setFormApiKey(e.target.value)}
+                />
               </div>
 
               <div className="input-group-custom">
                 <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                  <div className="ui-toggle active">
+                  <div
+                    className={`ui-toggle ${formIsActive ? "active" : ""}`}
+                    onClick={() => setFormIsActive(!formIsActive)}
+                    style={{ cursor: "pointer" }}
+                  >
                     <div className="ui-toggle-thumb"></div>
                   </div>
                   <span style={{ color: "#888", fontSize: "12px" }}>
@@ -289,11 +373,23 @@ const SettingsPage = () => {
                   </span>
                 </div>
               </div>
+
+              {saveError && (
+                <p style={{ color: "red", marginTop: "12px", fontSize: "13px" }}>
+                  {saveError}
+                </p>
+              )}
             </div>
 
             <div className="modal-footer">
-              <button className="save-settings-btn" onClick={() => setModalMode(null)}>
-                {modalMode === "add"
+              <button
+                className="save-settings-btn"
+                onClick={handleSave}
+                disabled={saving}
+              >
+                {saving
+                  ? "Сохранение..."
+                  : modalMode === "add"
                   ? "Добавить модель"
                   : "Сохранить изменения"}
               </button>

@@ -5,19 +5,19 @@ export class AiSettings {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @Column()
+    @Column({ nullable: true })
     provider_code: string;
 
-    @Column()
+    @Column({ nullable: true })
     model_name: string;
 
-    @Column()
+    @Column({ nullable: true })
     api_key: string;
 
-    @Column()
+    @Column({ nullable: true })
     base_url: string;
 
-    @Column()
+    @Column({ nullable: true })
     is_active: boolean;
 
     @UpdateDateColumn()
