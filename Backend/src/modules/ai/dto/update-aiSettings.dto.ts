@@ -1,15 +1,23 @@
-import { IsOptional, IsString } from "class-validator";
+import { IsOptional, IsString, IsBoolean } from "class-validator";
 
 export class UpdateAiSettingsDto {
     @IsOptional()
     @IsString()
-    provider_code: string;
+    provider_code?: string;
 
     @IsOptional()
     @IsString()
-    model_name: string;
+    model_name?: string;
 
     @IsOptional()
     @IsString()
-    api_key: string;
+    api_key?: string;
+
+    @IsOptional()
+    @IsString()
+    base_url?: string;
+
+    @IsOptional()
+    @IsBoolean()
+    is_active?: boolean;
 }

@@ -25,5 +25,14 @@ export class HistoryService {
       where: { user_id: +user_id}
     })
   }
-
+  
+  async findByQueryText(queryText: string): Promise<SearchQueries | null> {
+  return await this.searchQueriesRepository.findOne({
+    where: {
+      query_text: queryText,
+      query_type: 'ai',
+    },
+    order: { created_at: 'DESC' },
+  });
+}
 }

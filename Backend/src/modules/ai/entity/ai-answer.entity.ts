@@ -5,27 +5,27 @@ export class AiAnswers {
     @PrimaryGeneratedColumn()
     answer_id: number;
 
-    @Column()
+    @Column({ nullable: true })
     query_id: number;
 
-    @Column()
+    @Column({ nullable: true })
     answer_text: string;
 
-    @Column()
+    @Column({ nullable: true })
     provider_code: string;
 
-    @Column()
+    @Column({ nullable: true })
     model_name: string;
 
-    @Column('decimal', { precision: 10, scale: 2 })
+    @Column('decimal', { precision: 10, scale: 2 } )
     confidence_score: number;
 
     @CreateDateColumn()
     created_at: Date;
 
-    @Column()
+    @Column({ nullable: true })
     citation_document_id: number;
 
-    @Column()
+    @Column({ nullable: true })
     citation_fragment: string;
 }
