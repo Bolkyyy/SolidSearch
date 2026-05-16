@@ -27,7 +27,6 @@ const SearchPage = () => {
         query_text: query,
       });
       setMessage(`Запрос "${query}" успешно сохранён`);
-
     } catch (err: any) {
       console.error(err);
     } finally {

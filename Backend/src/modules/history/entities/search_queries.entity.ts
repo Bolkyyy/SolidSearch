@@ -5,13 +5,13 @@ export class SearchQueries {
     @PrimaryGeneratedColumn()
     id!: number;
 
-    @Column()
+    @Column({ nullable: true })
     user_id: number;
 
-    @Column()
+    @Column({ nullable: true })
     query_text: string;
     
-    @Column()
+    @Column({ nullable: true })
     query_type: string;
 
     @Column({ type: 'json', nullable: true })

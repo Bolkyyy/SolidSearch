@@ -28,7 +28,7 @@ const Sidebar = () => {
         <div><i className="fa fa-line-chart" /> Аналитика</div>
       </Link>
       <Link to="/indexing" className={`nav-link ${path === '/indexing' ? 'active' : ''}`}>
-        <div><i className="fa fa-database" />Индексация</div>
+        <div><i className="fa fa-database" /> Индексация</div>
       </Link>
 
       <div className="sidebar-divider" />
