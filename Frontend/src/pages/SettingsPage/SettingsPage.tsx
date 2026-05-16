@@ -4,10 +4,6 @@ import Layout from "../../components/Layout/Layout";
 import { aiApi, type AiSettings } from "../../api/AI_api";
 
 const SettingsPage = () => {
-<<<<<<< HEAD
-  const [activeTab, setActiveTab] = useState('users'); 
-  const [modalMode, setModalMode] = useState<'add' | 'edit' | null>(null);  return (
-=======
   const [activeTab, setActiveTab] = useState("users");
   const [modalMode, setModalMode] = useState<"add" | "edit" | null>(null);
 
@@ -81,7 +77,6 @@ const SettingsPage = () => {
   // --- конец AI Settings ---
 
   return (
->>>>>>> 9bdd3a76c0d68f4ccc3587fe52282dfa4d363e20
     <Layout>
       <section className="welcome">
         <h1>Настройки</h1>
@@ -253,34 +248,6 @@ const SettingsPage = () => {
           )}
 
           {activeTab === "integrations" && (
-<<<<<<< HEAD
-  <div className={`settings-view-fade ${modalMode ? 'blur-content' : ''}`}>
-    <div className="view-header-row">
-      <h2>Интеграции</h2>
-      <button className="add-model-btn-y" onClick={() => setModalMode('add')}>
-        Добавить модель
-      </button>
-    </div>
-
-    <div className="integrations-grid-layout">
-      <div className="integration-card-large">
-        <div className="integration-card-header">
-          <h3>OpenAI API</h3>
-        </div>
-        <p className="integration-card-desc">
-          Используется для эмбеддингов и генерации ответов
-        </p>
-        <div className="integration-card-actions">
-          <span className="badge-status success">Подключено</span>
-          <button className="redact-btn-y" onClick={() => setModalMode('edit')}>
-            Редактировать
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-)}
-=======
             <div className={`settings-view-fade ${modalMode ? "blur-content" : ""}`}>
               <div className="view-header-row">
                 <h2>Интеграции</h2>
@@ -315,7 +282,6 @@ const SettingsPage = () => {
               )}
             </div>
           )}
->>>>>>> 9bdd3a76c0d68f4ccc3587fe52282dfa4d363e20
 
           {activeTab === "interface" && (
             <div className="settings-view-fade">
@@ -344,52 +310,6 @@ const SettingsPage = () => {
           )}
         </div>
       </div>
-<<<<<<< HEAD
-      {modalMode && (
-  <div className="modal-overlay" onClick={() => setModalMode(null)}>
-    <div className="modal-window" onClick={(e) => e.stopPropagation()}>
-      <div className="modal-header">
-        <h2>
-          {modalMode === 'add' ? 'Добавление новой модели' : 'Настройка конфигурации модели'}
-        </h2>
-        <button className="modal-close" onClick={() => setModalMode(null)}>&times;</button>
-      </div>
-      
-      <div className="modal-body">
-        <div className="input-group-custom" style={{marginBottom: '16px'}}>
-          <label className="block-title">Код провайдера</label>
-          <input type="text" className="dark-field-input" placeholder="Например, openai или deepseek" />
-        </div>
-
-        <div className="input-group-custom" style={{marginBottom: '16px'}}>
-          <label className="block-title">Название модели</label>
-          <input type="text" className="dark-field-input" placeholder="Введите название" />
-        </div>
-
-        <div className="input-group-custom" style={{marginBottom: '16px'}}>
-          <label className="block-title">Api ключ</label>
-          <input type="password" className="dark-field-input" placeholder="sk-..." />
-        </div>
-
-        <div className="input-group-custom">
-          <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
-            <div className="ui-toggle active">
-               <div className="ui-toggle-thumb"></div>
-            </div>
-            <span style={{color: '#888', fontSize: '12px'}}>Активировать сразу</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="modal-footer">
-        <button className="save-settings-btn" onClick={() => setModalMode(null)}>
-          {modalMode === 'add' ? 'Добавить модель' : 'Сохранить изменения'}
-        </button>
-      </div>
-    </div>
-  </div>
-)}
-=======
 
       {modalMode && (
         <div className="modal-overlay" onClick={() => setModalMode(null)}>
@@ -477,7 +397,6 @@ const SettingsPage = () => {
           </div>
         </div>
       )}
->>>>>>> 9bdd3a76c0d68f4ccc3587fe52282dfa4d363e20
     </Layout>
   );
 };
