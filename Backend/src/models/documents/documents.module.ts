@@ -5,9 +5,10 @@ import { DocumentsController } from './documents.controller';
 import { DocumentService } from './documents.service';
 import { Documents } from './documents.entity';
 import { DocumentFiles } from '../document_files/document_files.entity';
+import { DocumentMetadata } from '../document_metadata/document_metadata.entity';
 
 @Module({
-    imports: [TypeOrmModule.forFeature([Documents, DocumentFiles])],
+    imports: [TypeOrmModule.forFeature([Documents, DocumentFiles, DocumentMetadata])],
     controllers: [DocumentsController],
     providers: [DocumentService],
     exports: [DocumentService],

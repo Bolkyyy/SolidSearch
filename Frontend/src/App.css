@@ -2473,7 +2473,7 @@ body {
    ======================================================== */
 .document-card-page {
   padding: 24px 32px;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  background-color: #1d1d1d;
   min-height: calc(100vh - 70px);
 }
 .document-layout {

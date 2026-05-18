@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Documents } from "../documents/documents.entity";
 
 @Entity({ name: 'document_metadata', schema: 'solidsearchdb' })
 export class DocumentMetadata {
@@ -22,4 +23,8 @@ export class DocumentMetadata {
 
     @Column({ type: 'jsonb', nullable: true })
     extra_json!: object | null;
+
+    @ManyToOne(() => Documents, (doc) => doc.metadata)
+    @JoinColumn({ name: 'document_id' })
+    document: Documents;
 }

@@ -30,7 +30,7 @@ export class DocumentService {
     async findbyid(id: number): Promise<Documents> {
         const document = await this.documentsRepository.findOne({
             where: { id },
-            relations: ['files'],
+            relations: ['files', 'metadata'],
         });
         if (!document) throw new NotFoundException(`Document ${id} not found`);
         return document;

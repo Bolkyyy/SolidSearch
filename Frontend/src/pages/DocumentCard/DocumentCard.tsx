@@ -6,7 +6,9 @@ import { Document, DocumentsApi } from "@/api/documentsApi";
 const DocumentCard = () => {
   const [activeTab, setActiveTab] = useState("overview"); // overview, fragments, fulltext, metadata, history
   const [documentData, setDocumentData] = useState<Document | null>(null);
-
+  const file = documentData?.files?.[0];
+  const meta = documentData?.metadata?.[0];
+  
   // Переменная для проверки, есть ли документ
   const [notFound, setNotFound] = useState(false);
 
@@ -33,6 +35,8 @@ const DocumentCard = () => {
       year: "numeric",
     });
   };
+
+  
 
   useEffect(() => {
     if (!documentId) {
@@ -98,16 +102,10 @@ const DocumentCard = () => {
           >
             Полный текст
           </button>
-          <button
-            className={`tab-btn ${activeTab === "metadata" ? "active" : ""}`}
-            onClick={() => setActiveTab("metadata")}
-          >
+          <button className={`tab-btn ${activeTab === "metadata" ? "active" : ""}`} onClick={() => setActiveTab("metadata")}>
             Метаданные
           </button>
-          <button
-            className={`tab-btn ${activeTab === "history" ? "active" : ""}`}
-            onClick={() => setActiveTab("history")}
-          >
+          <button className={`tab-btn ${activeTab === "history" ? "active" : ""}`} onClick={() => setActiveTab("history")}>
             История
           </button>
 
@@ -217,16 +215,9 @@ const DocumentCard = () => {
               {activeTab === "fulltext" && (
                 <div className="fulltext-tab">
                   <div className="fulltext-content">
-                    <h2>ДОГОВОР №451/2019</h2>
-                    <p className="fulltext-place">
-                      г. Москва, 15 марта 2019 г.
-                    </p>
+                    <h2>{documentData?.title}</h2>
                     <p>
-                      Заказчик, в лице директора Иванова П.С., действующего на
-                      основании Устава, с одной стороны, и Подрядчик ООО
-                      "СтройПуть", в лице генерального директора Петрова А.В.,
-                      действующего на основании Устава, с другой стороны,
-                      заключили настоящий договор о нижеследующем:
+                      {file?.normalized_text}
                     </p>
 
                     <h3>1. ПРЕДМЕТ ДОГОВОРА</h3>
@@ -383,7 +374,7 @@ const DocumentCard = () => {
                   <div className="info-row">
                     <span className="info-label">Подрядчик:</span>
                     <span className="info-value">
-                      {documentData.author_name}
+                      {documentData.author_name || 'Нет информации'}
                     </span>
                   </div>
                 </div>
@@ -398,7 +389,7 @@ const DocumentCard = () => {
                   <div className="related-item">
                     <span className="related-label">Подрядчик</span>
                     <span className="related-value">
-                      {documentData.author_name}
+                      {documentData.author_name || 'Нет информации'}
                     </span>
                   </div>
                   <div className="related-item">
