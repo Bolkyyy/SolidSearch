@@ -8,7 +8,7 @@ import { UpdateAiSettingsDto } from './dto/update-aiSettings.dto';
 import { HistoryService } from '../history/history.service';
 import { DocumentService } from '../../models/documents/documents.service';
 import { Documents } from '../../models/documents/documents.entity';
-
+import { encrypt, decrypt } from './Encryption/crypto';
 
 export interface AiProvider {
   code: string;
@@ -47,6 +47,12 @@ export class AiService {
   }
 
   async saveAiSettings(dto: UpdateAiSettingsDto) {
+    if (dto.api_key) {
+      dto.api_key = encrypt(dto.api_key);
+      // console.log(dto.api_key)
+      // console.log(decrypt(dto.api_key))
+    }
+    
     return await this.aiRepository.update(1, dto);
   }
 

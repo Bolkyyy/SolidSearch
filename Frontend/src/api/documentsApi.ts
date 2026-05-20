@@ -7,6 +7,7 @@ export interface DocumentFile {
   file_type: string;
   file_path: string;
   file_size: number;
+  page_count: number;
   normalized_text: string;
 }
 

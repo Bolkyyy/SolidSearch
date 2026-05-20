@@ -7,7 +7,7 @@ const DocumentCard = () => {
   const [activeTab, setActiveTab] = useState("overview"); // overview, fragments, fulltext, metadata, history
   const [documentData, setDocumentData] = useState<Document | null>(null);
   const file = documentData?.files?.[0];
-  const meta = documentData?.metadata?.[0];
+  // const meta = documentData?.metadata?.[0];
   
   // Переменная для проверки, есть ли документ
   const [notFound, setNotFound] = useState(false);
@@ -36,7 +36,17 @@ const DocumentCard = () => {
     });
   };
 
-  
+  const formatDate = (iso: string) => {
+    const date = new Date(iso);
+    return date.toLocaleString("ru-RU", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
 
   useEffect(() => {
     if (!documentId) {
@@ -219,25 +229,6 @@ const DocumentCard = () => {
                     <p>
                       {file?.normalized_text}
                     </p>
-
-                    <h3>1. ПРЕДМЕТ ДОГОВОРА</h3>
-                    <p>
-                      1.1. Подрядчик обязуется выполнить работы по капитальному
-                      ремонту железнодорожных путей участка км 15-25 общей
-                      протяженностью 10 км, а Заказчик обязуется принять и
-                      оплатить эти работы.
-                    </p>
-
-                    <h3>2. СТОИМОСТЬ РАБОТ</h3>
-                    <p>
-                      2.1. Общая стоимость работ составляет 12 500 000
-                      (двенадцать миллионов пятьсот тысяч) рублей.
-                    </p>
-
-                    <h3>3. СРОКИ ВЫПОЛНЕНИЯ</h3>
-                    <p>
-                      3.1. Срок выполнения работ: с 01.04.2019 по 31.08.2019.
-                    </p>
                   </div>
                 </div>
               )}
@@ -248,38 +239,38 @@ const DocumentCard = () => {
                   <div className="metadata-grid">
                     <div className="metadata-item">
                       <span className="metadata-label">Формат файла</span>
-                      <span className="metadata-value">PDF</span>
+                      <span className="metadata-value">{documentData?.document_type || 'Неизвестно'}</span>
                     </div>
                     <div className="metadata-item">
                       <span className="metadata-label">Количество страниц</span>
-                      <span className="metadata-value">12</span>
+                      <span className="metadata-value">{file?.page_count || 'Неизвестно'}</span>
                     </div>
                     <div className="metadata-item">
                       <span className="metadata-label">Создан</span>
-                      <span className="metadata-value">15.03.2019 14:30</span>
+                      <span className="metadata-value">{formatDate(documentData?.created_at || 'Неизвестно')}</span>
                     </div>
                     <div className="metadata-item">
                       <span className="metadata-label">Проиндексирован</span>
-                      <span className="metadata-value">21.03.2019 02:45</span>
+                      <span className="metadata-value">21.03.2019 02:45 - мок</span>
                     </div>
                     <div className="metadata-item">
                       <span className="metadata-label">Размер файла</span>
-                      <span className="metadata-value">2.4 MB</span>
+                      <span className="metadata-value">{file ? (file.file_size / 1024 / 1024).toFixed(2) : '--'} MB</span>
                     </div>
                     <div className="metadata-item">
                       <span className="metadata-label">Язык</span>
-                      <span className="metadata-value">Русский</span>
+                      <span className="metadata-value">{documentData?.language || 'Неизвестно'}</span>
                     </div>
                     <div className="metadata-item">
                       <span className="metadata-label">
                         Последнее изменение
                       </span>
-                      <span className="metadata-value">20.03.2019 10:15</span>
+                      <span className="metadata-value">20.03.2019 10:15 - мок </span>
                     </div>
                     <div className="metadata-item">
                       <span className="metadata-label">Вектор модель</span>
                       <span className="metadata-value">
-                        text-embedding-ada-002
+                        text-embedding-ada-002 - мок
                       </span>
                     </div>
                   </div>
@@ -356,7 +347,7 @@ const DocumentCard = () => {
                   <div className="info-row">
                     <span className="info-label">Номер:</span>
                     <span className="info-value">
-                      {documentData.archive_number}
+                      {documentData.archive_number || 'Неизвестно'}
                     </span>
                   </div>
                   <div className="info-row">

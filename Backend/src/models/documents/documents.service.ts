@@ -182,6 +182,7 @@ export class DocumentService {
             .trim();
     }
 
+
     private getDocumentType(mimeType: string): string {
         const types: Record<string, string> = {
             'application/pdf': 'PDF',

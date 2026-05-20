@@ -41,5 +41,4 @@ export class AiSettingsController {
     return 1;
   }
 
-
 }
