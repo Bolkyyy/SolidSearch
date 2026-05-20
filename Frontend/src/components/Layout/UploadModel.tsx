@@ -49,14 +49,12 @@ const UploadModal = ({ isOpen, onClose }: UploadModalProps) => {
         const formData = new FormData();
         formData.append("file", files[i].file);
 
-        // 1. Загружаем файл — получаем id созданного документа
-        const uploadRes = await axios.post("http://localhost:3001/document_files/upload", formData, {
+        const uploadRes = await axios.post("http://localhost:3001/documents/upload", formData, {
           headers: { "Content-Type": "multipart/form-data" },
         });
 
         const documentId = uploadRes.data?.document?.id;
 
-        // 2. Извлекаем текст из загруженного документа
         if (documentId) {
           await axios.post(`http://localhost:3001/documents/${documentId}/extract-text`);
         }

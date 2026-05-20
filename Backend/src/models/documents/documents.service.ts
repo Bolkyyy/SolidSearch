@@ -1,4 +1,3 @@
-// documents.service.ts
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
@@ -42,10 +41,11 @@ export class DocumentService {
         dto: UploadDocumentDto,
     ): Promise<{ document: Documents; file: DocumentFiles }> {
 
-        // 1. Создание записи в documents
+        const originalName = Buffer.from(file.originalname, 'latin1').toString('utf8');
+
         const document = await this.documentsRepository.save({
             collection_id: dto.collection_id ?? 1,
-            title: dto.title ?? file.originalname,
+            title: dto.title ?? originalName,
             document_type: this.getDocumentType(file.mimetype),
             archive_number: dto.archive_number ?? '',
             document_date: new Date(),
@@ -54,10 +54,9 @@ export class DocumentService {
             language: dto.language ?? 'ru',
         });
 
-        // 2. Создание записи в document_files
         const documentFile = await this.documentFilesRepository.save({
             document_id: document.id,
-            file_name: file.originalname,
+            file_name: originalName,
             file_type: file.mimetype,
             file_path: file.path,
             file_size: file.size,
@@ -104,7 +103,7 @@ export class DocumentService {
         return results;
     }
 
-    // Поиск по title + normalized_text (для AiService)
+    // Поиск по title + normalized_text 
     async searchDocuments(query: string): Promise<Documents[]> {
         const normalized = this.normalizeText(query);
         const words = normalized.split(' ').filter(w => w.length > 3);
@@ -112,13 +111,11 @@ export class DocumentService {
         const results: Documents[] = [];
 
         for (const word of words) {
-            // Поиск в заголовках документов
             const byTitle = await this.documentsRepository.find({
                 where: { title: Like(`%${word}%`) },
                 relations: ['files'],
             });
 
-            // Поиск в тексте файлов
             const byText = await this.documentFilesRepository.find({
                 where: { normalized_text: Like(`%${word}%`) },
                 relations: ['document'],
@@ -128,11 +125,9 @@ export class DocumentService {
             results.push(...byText.map(f => f.document));
         }
 
-        // Убирает дубликаты
         return Array.from(new Map(results.map(d => [d.id, d])).values()).slice(0, 10);
     }
 
-    // Приватные
     private async extractTextFromFile(filePath: string, mimeType: string): Promise<string> {
         const buffer = fs.readFileSync(filePath);
 

@@ -9,7 +9,6 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { AiModule } from './modules/ai/ai.module';
 import { HistoryModule } from './modules/history/history.module';
 import { SearchQueriesModule } from './models/search_queries/search-queries.module';
-import { DocumentFilesModule } from './models/document_files/document_files.module';
 
 @Module({
   imports: [
@@ -38,7 +37,6 @@ import { DocumentFilesModule } from './models/document_files/document_files.modu
     DashboardModule,
     HistoryModule,
     DocumentsModule,
-    DocumentFilesModule,
     AiModule,
     SearchQueriesModule
   ],
