@@ -58,8 +58,10 @@ export class AiService {
 
   // Провайдеры AI
 
-  async getAiProviders(): Promise<AiProvider[]> {
-    return AI_PROVIDERS;
+  async getAiProviders() {
+    return await this.aiRepository.find({
+      select: ['provider_code', 'model_name']
+    });
   }
 
   // Получение ответа по id

@@ -38,7 +38,7 @@ export class AiSettingsController {
 
   @Get('ai/providers') 
   async getAiProviders() {
-    return 1;
+    return await this.aiService.getAiProviders()
   }
 
 }
