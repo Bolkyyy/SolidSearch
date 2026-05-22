@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import ReactMarkdown from "react-markdown";
 import Layout from "../../components/Layout/Layout";
 import { Link, useParams } from "react-router-dom";
 import { Document, DocumentsApi } from "@/api/documentsApi";
@@ -8,8 +9,7 @@ const DocumentCard = () => {
   const [documentData, setDocumentData] = useState<Document | null>(null);
   const file = documentData?.files?.[0];
   // const meta = documentData?.metadata?.[0];
-  
-  // Переменная для проверки, есть ли документ
+
   const [notFound, setNotFound] = useState(false);
 
   const params = useParams();
@@ -89,7 +89,10 @@ const DocumentCard = () => {
         {/* Заголовок документа */}
         <div className="document-header">
           <h1>{documentData?.title}</h1>
-          <div className="document-type">{documentData?.document_type} • {formatDateOnly(documentData?.document_date)}</div>
+          <div className="document-type">
+            {documentData?.document_type} •{" "}
+            {formatDateOnly(documentData?.document_date)}
+          </div>
         </div>
 
         {/* Вкладки */}
@@ -112,10 +115,16 @@ const DocumentCard = () => {
           >
             Полный текст
           </button>
-          <button className={`tab-btn ${activeTab === "metadata" ? "active" : ""}`} onClick={() => setActiveTab("metadata")}>
+          <button
+            className={`tab-btn ${activeTab === "metadata" ? "active" : ""}`}
+            onClick={() => setActiveTab("metadata")}
+          >
             Метаданные
           </button>
-          <button className={`tab-btn ${activeTab === "history" ? "active" : ""}`} onClick={() => setActiveTab("history")}>
+          <button
+            className={`tab-btn ${activeTab === "history" ? "active" : ""}`}
+            onClick={() => setActiveTab("history")}
+          >
             История
           </button>
 
@@ -141,33 +150,41 @@ const DocumentCard = () => {
                   <div className="overview-card">
                     <h2>Обзор документа</h2>
                     <div className="overview-content">
-                      <div className="overview-section">
-                        <h3>Описание договора</h3>
-                        <p>
-                          Договор на выполнение работ по капитальному ремонту
-                          железнодорожных путей участка км 15-25 общей
-                          протяженностью 10 км, заключенный между заказчиком и
-                          ООО "СтройПуть".
-                        </p>
-                      </div>
+                      {file?.normalized_text ? (
+                        <div className="markdown-body">
+                          <ReactMarkdown>{file.normalized_text}</ReactMarkdown>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="overview-section">
+                            <h3>Описание договора</h3>
+                            <p>
+                              Договор на выполнение работ по капитальному ремонту
+                              железнодорожных путей участка км 15-25 общей
+                              протяженностью 10 км, заключенный между заказчиком и
+                              ООО "СтройПуть".
+                            </p>
+                          </div>
 
-                      <div className="overview-section">
-                        <h3>Условия договора</h3>
-                        <p>
-                          Общая стоимость работ составляет 12 500 000
-                          (двенадцать миллионов пятьсот тысяч) рублей. Срок
-                          выполнения работ: с 01.04.2019 по 31.08.2019.
-                        </p>
-                      </div>
+                          <div className="overview-section">
+                            <h3>Условия договора</h3>
+                            <p>
+                              Общая стоимость работ составляет 12 500 000
+                              (двенадцать миллионов пятьсот тысяч) рублей. Срок
+                              выполнения работ: с 01.04.2019 по 31.08.2019.
+                            </p>
+                          </div>
 
-                      <div className="overview-section">
-                        <h3>Выполнение работ</h3>
-                        <p>
-                          Все работы выполнены в полном объеме и в соответствии
-                          с техническим заданием. Подписан акт приемки №128-2019
-                          от 20.08.2019.
-                        </p>
-                      </div>
+                          <div className="overview-section">
+                            <h3>Выполнение работ</h3>
+                            <p>
+                              Все работы выполнены в полном объеме и в соответствии
+                              с техническим заданием. Подписан акт приемки №128-2019
+                              от 20.08.2019.
+                            </p>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -226,9 +243,13 @@ const DocumentCard = () => {
                 <div className="fulltext-tab">
                   <div className="fulltext-content">
                     <h2>{documentData?.title}</h2>
-                    <p>
-                      {file?.normalized_text}
-                    </p>
+                    {file?.extracted_text ? (
+                      <div className="markdown-body">
+                        <ReactMarkdown>{file.extracted_text}</ReactMarkdown>
+                      </div>
+                    ) : (
+                      <p>Текст документа недоступен</p>
+                    )}
                   </div>
                 </div>
               )}
@@ -239,33 +260,50 @@ const DocumentCard = () => {
                   <div className="metadata-grid">
                     <div className="metadata-item">
                       <span className="metadata-label">Формат файла</span>
-                      <span className="metadata-value">{documentData?.document_type || 'Неизвестно'}</span>
+                      <span className="metadata-value">
+                        {documentData?.document_type || "Неизвестно"}
+                      </span>
                     </div>
                     <div className="metadata-item">
                       <span className="metadata-label">Количество страниц</span>
-                      <span className="metadata-value">{file?.page_count || 'Неизвестно'}</span>
+                      <span className="metadata-value">
+                        {file?.page_count || "Неизвестно"}
+                      </span>
                     </div>
                     <div className="metadata-item">
                       <span className="metadata-label">Создан</span>
-                      <span className="metadata-value">{formatDate(documentData?.created_at || 'Неизвестно')}</span>
+                      <span className="metadata-value">
+                        {formatDate(documentData?.created_at || "Неизвестно")}
+                      </span>
                     </div>
                     <div className="metadata-item">
                       <span className="metadata-label">Проиндексирован</span>
-                      <span className="metadata-value">21.03.2019 02:45 - мок</span>
+                      <span className="metadata-value">
+                        21.03.2019 02:45 - мок
+                      </span>
                     </div>
                     <div className="metadata-item">
                       <span className="metadata-label">Размер файла</span>
-                      <span className="metadata-value">{file ? (file.file_size / 1024 / 1024).toFixed(2) : '--'} MB</span>
+                      <span className="metadata-value">
+                        {file
+                          ? (file.file_size / 1024 / 1024).toFixed(2)
+                          : "--"}{" "}
+                        MB
+                      </span>
                     </div>
                     <div className="metadata-item">
                       <span className="metadata-label">Язык</span>
-                      <span className="metadata-value">{documentData?.language || 'Неизвестно'}</span>
+                      <span className="metadata-value">
+                        {documentData?.language || "Неизвестно"}
+                      </span>
                     </div>
                     <div className="metadata-item">
                       <span className="metadata-label">
                         Последнее изменение
                       </span>
-                      <span className="metadata-value">20.03.2019 10:15 - мок </span>
+                      <span className="metadata-value">
+                        20.03.2019 10:15 - мок{" "}
+                      </span>
                     </div>
                     <div className="metadata-item">
                       <span className="metadata-label">Вектор модель</span>
@@ -347,7 +385,7 @@ const DocumentCard = () => {
                   <div className="info-row">
                     <span className="info-label">Номер:</span>
                     <span className="info-value">
-                      {documentData.archive_number || 'Неизвестно'}
+                      {documentData.archive_number || "Неизвестно"}
                     </span>
                   </div>
                   <div className="info-row">
@@ -365,7 +403,7 @@ const DocumentCard = () => {
                   <div className="info-row">
                     <span className="info-label">Подрядчик:</span>
                     <span className="info-value">
-                      {documentData.author_name || 'Нет информации'}
+                      {documentData.author_name || "Нет информации"}
                     </span>
                   </div>
                 </div>
@@ -373,14 +411,14 @@ const DocumentCard = () => {
             )}
 
             {/* Связанные сущности */}
-            {documentData && (
+            {/* {documentData && (
               <div className="related-section">
                 <h2>Связанные сущности</h2>
                 <div className="related-grid">
                   <div className="related-item">
                     <span className="related-label">Подрядчик</span>
                     <span className="related-value">
-                      {documentData.author_name || 'Нет информации'}
+                      {documentData.author_name || "Нет информации"}
                     </span>
                   </div>
                   <div className="related-item">
@@ -397,7 +435,7 @@ const DocumentCard = () => {
                   </div>
                 </div>
               </div>
-            )}
+            )} */}
           </div>
         </div>
       </div>
