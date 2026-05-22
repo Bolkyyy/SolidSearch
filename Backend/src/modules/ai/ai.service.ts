@@ -30,7 +30,7 @@ export class AiService {
     private readonly historyService: HistoryService,
   ) {}
 
-  // Настройки AI 
+  // Настройки AI ------------------------ 1 
 
   async getAiSettings(): Promise<AiSettings[]> {
     return await this.aiRepository.find();
@@ -43,7 +43,7 @@ export class AiService {
     return await this.aiRepository.update(1, dto);
   }
 
-  // Провайдеры AI
+  // Провайдеры AI ------------------------ 2
 
   async getAiProviders() {
     return await this.aiRepository.find({
@@ -51,7 +51,7 @@ export class AiService {
     });
   }
 
-  // Получение ответа по id 
+  // Получение ответа по id ------------------------ 3 
 
   async getAnswer(id: number) {
     return await this.aiAnswerRepository.find({ where: { answer_id: +id } });
