@@ -2,9 +2,30 @@ import { useState, useEffect } from "react";
 import Layout from "../../components/Layout/Layout";
 import { aiApi, type AiSettings } from "../../api/AI_api";
 
+interface User {
+  id: number | null;
+  name: string;
+  email: string;
+  role: string;
+  status: string;
+}
+
 const SettingsPage = () => {
   const [activeTab, setActiveTab] = useState("users");
   const [modalMode, setModalMode] = useState<"add" | "edit" | null>(null);
+  const [users, setUsers] = useState<User[]>([
+    { id: 1, name: 'Иван Петров', email: 'ivan@company.ru', role: 'Администратор', status: 'Активен' },
+    { id: 2, name: 'Мария Сидорова', email: 'maria@company.ru', role: 'Пользователь', status: 'Активен' },
+    { id: 3, name: 'Ольга Иванова', email: 'olga@company.ru', role: 'Читатель', status: 'Неактивен' }
+  ]);
+
+  const [userForm, setUserForm] = useState<User>({ 
+    id: null, 
+    name: '', 
+    email: '', 
+    role: '', 
+    status: 'Активен' 
+  });
 
   // --- AI Settings state ---
   const [aiSettings, setAiSettings] = useState<AiSettings | null>(null);
@@ -74,6 +95,20 @@ const SettingsPage = () => {
     }
   }
   // --- конец AI Settings ---
+      const handleDeleteUser = (id: number | null) => {
+    if (!id) return; 
+    if (window.confirm("Вы уверены, что хотите удалить пользователя?")) {
+      setUsers(users.filter(user => user.id !== id));
+    }
+  };
+  const openUserModal = (mode: 'add' | 'edit', user: User | null = null) => {
+    if (mode === 'edit' && user) {
+      setUserForm(user);
+    } else {
+      setUserForm({ id: null, name: '', email: '', role: '', status: 'Активен' });
+    }
+    setModalMode(mode);
+  };
 
   return (
     <Layout>
@@ -108,61 +143,41 @@ const SettingsPage = () => {
 
           {activeTab === "users" && (
             <div className="settings-view-fade">
-              <div className="view-header-row">
-                <h2>Управление пользователями</h2>
-                <button className="create-collection-btn">
-                  + Создать пользователя
-                </button>
-              </div>
-              <table className="users-data-table">
-                <thead>
-                  <tr>
-                    <th style={{ width: "25%" }}>Имя</th>
-                    <th style={{ width: "25%" }}>Email</th>
-                    <th style={{ width: "20%" }}>Роль</th>
-                    <th style={{ width: "15%" }}>Статус</th>
-                    <th style={{ width: "15%" }}>Действия</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>Иван Петров</td>
-                    <td className="text-muted">ivan@company.ru</td>
-                    <td>Администратор</td>
-                    <td>
-                      <span className="badge-status success">Активен</span>
-                    </td>
-                    <td className="table-actions">
-                      <i className="fa fa-edit"></i>
-                      <i className="fa fa-trash-alt"></i>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>Мария Сидорова</td>
-                    <td className="text-muted">maria@company.ru</td>
-                    <td>Пользователь</td>
-                    <td>
-                      <span className="badge-status success">Активен</span>
-                    </td>
-                    <td className="table-actions">
-                      <i className="fa fa-edit"></i>
-                      <i className="fa fa-trash-alt"></i>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>Ольга Иванова</td>
-                    <td className="text-muted">olga@company.ru</td>
-                    <td>Читатель</td>
-                    <td>
-                      <span className="badge-status danger">Неактивен</span>
-                    </td>
-                    <td className="table-actions">
-                      <i className="fa fa-edit"></i>
-                      <i className="fa fa-trash-alt"></i>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+                        <div className="view-header-row">
+            <h2>Управление пользователями</h2>
+            <button className="create-collection-btn" onClick={() => openUserModal('add')}>
+              + Создать пользователя
+            </button>
+          </div>
+          <table className="users-data-table">
+            <thead>
+              <tr>
+                <th style={{ width: "25%" }}>Имя</th>
+                <th style={{ width: "25%" }}>Email</th>
+                <th style={{ width: "20%" }}>Роль</th>
+                <th style={{ width: "15%" }}>Статус</th>
+                <th style={{ width: "15%" }}>Действия</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map(user => (
+                <tr key={user.id}>
+                  <td>{user.name}</td>
+                  <td className="text-muted">{user.email}</td>
+                  <td>{user.role}</td>
+                  <td>
+                    <span className={`badge-status ${user.status === 'Активен' ? 'success' : 'danger'}`}>
+                      {user.status}
+                    </span>
+                  </td>
+                  <td className="table-actions">
+                    <i className="fa fa-edit" onClick={() => openUserModal('edit', user)}></i>
+                    <i className="fa fa-trash-alt" onClick={() => handleDeleteUser(user.id)}></i>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
             </div>
           )}
 
@@ -286,87 +301,78 @@ const SettingsPage = () => {
         </div>
       </div>
 
-      {modalMode && (
+            {modalMode && (
         <div className="modal-overlay" onClick={() => setModalMode(null)}>
           <div className="modal-window" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>
-                {modalMode === "add"
-                  ? "Добавление новой модели"
-                  : "Настройка конфигурации модели"}
+                {activeTab === 'users' 
+                  ? (modalMode === 'add' ? 'Создать пользователя' : 'Изменить пользователя')
+                  : (modalMode === 'add' ? 'Добавление новой модели' : 'Настройка конфигурации модели')
+                }
               </h2>
-              <button className="modal-close" onClick={() => setModalMode(null)}>
-                &times;
-              </button>
+              <button className="modal-close" onClick={() => setModalMode(null)}>&times;</button>
             </div>
-
+            
             <div className="modal-body">
-              <div className="input-group-custom" style={{ marginBottom: "16px" }}>
-                <label className="block-title">Код провайдера</label>
-                <input
-                  type="text"
-                  className="dark-field-input"
-                  placeholder="Deepseek"
-                  value={formProvider}
-                  onChange={(e) => setFormProvider(e.target.value)}
-                />
-              </div>
-
-              <div className="input-group-custom" style={{ marginBottom: "16px" }}>
-                <label className="block-title">Название модели</label>
-                <input
-                  type="text"
-                  className="dark-field-input"
-                  placeholder="Введите название"
-                  value={formModel}
-                  onChange={(e) => setFormModel(e.target.value)}
-                />
-              </div>
-
-              <div className="input-group-custom" style={{ marginBottom: "16px" }}>
-                <label className="block-title">Api ключ</label>
-                <input
-                  type="password"
-                  className="dark-field-input"
-                  placeholder={modalMode === "edit" ? "Оставьте пустым, чтобы не менять" : "sk-..."}
-                  value={formApiKey}
-                  onChange={(e) => setFormApiKey(e.target.value)}
-                />
-              </div>
-
-              <div className="input-group-custom">
-                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                  <div
-                    className={`ui-toggle ${formIsActive ? "active" : ""}`}
-                    onClick={() => setFormIsActive(!formIsActive)}
-                    style={{ cursor: "pointer" }}
-                  >
-                    <div className="ui-toggle-thumb"></div>
+              {activeTab === 'users' ? (
+                <>
+                  <div className="input-group-custom" style={{marginBottom: '16px'}}>
+                    <label className="block-title">Имя</label>
+                    <input type="text" className="dark-field-input" value={userForm.name} onChange={(e) => setUserForm({...userForm, name: e.target.value})} placeholder="Иван Иванов" />
                   </div>
-                  <span style={{ color: "#888", fontSize: "12px" }}>
-                    Активировать сразу
-                  </span>
-                </div>
-              </div>
-
-              {saveError && (
-                <p style={{ color: "red", marginTop: "12px", fontSize: "13px" }}>
-                  {saveError}
-                </p>
+                  <div className="input-group-custom" style={{marginBottom: '16px'}}>
+                    <label className="block-title">Email</label>
+                    <input type="email" className="dark-field-input" value={userForm.email} onChange={(e) => setUserForm({...userForm, email: e.target.value})} placeholder="ivan@mail.ru" />
+                  </div>
+                  <div className="input-group-custom" style={{marginBottom: '16px'}}>
+                    <label className="block-title">Роль</label>
+                    <input type="text" className="dark-field-input" value={userForm.role} onChange={(e) => setUserForm({...userForm, role: e.target.value})} placeholder="Администратор" />
+                  </div>
+                  <div className="input-group-custom">
+                    <label className="block-title">Статус</label>
+                    <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
+                      <div 
+                        className={`ui-toggle ${userForm.status === 'Активен' ? 'active' : ''}`}
+                        onClick={() => setUserForm({...userForm, status: userForm.status === 'Активен' ? 'Неактивен' : 'Активен'})}
+                      >
+                        <div className="ui-toggle-thumb"></div>
+                      </div>
+                                            <span style={{color: '#888', fontSize: '12px'}}>{userForm.status}</span>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="input-group-custom" style={{marginBottom: '16px'}}>
+                    <label className="block-title">Код провайдера</label>
+                    <input type="text" className="dark-field-input" placeholder="Например, openai" />
+                  </div>
+                  <div className="input-group-custom" style={{marginBottom: '16px'}}>
+                    <label className="block-title">Название модели</label>
+                    <input type="text" className="dark-field-input" placeholder="Введите название" />
+                  </div>
+                  <div className="input-group-custom" style={{marginBottom: '16px'}}>
+                    <label className="block-title">Api ключ</label>
+                    <input type="password" className="dark-field-input" placeholder="sk-..." />
+                  </div>
+                </>
               )}
             </div>
 
             <div className="modal-footer">
-              <button
-                className="save-settings-btn"
-                onClick={handleSave}
-                disabled={saving}
-              >
-                {saving
-                  ? "Сохранение..."
-                  : modalMode === "add"
-                  ? "Добавить модель"
-                  : "Сохранить изменения"}
+              <button className="save-settings-btn" onClick={() => {
+                                if (activeTab === 'users') {
+                  if (modalMode === 'add') {
+                    const newUser = { ...userForm, id: Date.now() };
+                    setUsers(prev => [...prev, newUser]);
+                  } else {
+                    setUsers(prev => prev.map(u => u.id === userForm.id ? userForm : u));
+                  }
+                }
+                setModalMode(null);
+              }}>
+                {modalMode === 'add' ? 'Создать' : 'Сохранить изменения'}
               </button>
             </div>
           </div>
