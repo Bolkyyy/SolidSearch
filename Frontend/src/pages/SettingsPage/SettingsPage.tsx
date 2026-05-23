@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
 import Layout from "../../components/Layout/Layout";
 import { aiApi, type AiSettings } from "../../api/AI_api";
 
@@ -90,7 +89,6 @@ const SettingsPage = () => {
             {[
               { id: "users", icon: "fa-users", label: "Пользователи и роли" },
               { id: "sources", icon: "fa-database", label: "Источники" },
-              { id: "collections", icon: "fa-layer-group", label: "Коллекции" },
               { id: "rules", icon: "fa-cog", label: "Правила индексации" },
               { id: "integrations", icon: "fa-plug", label: "Интеграции" },
               { id: "interface", icon: "fa-desktop", label: "Интерфейс" },
@@ -219,15 +217,6 @@ const SettingsPage = () => {
             <div className="settings-view-fade">
               <h2>Правила индексации</h2>
               <div className="indexing-block">
-                <label className="block-title">
-                  Автоматическая индексация новых документов
-                </label>
-                <div className="custom-checkbox-row">
-                  <input type="checkbox" className="custom-checkbox" />
-                  <span> Индексировать документы сразу после загрузки</span>
-                </div>
-              </div>
-              <div className="indexing-block">
                 <label className="block-title">Размер чанка (токены)</label>
                 <div className="input-group-custom">
                   <input type="text" className="dark-field-input" placeholder="512" />
@@ -291,20 +280,6 @@ const SettingsPage = () => {
                 <div className="ui-toggle active">
                   <div className="ui-toggle-thumb"></div>
                 </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === "collections" && (
-            <div className="settings-view-fade">
-              <h2>Коллекции</h2>
-              <div className="collection-text">
-                <p className="empty-tab-text">
-                  Управление коллекциями доступно в разделе{" "}
-                  <Link to="/collections" className="coll-endpoint">
-                    Архив документов
-                  </Link>
-                </p>
               </div>
             </div>
           )}

@@ -1,4 +1,3 @@
-// documents.controller.ts
 import { Controller, Get, Post, Param, ParseIntPipe, UseInterceptors, UploadedFile, Body} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';

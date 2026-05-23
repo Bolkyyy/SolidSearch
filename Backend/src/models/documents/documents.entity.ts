@@ -1,5 +1,6 @@
 import { Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { DocumentFiles } from "../document_files/document_files.entity";
+import { DocumentMetadata } from "../document_metadata/document_metadata.entity";
 
 @Entity({ name: 'documents', schema: 'solidsearchdb' })
 export class Documents {
@@ -35,4 +36,7 @@ export class Documents {
 
     @OneToMany(() => DocumentFiles, file => file.document)
     files: DocumentFiles[];
+
+    @OneToMany(() => DocumentMetadata, (meta) => meta.document)
+    metadata: DocumentMetadata[];
 }

@@ -8,9 +8,11 @@ export class AiController {
 
   // Отправление запроса ИИ 
   @Post()
-  async search(@Body() body: { query: string; }) {
-    const answer = await this.aiService.generateAnswer(body.query);
-    return { answer };
+  async search(@Body() body: { query: string; userId?: number}) {
+    const result = await this.aiService.generateAnswer(body.query, body.userId);
+    return { answer: result.answer,
+      fromCache: result.fromCache,
+      documentIds: result.documentIds, };
   }
 
   // получение ответа ИИ по айди ----------------------- 4 ✔
@@ -38,8 +40,7 @@ export class AiSettingsController {
 
   @Get('ai/providers') 
   async getAiProviders() {
-    return 1;
+    return await this.aiService.getAiProviders()
   }
-
 
 }
