@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Documents } from '../../models/documents/documents.entity'; 
-import { SearchQueries } from '../../models/search_queries/search_queries.entity';
+import { SearchQueries } from '../history/entities/search_queries.entity';
 import { IndexJobs } from '../../models/index_jobs/index_jobs.entity';
 
 export interface DashboardData {

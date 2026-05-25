@@ -1,39 +1,78 @@
-import Layout from '../../components/Layout/Layout';
+import Layout from "../../components/Layout/Layout";
+import { useState } from "react";
+import axios from "axios";
+import { Link } from "react-router-dom";
 
 const SearchPage = () => {
+  const [query, setQuery] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [message, setMessage] = useState("");
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!query.trim()) return;
+
+    const userId = localStorage.getItem("userId");
+    if (!userId) {
+      setMessage("Ошибка: пользователь не авторизован");
+      return;
+    }
+
+    setIsLoading(true);
+    setMessage("");
+
+    try {
+      await axios.post("http://localhost:3001/search-queries", {
+        user_id: Number(userId),
+        query_text: query,
+      });
+      setMessage(`Запрос "${query}" успешно сохранён`);
+    } catch (err: any) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <Layout>
       <div className="search-page-content">
         <div className="ai-status-badge">
           <i className="fa fa-sparkles"></i>
-          <span>AI-powered поиск по архивам</span>
+          <span>Ai-powered поиск по архивам</span>
         </div>
 
         <div className="hero-section">
           <h1 className="hero-title">Найдите любой документ за секунды</h1>
-          <p className="hero-subtitle">
-            Задавайте вопросы на естественном языке и получайте точные ответы с цитатами
-          </p>
+          <p className="hero-subtitle">Введите запрос и получите точные результаты</p>
         </div>
 
         <div className="ai-search-container">
-          <div className="ai-search-box">
+          <form onSubmit={handleSearch} className="ai-search-box">
             <i className="fa fa-search search-icon-main"></i>
-            <input type="text" placeholder="Введите запрос" className="ai-input" />
+            <input
+              type="text"
+              placeholder="Введите запрос"
+              className="ai-input"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              disabled={isLoading}
+            />
             <div className="ai-search-actions">
               <i className="fa fa-microphone mic-icon"></i>
-              <button className="ai-search-btn">
-                Найти <i className="fa fa-arrow-right"></i>
+              <button type="submit" className="ai-search-btn" disabled={isLoading}>
+                {isLoading ? "Поиск..." : "Найти"}
+                <i className="fa fa-arrow-right"></i>
               </button>
             </div>
-          </div>
+          </form>
 
           <div className="query-examples">
             <span className="examples-label">Примеры запросов:</span>
             <div className="chips-container">
-              <span className="chip">Найти договор на ремонт путей за 2019 год</span>
-              <span className="chip">Показать акты с подрядчиком за 2021 год</span>
-              <span className="chip">Какие документы содержат сумму выше 5 млн рублей</span>
+              <Link to='results' className="chip router-link"><span>Найти договор на ремонт путей за 2019 год</span></Link>
+              <Link to='results' className="chip router-link"><span>Показать акты с подрядчиком за 2021 год</span></Link>
+              <Link to='results' className="chip router-link"><span>Какие документы содержат сумму выше 5 млн рублей</span></Link>
             </div>
           </div>
         </div>
@@ -109,6 +148,12 @@ const SearchPage = () => {
             <p>Ответ за 1-2 секунды из миллионов документов</p>
           </div>
         </div>
+
+        {message && (
+          <div style={{ marginTop: "20px", padding: "10px", background: "#e0f7fa", borderRadius: "8px" }}>
+            {message}
+          </div>
+        )}
       </div>
     </Layout>
   );
