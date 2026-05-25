@@ -1,25 +1,28 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from "typeorm";
 
-@Entity({name: 'users', schema: 'solidsearchdb'})
+import { Column, CreateDateColumn, Entity,  JoinColumn,  ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Roles } from "../roles/roles.entity";
+
+@Entity({ name: 'users', schema: 'solidsearchdb' })
 export class Users {
-    @PrimaryGeneratedColumn()
-    id!: number;
+  @PrimaryGeneratedColumn()
+  id!: number;
 
-    @Column({ nullable: true })
-    full_name!: string;
+  @Column({ nullable: true })
+  full_name!: string;
 
-    @Column({ unique: true, nullable: true })
-    email!: string;
+  @Column({ unique: true, nullable: true })
+  email!: string;
 
-    @Column({ nullable: true })
-    password_hash!: string;
+  @Column({ nullable: true })
+  password_hash!: string;
 
-    @Column({ nullable: true })
-    role_id!: number;
+  @ManyToOne(() => Roles, (role) => role.users)
+  @JoinColumn({ name: 'role_id' }) // указываем, какой столбец БД отвечает за связь
+  role!: Roles; // свойство-сущность
 
-    @Column({ nullable: true })
-    status!: string;
+  @Column({ nullable: true })
+  status!: string;
 
-    @CreateDateColumn( { type: "timestamp", name: "created_at" } )
-    created_at!: Date;
+  @CreateDateColumn({ type: "timestamp", name: "created_at" })
+  created_at!: Date;
 }

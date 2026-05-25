@@ -9,6 +9,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { AiModule } from './modules/ai/ai.module';
 import { HistoryModule } from './modules/history/history.module';
 import { SearchQueriesModule } from './models/search_queries/search-queries.module';
+import { UsersModule } from './models/users/users.module';
 
 @Module({
   imports: [
@@ -38,7 +39,8 @@ import { SearchQueriesModule } from './models/search_queries/search-queries.modu
     HistoryModule,
     DocumentsModule,
     AiModule,
-    SearchQueriesModule
+    SearchQueriesModule,
+    UsersModule
   ],
   controllers: [AppController],
   providers: [AppService],
