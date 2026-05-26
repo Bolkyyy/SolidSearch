@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Layout from "../../components/Layout/Layout";
 import { fetchDashboardData, DashboardData } from "@/api/dashboard";
-import "./CollectionPage.css";
 const CollectionPage = () => {
   const [data, setData] = useState<DashboardData | null>(null);
   
