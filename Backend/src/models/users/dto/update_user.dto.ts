@@ -1,6 +1,6 @@
 import { IsEmail, IsString, Length } from "class-validator";
 
-export class CreateUserDto {
+export class UpdateUserDto {
     @IsString()
     @Length(2, 100)
     full_name: string;

@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { Users } from '../../models/users/users.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { hash, verify } from 'argon2';
 
 @Injectable()
 export class AuthService {
@@ -21,7 +22,7 @@ export class AuthService {
       throw new UnauthorizedException('Неверный email');
     }
 
-    if (user.password_hash !== password) {
+    if (!await verify(user.password_hash, password)) {
       throw new UnauthorizedException('Неверный пароль');
     }
 
