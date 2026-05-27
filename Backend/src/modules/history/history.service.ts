@@ -6,22 +6,28 @@ import { SearchQueries } from './entities/search_queries.entity';
 
 @Injectable()
 export class HistoryService {
+  private recentKeys = new Map<string, number>();
+
   constructor(
     @InjectRepository(SearchQueries)
     private readonly searchQueriesRepository: Repository<SearchQueries>,
   ) {}
-  
+
   async create(dto: CreateHistoryDto) {
-    if (dto.user_id && dto.query_text) {
-      const recent = await this.searchQueriesRepository.findOne({
-        where: {
-          user_id: dto.user_id,
-          query_text: dto.query_text,
-          created_at: MoreThan(new Date(Date.now() - 10_000)),
-        },
-      });
-      if (recent) return recent;
+    const dedupeKey = `${dto.user_id}:${dto.query_text}`;
+    const now = Date.now();
+    const last = this.recentKeys.get(dedupeKey);
+    if (last && now - last < 10_000) {
+      return null;
     }
+    this.recentKeys.set(dedupeKey, now);
+
+    if (this.recentKeys.size > 500) {
+      for (const [k, t] of this.recentKeys) {
+        if (now - t > 30_000) this.recentKeys.delete(k);
+      }
+    }
+
     const post = this.searchQueriesRepository.create(dto);
     return this.searchQueriesRepository.save(post);
   }

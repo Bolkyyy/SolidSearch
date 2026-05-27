@@ -266,30 +266,88 @@ export class DocumentService {
     return { message: `Извлечение запущено для ${files.length} файлов` };
   }
 
+  private transliterate(word: string): string | null {
+    const map: Record<string, string> = {
+      'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'yo','ж':'zh',
+      'з':'z','и':'i','й':'y','к':'k','л':'l','м':'m','н':'n','о':'o',
+      'п':'p','р':'r','с':'s','т':'t','у':'u','ф':'f','х':'kh','ц':'ts',
+      'ч':'ch','ш':'sh','щ':'sch','ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya',
+    };
+    const hasRussian = /[а-яё]/i.test(word);
+    if (!hasRussian) return null;
+    return word.toLowerCase().split('').map((c) => map[c] ?? c).join('');
+  }
+
+  private getSynonyms(word: string): string[] {
+    const groups = [
+      ['квиз','викторина','тест','опрос','quiz'],
+      ['договор','контракт','соглашение'],
+      ['задача','задачи','задание','план','todo'],
+      ['архив','хранилище','repository'],
+      ['поиск','search','найти','искать'],
+      ['лазер','лазеры','laser'],
+      ['криминалистика','экспертиза','forensic'],
+      ['казак','казаки','казачий','казачьи','казачье'],
+      ['формула','формулы','уравнение'],
+      ['физика','physics'],
+      ['распределение','distribution'],
+      ['интеграция','integration','внедрение'],
+    ];
+    const result: string[] = [];
+    for (const group of groups) {
+      if (group.some((w) => word.startsWith(w.slice(0, Math.min(w.length, 4))) || w.startsWith(word.slice(0, 4)))) {
+        result.push(...group.filter((w) => w !== word));
+      }
+    }
+    return result;
+  }
+
   async searchDocuments(query: string): Promise<Documents[]> {
     const stopWords = new Set([
       'найди','найти','покажи','документ','документы','файл','файлы',
       'про','для','все','мне','нужно','хочу','где','как','что','это',
       'такое','какие','который','которые','нужен','можно','есть',
     ]);
-    const words = query
+    const baseWords = query
       .toLowerCase()
       .replace(/[^\wа-яё\s]/gi, ' ')
       .split(/\s+/)
       .filter((w) => w.length > 2 && !stopWords.has(w));
 
+    if (baseWords.length === 0) return [];
+
+    const searchWords: string[] = [];
+
+    for (const w of baseWords) {
+      searchWords.push(w);
+      const synonyms = this.getSynonyms(w);
+      for (const s of synonyms) searchWords.push(s);
+      const stem = w.replace(/(ую|ой|ый|ий|ая|яя|ое|ее|ом|ем|ых|их|ам|ям|ов|ев|ах|ях|ей|ью|ю|у|а|я|о|е|и|ы)$/i, '');
+      if (stem.length > 3 && stem !== w) searchWords.push(stem);
+      const translit = this.transliterate(w);
+      if (translit) searchWords.push(translit);
+      if (stem.length > 3) {
+        const transStem = this.transliterate(stem);
+        if (transStem) searchWords.push(transStem);
+      }
+    }
+
+    const words = [...new Set(searchWords)];
     if (words.length === 0) return [];
 
-    const params = Object.fromEntries(words.map((w, i) => [`w${i}`, `%${w}%`]));
+    const params: Record<string, string> = {};
+    words.forEach((w, i) => { params[`w${i}`] = `%${w}%`; });
+
     const titleConds = words.map((_, i) => `LOWER(doc.title) LIKE :w${i}`).join(' OR ');
     const fileNameConds = words.map((_, i) => `LOWER(f.file_name) LIKE :w${i}`).join(' OR ');
-    const fullTextConds = words.map((_, i) => `LOWER(f.extracted_text) LIKE :w${i}`).join(' OR ');
     const summConds = words.map((_, i) => `LOWER(f.normalized_text) LIKE :w${i}`).join(' OR ');
+
+    const where = `(${titleConds}) OR (${fileNameConds}) OR (${summConds})`;
 
     return await this.documentsRepository
       .createQueryBuilder('doc')
       .leftJoinAndSelect('doc.files', 'f')
-      .where(`(${titleConds}) OR (${fileNameConds}) OR (${fullTextConds}) OR (${summConds})`)
+      .where(where)
       .setParameters(params)
       .orderBy('doc.created_at', 'DESC')
       .limit(20)

@@ -96,7 +96,10 @@ const DocumentCard = () => {
           onClick={() => {
             if (docNavState?.returnQuery) {
               navigate("/search/results", {
-                state: { query: docNavState.returnQuery, userId: docNavState.returnUserId ?? 0 },
+                state: {
+                  query: docNavState.returnQuery,
+                  userId: docNavState.returnUserId ?? 0,
+                },
               });
             } else {
               navigate(-1);
@@ -120,27 +123,32 @@ const DocumentCard = () => {
         <div className="document-tabs">
           <button
             className={`tab-btn ${activeTab === "overview" ? "active" : ""}`}
-            onClick={() => setActiveTab("overview")}>
+            onClick={() => setActiveTab("overview")}
+          >
             Обзор
           </button>
           <button
             className={`tab-btn ${activeTab === "fragments" ? "active" : ""}`}
-            onClick={() => setActiveTab("fragments")}>
+            onClick={() => setActiveTab("fragments")}
+          >
             Фрагменты
           </button>
           <button
             className={`tab-btn ${activeTab === "fulltext" ? "active" : ""}`}
-            onClick={() => setActiveTab("fulltext")}>
+            onClick={() => setActiveTab("fulltext")}
+          >
             Полный текст
           </button>
           <button
             className={`tab-btn ${activeTab === "metadata" ? "active" : ""}`}
-            onClick={() => setActiveTab("metadata")}>
+            onClick={() => setActiveTab("metadata")}
+          >
             Метаданные
           </button>
           <button
             className={`tab-btn ${activeTab === "history" ? "active" : ""}`}
-            onClick={() => setActiveTab("history")}>
+            onClick={() => setActiveTab("history")}
+          >
             История
           </button>
 
@@ -175,10 +183,10 @@ const DocumentCard = () => {
                           <div className="overview-section">
                             <h3>Описание договора</h3>
                             <p>
-                              Договор на выполнение работ по капитальному ремонту
-                              железнодорожных путей участка км 15-25 общей
-                              протяженностью 10 км, заключенный между заказчиком и
-                              ООО "СтройПуть".
+                              Договор на выполнение работ по капитальному
+                              ремонту железнодорожных путей участка км 15-25
+                              общей протяженностью 10 км, заключенный между
+                              заказчиком и ООО "СтройПуть".
                             </p>
                           </div>
 
@@ -194,9 +202,9 @@ const DocumentCard = () => {
                           <div className="overview-section">
                             <h3>Выполнение работ</h3>
                             <p>
-                              Все работы выполнены в полном объеме и в соответствии
-                              с техническим заданием. Подписан акт приемки №128-2019
-                              от 20.08.2019.
+                              Все работы выполнены в полном объеме и в
+                              соответствии с техническим заданием. Подписан акт
+                              приемки №128-2019 от 20.08.2019.
                             </p>
                           </div>
                         </>
@@ -313,7 +321,7 @@ const DocumentCard = () => {
                         {documentData?.language || "Неизвестно"}
                       </span>
                     </div>
-                    <div className="metadata-item">
+                    {/* <div className="metadata-item">
                       <span className="metadata-label">
                         Последнее изменение
                       </span>
@@ -326,7 +334,7 @@ const DocumentCard = () => {
                       <span className="metadata-value">
                         text-embedding-ada-002 - мок
                       </span>
-                    </div>
+                    </div> */}
                   </div>
                 </div>
               )}
@@ -398,7 +406,7 @@ const DocumentCard = () => {
                       {formatDateOnly(documentData.document_date)}
                     </span>
                   </div>
-                  <div className="info-row">
+                  {/* <div className="info-row">
                     <span className="info-label">Номер:</span>
                     <span className="info-value">
                       {documentData.archive_number || "Неизвестно"}
@@ -421,7 +429,7 @@ const DocumentCard = () => {
                     <span className="info-value">
                       {documentData.author_name || "Нет информации"}
                     </span>
-                  </div>
+                  </div> */}
                 </div>
               </div>
             )}

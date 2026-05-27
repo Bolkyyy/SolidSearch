@@ -71,38 +71,55 @@ export class AiService {
     return { client: new OpenAI({ apiKey, baseURL, timeout: 30_000 }), model, provider };
   }
 
-  private async extractKeywords(client: OpenAI, model: string, query: string): Promise<string> {
-    try {
-      const response = await client.chat.completions.create({
-        model,
-        max_tokens: 100,
-        temperature: 0,
-        messages: [
-          {
-            role: 'system',
-            content: `Извлеки ключевые слова из поискового запроса пользователя для поиска в архиве документов.
-                      Правила:
-                      1. Исправь ВСЕ опечатки и ошибки
-                      2. Убери мусорные слова: найди, найти, покажи, документ, документы, файл, файлы, про, для, все, мне, нужно, хочу, где, как, что, это, такое
-                      3. Оставь ТОЛЬКО значимые слова (названия, термины, имена, даты)
-                      4. Добавь синонимы и близкие по смыслу слова для каждого ключевого термина
-                      5. Отвечай ТОЛЬКО словами через пробел, без кавычек и пояснений
 
-                      Примеры:
-                      "Найди документы про интеллекутальный ахрив" → интеллектуальный архив
-                      "покажи все файлы genki workbok" → genki workbook
-                      "дагавор на ремонт путй за 2019" → договор ремонт пути 2019
-                      "квиз про казаков" → квиз викторина тест казаки казачьи
-                      "лазеры в криминалистике" → лазеры криминалистика криминалистике
-                      "распределение задач команда" → распределение задачи команда участники`,
-          },
-          { role: 'user', content: query },
-        ],
-      });
-      return response.choices[0].message.content?.trim() || query;
-    } catch {
-      return query;
-    }
+  private async aiSelectDocuments(
+    client: OpenAI, model: string, query: string, allDocs: Documents[],
+  ): Promise<Documents[]> {
+    const docList = allDocs
+      .map((d) => {
+        const summary = d.files?.[0]?.normalized_text?.slice(0, 400) || '';
+        const text = d.files?.[0]?.extracted_text?.slice(0, 300) || '';
+        const content = summary || text || '(содержимое недоступно)';
+        return `ID:${d.id} | ${d.title} | ${content.slice(0, 200)}`;
+      })
+      .join('\n');
+
+    const response = await client.chat.completions.create({
+      model,
+      max_tokens: 200,
+      temperature: 0.3,
+      messages: [
+        {
+          role: 'user',
+          content: `Ты ищешь документы в архиве по запросу пользователя.
+
+Запрос: "${query}"
+
+Список документов:
+${docList}
+
+Инструкция:
+- Выбери ВСЕ документы которые хоть как-то связаны с запросом
+- Обязательно учитывай СИНОНИМЫ: квиз=викторина=тест, договор=контракт, задачи=задания=план
+- Если запрос на одном языке а документ на другом — это тоже совпадение
+- Лучше выбрать лишний документ чем пропустить нужный
+- Ответь ТОЛЬКО числами ID через запятую
+- Пиши "none" только если запрос совсем не связан ни с одним документом (например запрос про погоду а документы про ремонт)
+
+Твой ответ (только ID):`,
+        },
+      ],
+    });
+
+    const raw = response.choices[0].message.content?.trim() || 'none';
+    console.log('[AI-SELECT] Response:', raw.slice(0, 100));
+
+    if (raw.toLowerCase() === 'none') return [];
+    const validIds = new Set(allDocs.map((d) => d.id));
+    const matches = raw.match(/\d+/g);
+    if (!matches) return [];
+    const ids = matches.map(Number).filter((id) => validIds.has(id));
+    return this.documentService.findByIds(ids);
   }
 
   async streamAnswer(query: string, userId: number | undefined, res: Response): Promise<void> {
@@ -115,16 +132,24 @@ export class AiService {
       const { client, model, provider } = await this.getClient();
 
       send({ type: 'searching' });
-
       console.log('[SEARCH] Query:', query);
-      const corrected = await this.extractKeywords(client, model, query);
-      console.log('[SEARCH] Corrected keywords:', corrected);
 
-      let documents = await this.documentService.searchDocuments(corrected);
+      // Шаг 1: быстрый поиск по БД (стоп-слова + транслитерация + стемминг)
+      let documents = await this.documentService.searchDocuments(query);
 
-      if (documents.length === 0 && corrected.toLowerCase() !== query.toLowerCase()) {
-        console.log('[SEARCH] No results with corrected, trying original query');
-        documents = await this.documentService.searchDocuments(query);
+      console.log('[SEARCH] DB found', documents.length, 'documents');
+
+      // Шаг 2: если БД нашла мало — AI дополняет поиск среди всех документов
+      if (documents.length <= 1) {
+        console.log('[SEARCH] Few results, running AI selection to find more');
+        const allDocs = await this.documentService.findall();
+        if (allDocs.length > 0) {
+          const aiDocs = await this.aiSelectDocuments(client, model, query, allDocs);
+          const existingIds = new Set(documents.map((d) => d.id));
+          for (const doc of aiDocs) {
+            if (!existingIds.has(doc.id)) documents.push(doc);
+          }
+        }
       }
 
       console.log('[SEARCH] Found', documents.length, 'documents');
@@ -149,6 +174,7 @@ export class AiService {
         return;
       }
 
+      // Шаг 3: AI генерирует ответ по найденным документам
       const context = this.buildDocumentContext(documents);
       const stream = await client.chat.completions.create({
         model,

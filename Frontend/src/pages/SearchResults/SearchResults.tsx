@@ -16,14 +16,14 @@ interface CachedResult {
 
 type CacheMap = Record<string, CachedResult>;
 
-const cacheKey = (q: string) => q.toLowerCase().trim();
+const buildCacheKey = (q: string, uid: number) => `${uid}:${q.toLowerCase().trim()}`;
 
-const readCache = (query: string): CachedResult | null => {
+const readCache = (query: string, userId: number): CachedResult | null => {
   try {
     const raw = sessionStorage.getItem(CACHE_KEY);
     if (!raw) return null;
     const map: CacheMap = JSON.parse(raw);
-    return map[cacheKey(query)] ?? null;
+    return map[buildCacheKey(query, userId)] ?? null;
   } catch {}
   return null;
 };
@@ -32,7 +32,7 @@ const saveCache = (data: CachedResult) => {
   try {
     const raw = sessionStorage.getItem(CACHE_KEY);
     const map: CacheMap = raw ? JSON.parse(raw) : {};
-    map[cacheKey(data.query)] = data;
+    map[buildCacheKey(data.query, data.userId)] = data;
     const keys = Object.keys(map);
     if (keys.length > MAX_CACHE_ENTRIES) {
       keys.slice(0, keys.length - MAX_CACHE_ENTRIES).forEach((k) => delete map[k]);
@@ -60,25 +60,15 @@ const DocCard = ({ doc, query, userId }: { doc: SearchDocument; query: string; u
     </div>
     <div className="doc-card-meta">
       {doc.document_type || "Документ"}&nbsp;•&nbsp;
-      {formatDate(doc.document_date)}&nbsp;•&nbsp;
-      {doc.archive_number || "б/н"}
+      {formatDate(doc.document_date)}&nbsp;
     </div>
     <p className="doc-card-desc">{getDocDescription(doc)}</p>
-    <div className="doc-card-tags">
-      {doc.author_name && <span className="doc-tag">Автор: {doc.author_name}</span>}
-      {doc.status && <span className="doc-tag">Статус: {doc.status}</span>}
-      {doc.language && <span className="doc-tag">Язык: {doc.language.toUpperCase()}</span>}
-    </div>
     <div className="doc-card-actions">
       <Link to={`/document/${doc.id}`} state={{ returnQuery: query, returnUserId: userId }} className="router-link">
         <button className="btn-open">
           <i className="fa fa-external-link" aria-hidden="true"></i> Открыть
         </button>
       </Link>
-      <button className="doc-action-btn">Показать фрагмент</button>
-      <button className="doc-action-btn">
-        <i className="fa fa-plus" aria-hidden="true"></i> Добавить в сравнение
-      </button>
     </div>
   </div>
 );
@@ -108,7 +98,7 @@ const SearchResults = () => {
   const query: string = navState?.query ?? "";
   const userId: number = navState?.userId ?? 0;
 
-  const initialCache = query ? readCache(query) : null;
+  const initialCache = query ? readCache(query, userId) : null;
 
   const [documents, setDocuments] = useState<SearchDocument[]>(initialCache?.documents ?? []);
   const [answer, setAnswer] = useState<string>(initialCache?.answer ?? "");
@@ -213,7 +203,7 @@ const SearchResults = () => {
               <div className="ai-answer-header">
                 <span className="ai-answer-icon"><i className="fas fa-robot"></i></span>
                 <span className="ai-answer-label">
-                  {searching ? "DeepSeek ищет релевантные документы…" : "Загрузка…"}
+                  {searching ? "Идет поиск документов…" : "Загрузка…"}
                 </span>
               </div>
               <p className="ai-answer-text"><i className="fa fa-spinner fa-spin"></i></p>
@@ -224,7 +214,7 @@ const SearchResults = () => {
             <div className="ai-answer-block">
               <div className="ai-answer-header">
                 <span className="ai-answer-icon"><i className="fas fa-robot"></i></span>
-                <span className="ai-answer-label">DeepSeek формулирует ответ…</span>
+                <span className="ai-answer-label">Формулируется ответ…</span>
               </div>
               <p className="ai-answer-text"><i className="fa fa-spinner fa-spin"></i></p>
             </div>
