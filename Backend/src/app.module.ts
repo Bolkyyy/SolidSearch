@@ -9,6 +9,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { AiModule } from './modules/ai/ai.module';
 import { HistoryModule } from './modules/history/history.module';
 import { SearchQueriesModule } from './models/search_queries/search-queries.module';
+import { UsersModule } from './models/users/users.module';
 
 @Module({
   imports: [
@@ -25,7 +26,19 @@ import { SearchQueriesModule } from './models/search_queries/search-queries.modu
         synchronize: false,
         ssl: true,
         logging: true,
+        retryAttempts: 10,
+        retryDelay: 3000,
         extra: {
+          keepAlive: true,
+          keepalives: 1,
+          keepalives_idle: 10,
+          keepalives_interval: 5,
+          keepalives_count: 3,
+          max: 5,
+          min: 0,
+          idleTimeoutMillis: 5000,
+          connectionTimeoutMillis: 15000,
+          allowExitOnIdle: true,
           ssl: {
             rejectUnauthorized: false,
           },
@@ -38,7 +51,8 @@ import { SearchQueriesModule } from './models/search_queries/search-queries.modu
     HistoryModule,
     DocumentsModule,
     AiModule,
-    SearchQueriesModule
+    SearchQueriesModule,
+    UsersModule
   ],
   controllers: [AppController],
   providers: [AppService],

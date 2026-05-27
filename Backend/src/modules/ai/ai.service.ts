@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import OpenAI from 'openai';
 import { Repository } from 'typeorm';
+import { Response } from 'express';
 import { AiSettings } from './entity/ai-settings.entity';
 import { AiAnswers } from './entity/ai-answer.entity';
 import { UpdateAiSettingsDto } from './dto/update-aiSettings.dto';
@@ -9,13 +10,6 @@ import { HistoryService } from '../history/history.service';
 import { DocumentService } from '../../models/documents/documents.service';
 import { Documents } from '../../models/documents/documents.entity';
 import { encrypt, decrypt } from './Encryption/crypto';
-
-export interface AiProvider {
-  code: string;
-  name: string;
-  base_url: string;
-  models: string[];
-}
 
 @Injectable()
 export class AiService {
@@ -30,8 +24,6 @@ export class AiService {
     private readonly historyService: HistoryService,
   ) {}
 
-  // Настройки AI ------------------------ 1 
-
   async getAiSettings(): Promise<AiSettings[]> {
     return await this.aiRepository.find();
   }
@@ -43,148 +35,189 @@ export class AiService {
     return await this.aiRepository.update(1, dto);
   }
 
-  // Провайдеры AI ------------------------ 2
-
   async getAiProviders() {
     return await this.aiRepository.find({
       select: ['provider_code', 'model_name'],
     });
   }
 
-  // Получение ответа по id ------------------------ 3 
-
   async getAnswer(id: number) {
     return await this.aiAnswerRepository.find({ where: { answer_id: +id } });
   }
-
-  // Нормализация запроса 
 
   private normalizeQuery(query: string): string {
     return query.toLowerCase().trim().replace(/\s+/g, ' ');
   }
 
-  // Кэш
-
-  private async findCachedAnswer(normalizedQuery: string): Promise<AiAnswers | null> {
-    const existing = await this.historyService.findByQueryText(normalizedQuery);
-    if (!existing) return null;
-
-    return await this.aiAnswerRepository.findOne({
-      where: { query_id: existing.id },
-      order: { created_at: 'DESC' },
-    });
-  }
-
-  // Форматирование документов для промпта
-
   private buildDocumentContext(documents: Documents[]): string {
-    if (documents.length === 0) {
-      return 'Документы по данному запросу не найдены в архиве.';
-    }
-
     return documents
-      .map(
-        (doc, i) =>
-          `[Документ ${i + 1}]
-           ID: ${doc.id}
-           Название: ${doc.title}
-           Тип: ${doc.document_type}
-           Автор: ${doc.author_name}
-           Дата: ${doc.document_date}
-           Номер архива: ${doc.archive_number}
-           Статус: ${doc.status}`,
-      )
-      .join('\n\n');
+      .map((doc, i) => {
+        const summary = doc.files?.[0]?.normalized_text?.slice(0, 800) || '';
+        const text = doc.files?.[0]?.extracted_text?.slice(0, 600) || '';
+        const content = summary || text || '(содержимое недоступно)';
+        return `[Документ ${i + 1}] ID: ${doc.id}\nНазвание: ${doc.title}\nТип: ${doc.document_type || '—'} | Автор: ${doc.author_name || '—'} | Дата: ${doc.document_date || '—'}\nСодержание: ${content}`;
+      })
+      .join('\n\n---\n\n');
   }
 
-  // Дешифровка API-ключа из БД
+  private async getClient(): Promise<{ client: OpenAI; model: string; provider: string }> {
+    const settings = await this.aiRepository.findOne({ where: { id: 1 } });
+    const rawKey = settings?.api_key || process.env.AI_API_KEY || '';
+    let apiKey = rawKey;
+    try { apiKey = decrypt(rawKey); } catch {}
+    const model = settings?.model_name || 'deepseek-chat';
+    const baseURL = settings?.base_url || 'https://api.deepseek.com/v1';
+    const provider = settings?.provider_code || 'deepseek';
+    return { client: new OpenAI({ apiKey, baseURL, timeout: 30_000 }), model, provider };
+  }
 
-  private decryptApiKey(encryptedKey: string): string {
+  private async extractKeywords(client: OpenAI, model: string, query: string): Promise<string> {
     try {
-      return decrypt(encryptedKey);
-    } catch (e) {
-      console.error('[AI] Ошибка дешифровки API-ключа:', e);
-      return encryptedKey;
+      const response = await client.chat.completions.create({
+        model,
+        max_tokens: 100,
+        temperature: 0,
+        messages: [
+          {
+            role: 'system',
+            content: `Извлеки ключевые слова из поискового запроса пользователя для поиска в архиве документов.
+                      Правила:
+                      1. Исправь ВСЕ опечатки и ошибки
+                      2. Убери мусорные слова: найди, найти, покажи, документ, документы, файл, файлы, про, для, все, мне, нужно, хочу, где, как, что, это, такое
+                      3. Оставь ТОЛЬКО значимые слова (названия, термины, имена, даты)
+                      4. Добавь синонимы и близкие по смыслу слова для каждого ключевого термина
+                      5. Отвечай ТОЛЬКО словами через пробел, без кавычек и пояснений
+
+                      Примеры:
+                      "Найди документы про интеллекутальный ахрив" → интеллектуальный архив
+                      "покажи все файлы genki workbok" → genki workbook
+                      "дагавор на ремонт путй за 2019" → договор ремонт пути 2019
+                      "квиз про казаков" → квиз викторина тест казаки казачьи
+                      "лазеры в криминалистике" → лазеры криминалистика криминалистике
+                      "распределение задач команда" → распределение задачи команда участники`,
+          },
+          { role: 'user', content: query },
+        ],
+      });
+      return response.choices[0].message.content?.trim() || query;
+    } catch {
+      return query;
     }
   }
 
-  // Основной пайплайн 
+  async streamAnswer(query: string, userId: number | undefined, res: Response): Promise<void> {
+    const send = (data: object) => {
+      res.write(`data: ${JSON.stringify(data)}\n\n`);
+      if (typeof (res as any).flush === 'function') (res as any).flush();
+    };
+
+    try {
+      const { client, model, provider } = await this.getClient();
+
+      send({ type: 'searching' });
+
+      console.log('[SEARCH] Query:', query);
+      const corrected = await this.extractKeywords(client, model, query);
+      console.log('[SEARCH] Corrected keywords:', corrected);
+
+      let documents = await this.documentService.searchDocuments(corrected);
+
+      if (documents.length === 0 && corrected.toLowerCase() !== query.toLowerCase()) {
+        console.log('[SEARCH] No results with corrected, trying original query');
+        documents = await this.documentService.searchDocuments(query);
+      }
+
+      console.log('[SEARCH] Found', documents.length, 'documents');
+      send({ type: 'documents', documents });
+
+      let savedQuery: any = null;
+      try {
+        savedQuery = await this.historyService.create({
+          user_id: userId,
+          query_text: query,
+          query_type: 'ai',
+          status: documents.length > 0 ? 'success' : 'not_found',
+          result_count: documents.length,
+        });
+      } catch (dbErr) {
+        console.error('[HISTORY SAVE ERROR]', dbErr);
+      }
+
+      if (documents.length === 0) {
+        send({ type: 'done' });
+        res.end();
+        return;
+      }
+
+      const context = this.buildDocumentContext(documents);
+      const stream = await client.chat.completions.create({
+        model,
+        stream: true,
+        max_tokens: 1200,
+        messages: [
+          {
+            role: 'system',
+            content: `Ты — помощник интеллектуального архива. Опирайся ТОЛЬКО на документы ниже. Дай чёткий, структурированный ответ. Отвечай на языке запроса.`,
+          },
+          {
+            role: 'user',
+            content: `Запрос: "${query}"\n\nДокументы:\n${context}`,
+          },
+        ],
+      });
+
+      let fullAnswer = '';
+      for await (const chunk of stream) {
+        const token = chunk.choices[0]?.delta?.content || '';
+        if (token) {
+          fullAnswer += token;
+          send({ type: 'token', token });
+        }
+      }
+
+      if (fullAnswer && savedQuery?.id) {
+        try {
+          await this.aiAnswerRepository.save({
+            query_id: savedQuery.id,
+            answer_text: fullAnswer,
+            provider_code: provider,
+            model_name: model,
+            confidence_score: 1.0,
+          });
+        } catch (dbErr) {
+          console.error('[ANSWER SAVE ERROR]', dbErr);
+        }
+      }
+
+      send({ type: 'done' });
+    } catch (e: any) {
+      console.error('[STREAM ERROR]', e.message, e.status || '', e.code || '');
+      send({ type: 'error', message: e.message });
+    }
+
+    res.end();
+  }
 
   async generateAnswer(
     query: string,
     userId?: number,
-  ): Promise<{ answer: string; fromCache: boolean; documentIds: number[] }> {
-
-    // 1. Нормализация и проверка кэша
+  ): Promise<{ answer: string; fromCache: boolean; documentIds: number[]; documents: Documents[] }> {
     const normalized = this.normalizeQuery(query);
-    const cached = await this.findCachedAnswer(normalized);
-    if (cached) {
-      console.log(`[AI] Кэш найден: "${query}"`);
-      return {
-        answer: cached.answer_text,
-        fromCache: true,
-        documentIds: cached.citation_document_id ? [cached.citation_document_id] : [],
-      };
-    }
+    const documents = await this.documentService.searchDocuments(query);
 
-    // 2. Сохранение запроса в search_queries
-    const savedQuery = await this.historyService.create({
+    await this.historyService.create({
       user_id: userId,
       query_text: normalized,
       query_type: 'ai',
+      status: documents.length > 0 ? 'success' : 'not_found',
+      result_count: documents.length,
     });
 
-    // 3. Поиск документов в БД
-    const documents = await this.documentService.searchDocuments(query);
-    
-    // 4. Формирование контекста для AI
-    const documentContext = this.buildDocumentContext(documents);
-      console.log(`[AI] Запрос: "${query}"`);
-      console.log(`[AI] Найдено документов: ${documents.length}`);
-      console.log(`[AI] Контекст:\n${documentContext}`);  
-    // 5. Загрузка настроек и дешифровка ключа
-    const settings = await this.aiRepository.findOne({ where: { id: 1 } });
-    const rawKey = settings?.api_key || process.env.AI_API_KEY || '';
-    const apiKey = settings?.api_key ? this.decryptApiKey(rawKey) : rawKey;
-    const model = settings?.model_name || 'deepseek-chat';
-    const baseURL = settings?.base_url || 'https://api.deepseek.com/v1';
-
-    const client = new OpenAI({ apiKey, baseURL });
-
-    // 6. Запрос к AI с контекстом документов
-    const response = await client.chat.completions.create({
-      model,
-      messages: [
-        {
-          role: 'system',
-          content: `Ты — умный помощник интеллектуального архива документов.
-                  - Опирайся ТОЛЬКО на документы из архива ниже
-                  - Давай чёткий, связный и короткий ответ
-                  - Укажи название и ID ВСЕХ документов подтверждающих ответ
-                  - Если документов нет — скажи "Таких документов нет"
-                  - Отвечай на том же языке что и запрос`,
-        },
-        {
-          role: 'user',
-          content: `Запрос: "${query}"\n\nДокументы:\n${documentContext}`,
-        },
-      ],
-    });
-
-    const answerText = response.choices[0].message.content || '';
-    const documentIds = documents.map(d => d.id);
-
-    // 7. Сохранение ответа с метаданными цитирования
-    await this.aiAnswerRepository.save({
-      query_id: savedQuery.id,
-      answer_text: answerText,
-      provider_code: settings?.provider_code || 'deepseek',
-      model_name: model,
-      confidence_score: 0.9,
-      citation_document_id: documents[0]?.id ?? null,
-      citation_fragment: documents[0]?.title ?? '',
-    });
-
-    return { answer: answerText, fromCache: false, documentIds };
+    return {
+      answer: '',
+      fromCache: false,
+      documentIds: documents.map((d) => d.id),
+      documents,
+    };
   }
 }

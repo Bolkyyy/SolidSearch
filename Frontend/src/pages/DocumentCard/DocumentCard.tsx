@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import Layout from "../../components/Layout/Layout";
-import { Link, useParams } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Document, DocumentsApi } from "@/api/documentsApi";
 
 const DocumentCard = () => {
@@ -11,6 +11,10 @@ const DocumentCard = () => {
   // const meta = documentData?.metadata?.[0];
 
   const [notFound, setNotFound] = useState(false);
+
+  const navigate = useNavigate();
+  const location = useLocation();
+  const docNavState = location.state as { returnQuery?: string; returnUserId?: number } | null;
 
   const params = useParams();
   const documentId = params.id;
@@ -60,11 +64,20 @@ const DocumentCard = () => {
     return (
       <Layout>
         <div className="document-card-page">
-          <Link to="/search/results" className="router-link">
-            <div className="back-button">
-              <i className="fa fa-arrow-left"></i> Назад к результатам
-            </div>
-          </Link>
+          <button
+            className="back-button"
+            onClick={() => {
+              if (docNavState?.returnQuery) {
+                navigate("/search/results", {
+                  state: { query: docNavState.returnQuery, userId: docNavState.returnUserId ?? 0 },
+                });
+              } else {
+                navigate(-1);
+              }
+            }}
+          >
+            <i className="fa fa-arrow-left"></i> Назад к результатам
+          </button>
           <div style={{ textAlign: "center", marginTop: "4rem" }}>
             <h2>Документ не найден</h2>
             <p>
@@ -79,12 +92,20 @@ const DocumentCard = () => {
   return (
     <Layout>
       <div className="document-card-page">
-        {/* Кнопка назад */}
-        <Link to="/search/results" className="router-link">
-          <div className="back-button">
-            <i className="fa fa-arrow-left"></i> Назад к результатам
-          </div>
-        </Link>
+        <button
+          onClick={() => {
+            if (docNavState?.returnQuery) {
+              navigate("/search/results", {
+                state: { query: docNavState.returnQuery, userId: docNavState.returnUserId ?? 0 },
+              });
+            } else {
+              navigate(-1);
+            }
+          }}
+          className="back-button"
+        >
+          <i className="fa fa-arrow-left"></i> Назад к результатам поиска
+        </button>
 
         {/* Заголовок документа */}
         <div className="document-header">
@@ -99,32 +120,27 @@ const DocumentCard = () => {
         <div className="document-tabs">
           <button
             className={`tab-btn ${activeTab === "overview" ? "active" : ""}`}
-            onClick={() => setActiveTab("overview")}
-          >
+            onClick={() => setActiveTab("overview")}>
             Обзор
           </button>
           <button
             className={`tab-btn ${activeTab === "fragments" ? "active" : ""}`}
-            onClick={() => setActiveTab("fragments")}
-          >
+            onClick={() => setActiveTab("fragments")}>
             Фрагменты
           </button>
           <button
             className={`tab-btn ${activeTab === "fulltext" ? "active" : ""}`}
-            onClick={() => setActiveTab("fulltext")}
-          >
+            onClick={() => setActiveTab("fulltext")}>
             Полный текст
           </button>
           <button
             className={`tab-btn ${activeTab === "metadata" ? "active" : ""}`}
-            onClick={() => setActiveTab("metadata")}
-          >
+            onClick={() => setActiveTab("metadata")}>
             Метаданные
           </button>
           <button
             className={`tab-btn ${activeTab === "history" ? "active" : ""}`}
-            onClick={() => setActiveTab("history")}
-          >
+            onClick={() => setActiveTab("history")}>
             История
           </button>
 

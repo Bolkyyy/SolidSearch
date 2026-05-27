@@ -129,9 +129,9 @@ const LoginPage = () => {
         <div className="demo-box">
           <strong>Демо-доступ</strong>
           <p></p>
-          <span>Email: demo1@company.ru</span>
+          <span>Email: 1@mail.ru</span>
           <br />
-          <span>Пароль: demo123</span>
+          <span>Пароль: 1234567</span>
         </div>
 
         <hr className="divider" />

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Delete, Param } from '@nestjs/common';
 import { HistoryService } from './history.service';
 import { CreateHistoryDto } from './dto/create-history.dto';
 
@@ -17,7 +17,12 @@ export class HistoryController {
   }
 
   @Get(":user_id")
-  async findAllById(@Param("user_id") user_id: number){
+  async findAllById(@Param("user_id") user_id: number) {
     return this.historyService.findAllById(user_id);
+  }
+
+  @Delete(":user_id")
+  async clearByUserId(@Param("user_id") user_id: number) {
+    return this.historyService.clearByUserId(user_id);
   }
 }

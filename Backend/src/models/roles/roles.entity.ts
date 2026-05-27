@@ -1,6 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { Users } from '../users/users.entity';
 
-@Entity({ name: 'roles', schema: 'solidsearchdb' }) 
+
+@Entity({ name: 'roles', schema: 'solidsearchdb' })
 export class Roles {
   @PrimaryGeneratedColumn()
   id!: number;
@@ -9,5 +11,8 @@ export class Roles {
   name!: string;
 
   @Column()
-  code!: string; // На скрине была именно эта колонка
+  code!: string;
+
+  @OneToMany(() => Users, (user) => user.role)
+  users!: Users[];
 }

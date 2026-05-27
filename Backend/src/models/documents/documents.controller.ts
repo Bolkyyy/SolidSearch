@@ -14,12 +14,6 @@ export class DocumentsController {
         return await this.documentsService.findall();
     }
 
-    @Get(':id')
-    async findbyid(@Param('id', ParseIntPipe) id: number) {
-        return await this.documentsService.findbyid(id);
-    }
-
-    // POST /documents/upload
     @Post('upload')
     @UseInterceptors(FileInterceptor('file', {
         storage: diskStorage({
@@ -51,7 +45,16 @@ export class DocumentsController {
         return await this.documentsService.uploadDocument(file, dto);
     }
 
-    // POST /documents/:id/extract-text
+    @Post('extract-all')
+    async extractAll() {
+        return await this.documentsService.extractAllText();
+    }
+
+    @Get(':id')
+    async findbyid(@Param('id', ParseIntPipe) id: number) {
+        return await this.documentsService.findbyid(id);
+    }
+
     @Post(':id/extract-text')
     async extractText(@Param('id', ParseIntPipe) id: number) {
         return await this.documentsService.extractText(id);

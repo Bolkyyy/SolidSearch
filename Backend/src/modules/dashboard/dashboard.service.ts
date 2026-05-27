@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Documents } from '../../models/documents/documents.entity'; 
+import { Documents } from '../../models/documents/documents.entity';
 import { SearchQueries } from '../history/entities/search_queries.entity';
 import { IndexJobs } from '../../models/index_jobs/index_jobs.entity';
 
@@ -37,33 +37,22 @@ export class DashboardService {
       totalSearch,
       totalSearchToday,
     ] = await Promise.all([
-      // 1. Всего документов
       this.documentsRepository.count(),
-
-      // 2. Документов за сегодня
       this.documentsRepository
         .createQueryBuilder('document')
         .where('document.created_at >= :todayDate', { todayDate })
         .getCount(),
-
-      // 3. Всего проиндексированных документов
       this.indexJobsRepository
         .createQueryBuilder('job')
         .select('COUNT(DISTINCT job.document_id)', 'count')
         .where('job.status = :status', { status: 'completed' })
         .getRawOne<{ count: string }>()
-        .then(res => Number(res?.count)),
-
-      // 4. Завершённых задач индексации за сегодня
+        .then((res) => Number(res?.count ?? 0)),
       this.indexJobsRepository
         .createQueryBuilder('job')
         .where('job.finished_at >= :todayDate', { todayDate })
         .getCount(),
-
-      // 5. Всего поисковых запросов
       this.searchQuerieRepository.count(),
-
-      // 6. Поисковых запросов за сегодня
       this.searchQuerieRepository
         .createQueryBuilder('query')
         .where('query.created_at >= :todayDate', { todayDate })
