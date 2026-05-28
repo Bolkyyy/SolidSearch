@@ -37,6 +37,11 @@ export class AiSettingsController {
     return await this.aiService.getAiSettings();
   }
 
+  @Post('ai')
+  async createAiSettings(@Body() dto: UpdateAiSettingsDto) {
+    return this.aiService.createAiSettings(dto);
+  }
+
   @Put('ai')
   async saveAiSettings(@Body() UpdateAiSettingsDto: UpdateAiSettingsDto) {
     return this.aiService.saveAiSettings(UpdateAiSettingsDto);

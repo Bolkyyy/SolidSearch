@@ -38,4 +38,8 @@ export const usersApi = {
     return response.data;
   },
 
+  updateUser: async (userId: number, userData: CreateUser): Promise<User> => {
+    const response = await axios.put(`http://localhost:3001/users/${userId}`, userData);
+    return response.data;
+  },
 };

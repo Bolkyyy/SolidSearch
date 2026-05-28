@@ -4,7 +4,8 @@ import { Users } from './users.entity';
 import { Repository } from 'typeorm';
 import { CreateUserDto } from './dto/create_user.dto';
 import { Roles } from '../roles/roles.entity';
-
+import { UpdateUserDto } from './dto/update_user.dto';
+import { hash } from 'argon2';
 @Injectable()
 export class UsersService {
 
@@ -29,8 +30,19 @@ export class UsersService {
             throw new NotFoundException(`Role with code ${userData.role} not found`);
         }
         const { password, ...rest } = userData;
-        const newUser = this.usersRepository.create({ ...rest, role, password_hash: password });
+        const newUser = this.usersRepository.create({ ...rest, role, password_hash: await hash(password) });
         const savedUser = await this.usersRepository.save(newUser);
         return savedUser;
+    }
+
+    async updateUser(userId: number, userData: UpdateUserDto): Promise<Users> {
+        const role = await this.roleRepository.findOne({ where: { code: userData.role } });
+        if (!role) {
+            throw new NotFoundException(`Role with code ${userData.role} not found`);
+        }
+
+        const { password, ...rest } = userData;
+        await this.usersRepository.update(userId, { ...rest, role, password_hash: await hash(password) });
+        return;
     }
 }

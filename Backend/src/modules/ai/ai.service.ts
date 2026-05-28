@@ -28,6 +28,13 @@ export class AiService {
     return await this.aiRepository.find();
   }
 
+  async createAiSettings(dto: UpdateAiSettingsDto) {
+    if (dto.api_key) {
+      dto.api_key = encrypt(dto.api_key);
+    }
+    return await this.aiRepository.save(dto);
+  }
+
   async saveAiSettings(dto: UpdateAiSettingsDto) {
     if (dto.api_key) {
       dto.api_key = encrypt(dto.api_key);
