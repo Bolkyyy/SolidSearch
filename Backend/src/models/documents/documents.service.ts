@@ -165,6 +165,26 @@ export class DocumentService {
     }
   }
 
+  // Retry-обёртка для DB-операций (защита от обрывов PgBouncer)
+  private async withRetry<T>(label: string, fn: () => Promise<T>, attempts = 4): Promise<T> {
+    for (let i = 1; i <= attempts; i++) {
+      try {
+        return await fn();
+      } catch (err: any) {
+        const isConn =
+          err?.message?.includes('Connection terminated') ||
+          err?.message?.includes('connection') ||
+          err?.code === 'ECONNRESET' ||
+          err?.code === 'ECONNREFUSED';
+        if (!isConn || i === attempts) throw err;
+        const delay = 600 * i;
+        console.warn(`[RETRY] ${label}: попытка ${i}/${attempts}, повтор через ${delay}мс`);
+        await new Promise(r => setTimeout(r, delay));
+      }
+    }
+    throw new Error(`[RETRY] ${label}: все попытки исчерпаны`);
+  }
+
   // Обработка файла
 
   private async processAndSave(
@@ -178,8 +198,8 @@ export class DocumentService {
       const rawText = await this.extractTextFromFile(fullPath, mimeType);
 
       if (!rawText.trim()) {
-        await this.documentFilesRepository.update(fileId, { extraction_status: 'empty' });
-        await this.documentsRepository.update(documentId, { status: 'processed' });
+        await this.withRetry('set empty', () => this.documentFilesRepository.update(fileId, { extraction_status: 'empty' }));
+        await this.withRetry('set processed', () => this.documentsRepository.update(documentId, { status: 'processed' }));
         return;
       }
 
@@ -188,18 +208,25 @@ export class DocumentService {
         this.buildAiFormattedText(rawText),
       ]);
 
-      await this.documentFilesRepository.update(fileId, {
-        extracted_text: formattedText,
-        normalized_text: summary,
-        extraction_status: 'processed',
-      });
-
-      await this.documentsRepository.update(documentId, { status: 'processed' });
+      await this.withRetry('save extracted text', () =>
+        this.documentFilesRepository.update(fileId, {
+          extracted_text: formattedText,
+          normalized_text: summary,
+          extraction_status: 'processed',
+        }),
+      );
+      await this.withRetry('set doc processed', () =>
+        this.documentsRepository.update(documentId, { status: 'processed' }),
+      );
       console.log(`[PROCESS] document_id: ${documentId} — готово`);
     } catch (e) {
       console.error(`[PROCESS ERROR] document_id: ${documentId}`, e);
-      await this.documentFilesRepository.update(fileId, { extraction_status: 'failed' });
-      await this.documentsRepository.update(documentId, { status: 'extraction_failed' });
+      try {
+        await this.withRetry('set failed', () => this.documentFilesRepository.update(fileId, { extraction_status: 'failed' }));
+        await this.withRetry('set extraction_failed', () => this.documentsRepository.update(documentId, { status: 'extraction_failed' }));
+      } catch (e2) {
+        console.error(`[PROCESS ERROR] не удалось обновить статус`, e2);
+      }
     }
   }
 
@@ -211,25 +238,29 @@ export class DocumentService {
   ): Promise<{ document: Documents; file: DocumentFiles }> {
     const originalName = Buffer.from(file.originalname, 'latin1').toString('utf8');
 
-    const document = await this.documentsRepository.save({
-      collection_id: dto.collection_id ?? 1,
-      title: dto.title ?? originalName,
-      document_type: this.getDocumentType(file.mimetype),
-      archive_number: dto.archive_number ?? '',
-      document_date: new Date(),
-      author_name: dto.author_name ?? '',
-      status: 'processing',
-      language: dto.language ?? 'ru',
-    });
+    const document = await this.withRetry('save document', () =>
+      this.documentsRepository.save({
+        collection_id: dto.collection_id ?? 1,
+        title: dto.title ?? originalName,
+        document_type: this.getDocumentType(file.mimetype),
+        archive_number: dto.archive_number ?? '',
+        document_date: new Date(),
+        author_name: dto.author_name ?? '',
+        status: 'processing',
+        language: dto.language ?? 'ru',
+      }),
+    );
 
-    const documentFile = await this.documentFilesRepository.save({
-      document_id: document.id,
-      file_name: originalName,
-      file_type: file.mimetype,
-      file_path: file.path,
-      file_size: file.size,
-      extraction_status: 'pending',
-    });
+    const documentFile = await this.withRetry('save document_file', () =>
+      this.documentFilesRepository.save({
+        document_id: document.id,
+        file_name: originalName,
+        file_type: file.mimetype,
+        file_path: file.path,
+        file_size: file.size,
+        extraction_status: 'pending',
+      }),
+    );
 
     this.processAndSave(documentFile.id, document.id, file.path, file.mimetype).catch((e) =>
       console.error('[UPLOAD PROCESS ERROR]', e),

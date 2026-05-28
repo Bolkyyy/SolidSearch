@@ -16,6 +16,10 @@ export const historyApi = {
   },
 
   clearHistory: async (userId: number): Promise<void> => {
-    await axios.delete(`http://localhost:3001/history/${userId}`);
+    await axios.delete(`http://localhost:3001/history/user/${userId}`);
+  },
+
+  deleteItem: async (id: number): Promise<void> => {
+    await axios.delete(`http://localhost:3001/history/item/${id}`);
   },
 };

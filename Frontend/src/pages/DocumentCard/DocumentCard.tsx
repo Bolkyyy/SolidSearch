@@ -78,7 +78,7 @@ const DocumentCard = () => {
           >
             <i className="fa fa-arrow-left"></i> Назад к результатам
           </button>
-          <div style={{ textAlign: "center", marginTop: "4rem" }}>
+          <div className="empty-state-center">
             <h2>Документ не найден</h2>
             <p>
               Возможно, он был удалён или вы перешли по некорректной ссылке.
@@ -127,12 +127,12 @@ const DocumentCard = () => {
           >
             Обзор
           </button>
-          <button
+          {/* <button
             className={`tab-btn ${activeTab === "fragments" ? "active" : ""}`}
             onClick={() => setActiveTab("fragments")}
           >
             Фрагменты
-          </button>
+          </button> */}
           <button
             className={`tab-btn ${activeTab === "fulltext" ? "active" : ""}`}
             onClick={() => setActiveTab("fulltext")}
@@ -155,9 +155,8 @@ const DocumentCard = () => {
           {/* Новая кнопка скачивания */}
           <button className="tab-btn download-btn-tab">
             <i
-              className="fa fa-cloud-download"
+              className="fa fa-cloud-download btn-icon-prefix"
               aria-hidden="true"
-              style={{ marginRight: "8px" }}
             ></i>
             Скачать
           </button>
@@ -181,31 +180,7 @@ const DocumentCard = () => {
                       ) : (
                         <>
                           <div className="overview-section">
-                            <h3>Описание договора</h3>
-                            <p>
-                              Договор на выполнение работ по капитальному
-                              ремонту железнодорожных путей участка км 15-25
-                              общей протяженностью 10 км, заключенный между
-                              заказчиком и ООО "СтройПуть".
-                            </p>
-                          </div>
-
-                          <div className="overview-section">
-                            <h3>Условия договора</h3>
-                            <p>
-                              Общая стоимость работ составляет 12 500 000
-                              (двенадцать миллионов пятьсот тысяч) рублей. Срок
-                              выполнения работ: с 01.04.2019 по 31.08.2019.
-                            </p>
-                          </div>
-
-                          <div className="overview-section">
-                            <h3>Выполнение работ</h3>
-                            <p>
-                              Все работы выполнены в полном объеме и в
-                              соответствии с техническим заданием. Подписан акт
-                              приемки №128-2019 от 20.08.2019.
-                            </p>
+                            <p> Обзор документа не доступен </p>
                           </div>
                         </>
                       )}
@@ -215,7 +190,7 @@ const DocumentCard = () => {
               )}
 
               {/* Фрагменты */}
-              {activeTab === "fragments" && (
+              {/* {activeTab === "fragments" && (
                 <div className="fragments-tab">
                   <div className="key-fragments">
                     <h2>Ключевые фрагменты</h2>
@@ -260,7 +235,7 @@ const DocumentCard = () => {
                     </div>
                   </div>
                 </div>
-              )}
+              )} */}
 
               {/* Полный текст */}
               {activeTab === "fulltext" && (

@@ -164,11 +164,11 @@ return (
             <table className="users-data-table">
               <thead>
                 <tr>
-                  <th style={{ width: "25%" }}>Имя</th>
-                  <th style={{ width: "25%" }}>Email</th>
-                  <th style={{ width: "20%" }}>Роль</th>
-                  <th style={{ width: "15%" }}>Статус</th>
-                  <th style={{ width: "15%" }}>Действия</th>
+                  <th className="users-col-name">Имя</th>
+                  <th className="users-col-email">Email</th>
+                  <th className="users-col-role">Роль</th>
+                  <th className="users-col-status">Статус</th>
+                  <th className="users-col-actions">Действия</th>
                 </tr>
               </thead>
               <tbody>
@@ -274,7 +274,7 @@ return (
             </div>
 
             {loadingSettings ? (
-              <p style={{ color: "#888" }}>Загрузка...</p>
+              <p className="text-muted">Загрузка...</p>
             ) : aiSettings ? (
               <div className="integrations-grid-layout">
                 <div className="integration-card-large">
@@ -295,7 +295,7 @@ return (
                 </div>
               </div>
             ) : (
-              <p style={{ color: "#888" }}>Настройки не найдены</p>
+              <p className="text-muted">Настройки не найдены</p>
             )}
           </div>
         )}
@@ -329,7 +329,7 @@ return (
           </div>
 
           <div className="modal-body">
-            <div className="input-group-custom" style={{ marginBottom: "16px" }}>
+            <div className="input-group-custom input-group-mb">
               <label className="block-title">Код провайдера</label>
               <input
                 type="text"
@@ -340,7 +340,7 @@ return (
               />
             </div>
 
-            <div className="input-group-custom" style={{ marginBottom: "16px" }}>
+            <div className="input-group-custom input-group-mb">
               <label className="block-title">Название модели</label>
               <input
                 type="text"
@@ -351,7 +351,7 @@ return (
               />
             </div>
 
-            <div className="input-group-custom" style={{ marginBottom: "16px" }}>
+            <div className="input-group-custom input-group-mb">
               <label className="block-title">Api ключ</label>
               <input
                 type="password"
@@ -363,22 +363,21 @@ return (
             </div>
 
             <div className="input-group-custom">
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <div className="toggle-row">
                 <div
-                  className={`ui-toggle ${formIsActive ? "active" : ""}`}
+                  className={`ui-toggle cursor-pointer ${formIsActive ? "active" : ""}`}
                   onClick={() => setFormIsActive(!formIsActive)}
-                  style={{ cursor: "pointer" }}
                 >
                   <div className="ui-toggle-thumb"></div>
                 </div>
-                <span style={{ color: "#888", fontSize: "12px" }}>
+                <span className="toggle-row-label">
                   Активировать сразу
                 </span>
               </div>
             </div>
 
             {saveError && (
-              <p style={{ color: "red", marginTop: "12px", fontSize: "13px" }}>
+              <p className="form-error">
                 {saveError}
               </p>
             )}
@@ -415,7 +414,7 @@ return (
           </div>
 
           <div className="modal-body">
-            <div className="input-group-custom" style={{ marginBottom: "16px" }}>
+            <div className="input-group-custom input-group-mb">
               <label className="block-title">Полное имя</label>
               <input
                 type="text"
@@ -426,7 +425,7 @@ return (
               />
             </div>
 
-            <div className="input-group-custom" style={{ marginBottom: "16px" }}>
+            <div className="input-group-custom input-group-mb">
               <label className="block-title">Почта</label>
               <input
                 type="text"
@@ -437,7 +436,7 @@ return (
               />
             </div>
 
-            <div className="input-group-custom" style={{ marginBottom: "16px" }}>
+            <div className="input-group-custom input-group-mb">
               <label className="block-title">Пароль</label>
               <input
                 type="text"
@@ -449,7 +448,7 @@ return (
             </div>
 
 
-            <div className="input-group-custom" style={{ marginBottom: "16px" }}>
+            <div className="input-group-custom input-group-mb">
               <label className="block-title">Роль</label>
               <select className="dark-field-input" value={modalUserRole} onChange={(e) => setModalUserRole(e.target.value)}>
                 <option value="">Выберите роль</option>
@@ -458,7 +457,7 @@ return (
               </select>
             </div>
 
-            <div className="input-group-custom" style={{ marginBottom: "16px" }}>
+            <div className="input-group-custom input-group-mb">
               <label className="block-title">Статус</label>
               <select className="dark-field-input" value={modalUserStatus} onChange={(e) => setModalUserStatus(e.target.value)}>
                 <option value="">Выберите статус</option>
@@ -468,7 +467,7 @@ return (
             </div>
 
             {saveError && (
-              <p style={{ color: "red", marginTop: "12px", fontSize: "13px" }}>
+              <p className="form-error">
                 {saveError}
               </p>
             )}

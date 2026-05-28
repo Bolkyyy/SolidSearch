@@ -49,6 +49,25 @@ export class AiService {
     return query.toLowerCase().trim().replace(/\s+/g, ' ');
   }
 
+  private async withRetry<T>(label: string, fn: () => Promise<T>, attempts = 4): Promise<T> {
+    for (let i = 1; i <= attempts; i++) {
+      try {
+        return await fn();
+      } catch (err: any) {
+        const isConn =
+          err?.message?.includes('Connection terminated') ||
+          err?.message?.includes('connection') ||
+          err?.code === 'ECONNRESET' ||
+          err?.code === 'ECONNREFUSED';
+        if (!isConn || i === attempts) throw err;
+        const delay = 600 * i;
+        console.warn(`[AI RETRY] ${label}: попытка ${i}/${attempts}, повтор через ${delay}мс`);
+        await new Promise(r => setTimeout(r, delay));
+      }
+    }
+    throw new Error(`[AI RETRY] ${label}: все попытки исчерпаны`);
+  }
+
   private buildDocumentContext(documents: Documents[]): string {
     return documents
       .map((doc, i) => {
@@ -134,15 +153,19 @@ ${docList}
       send({ type: 'searching' });
       console.log('[SEARCH] Query:', query);
 
-      // Шаг 1: быстрый поиск по БД (стоп-слова + транслитерация + стемминг)
-      let documents = await this.documentService.searchDocuments(query);
+      // Шаг 1: быстрый поиск по БД
+      let documents = await this.withRetry('searchDocuments', () =>
+        this.documentService.searchDocuments(query),
+      );
 
       console.log('[SEARCH] DB found', documents.length, 'documents');
 
       // Шаг 2: если БД нашла мало — AI дополняет поиск среди всех документов
       if (documents.length <= 1) {
         console.log('[SEARCH] Few results, running AI selection to find more');
-        const allDocs = await this.documentService.findall();
+        const allDocs = await this.withRetry('findall', () =>
+          this.documentService.findall(),
+        );
         if (allDocs.length > 0) {
           const aiDocs = await this.aiSelectDocuments(client, model, query, allDocs);
           const existingIds = new Set(documents.map((d) => d.id));
@@ -157,13 +180,15 @@ ${docList}
 
       let savedQuery: any = null;
       try {
-        savedQuery = await this.historyService.create({
-          user_id: userId,
-          query_text: query,
-          query_type: 'ai',
-          status: documents.length > 0 ? 'success' : 'not_found',
-          result_count: documents.length,
-        });
+        savedQuery = await this.withRetry('create history', () =>
+          this.historyService.create({
+            user_id: userId,
+            query_text: query,
+            query_type: 'ai',
+            status: documents.length > 0 ? 'success' : 'not_found',
+            result_count: documents.length,
+          }),
+        );
       } catch (dbErr) {
         console.error('[HISTORY SAVE ERROR]', dbErr);
       }
@@ -179,11 +204,11 @@ ${docList}
       const stream = await client.chat.completions.create({
         model,
         stream: true,
-        max_tokens: 1200,
+        max_tokens: 500,
         messages: [
           {
             role: 'system',
-            content: `Ты — помощник интеллектуального архива. Опирайся ТОЛЬКО на документы ниже. Дай чёткий, структурированный ответ. Отвечай на языке запроса.`,
+            content: `Ты — помощник интеллектуального архива документов. Опирайся ТОЛЬКО на документы из архива ниже. Дай короткий связный ответ из 2-3 предложений — что найдено и какова суть. Отвечай на языке запроса.`,
           },
           {
             role: 'user',
@@ -203,13 +228,15 @@ ${docList}
 
       if (fullAnswer && savedQuery?.id) {
         try {
-          await this.aiAnswerRepository.save({
-            query_id: savedQuery.id,
-            answer_text: fullAnswer,
-            provider_code: provider,
-            model_name: model,
-            confidence_score: 1.0,
-          });
+          await this.withRetry('save answer', () =>
+            this.aiAnswerRepository.save({
+              query_id: savedQuery.id,
+              answer_text: fullAnswer,
+              provider_code: provider,
+              model_name: model,
+              confidence_score: 1.0,
+            }),
+          );
         } catch (dbErr) {
           console.error('[ANSWER SAVE ERROR]', dbErr);
         }
@@ -229,15 +256,23 @@ ${docList}
     userId?: number,
   ): Promise<{ answer: string; fromCache: boolean; documentIds: number[]; documents: Documents[] }> {
     const normalized = this.normalizeQuery(query);
-    const documents = await this.documentService.searchDocuments(query);
+    const documents = await this.withRetry('searchDocuments', () =>
+      this.documentService.searchDocuments(query),
+    );
 
-    await this.historyService.create({
-      user_id: userId,
-      query_text: normalized,
-      query_type: 'ai',
-      status: documents.length > 0 ? 'success' : 'not_found',
-      result_count: documents.length,
-    });
+    try {
+      await this.withRetry('create history', () =>
+        this.historyService.create({
+          user_id: userId,
+          query_text: normalized,
+          query_type: 'ai',
+          status: documents.length > 0 ? 'success' : 'not_found',
+          result_count: documents.length,
+        }),
+      );
+    } catch (dbErr) {
+      console.warn('[HISTORY SAVE ERROR]', dbErr);
+    }
 
     return {
       answer: '',

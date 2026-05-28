@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
+import ReactMarkdown from "react-markdown";
 import Layout from "../../components/Layout/Layout";
 import type { SearchDocument } from "../../interfaces/SearchPageInterface";
 
@@ -153,6 +154,12 @@ const SearchResults = () => {
                 setAnswer((prev) => prev + data.token);
               } else if (data.type === "done") {
                 setAnswerLoading(false);
+                // Fallback если AI вернул пустой ответ, но документы нашлись
+                if (!liveAnswer && liveDocs.length > 0) {
+                  const names = liveDocs.map((d) => d.title).join(", ");
+                  liveAnswer = `По вашему запросу найдены документы: ${names}.`;
+                  setAnswer(liveAnswer);
+                }
                 saveCache({ query, userId, documents: liveDocs, answer: liveAnswer });
               } else if (data.type === "error") {
                 setError(data.message);
@@ -176,10 +183,10 @@ const SearchResults = () => {
   if (!query) {
     return (
       <Layout>
-        <div style={{ textAlign: "center", padding: "4rem 0" }}>
+        <div className="no-data-block">
           <h2>Нет данных для отображения</h2>
           <button className="ai-search-btn" onClick={() => navigate("/search")}>
-            <i className="fa fa-arrow-left" style={{ marginRight: "8px" }} />
+            <i className="fa fa-arrow-left back-icon" />
             На страницу поиска
           </button>
         </div>
@@ -226,10 +233,10 @@ const SearchResults = () => {
                 <span className="ai-answer-icon"><i className="fas fa-robot"></i></span>
                 <span className="ai-answer-label">Ответ системы</span>
               </div>
-              <p className="ai-answer-text" style={{ whiteSpace: "pre-wrap" }}>
-                {answer}
+              <div className="ai-answer-text markdown-body">
+                <ReactMarkdown>{answer}</ReactMarkdown>
                 {answerLoading && <span className="typing-cursor">▌</span>}
-              </p>
+              </div>
               {!answerLoading && (
                 <p className="ai-answer-footer">
                   * Ответ сформирован на основе {documents.length} источников
@@ -238,17 +245,17 @@ const SearchResults = () => {
             </div>
           )}
 
-          {error && <div style={{ color: "red", padding: "1rem" }}>{error}</div>}
+          {error && <div className="inline-error">{error}</div>}
 
           {!docsLoading && documents.length > 0 && (
             <h3 className="relevant-docs-title">Релевантные документы</h3>
           )}
 
           {!docsLoading && documents.length === 0 && !error && (
-            <div style={{ textAlign: "center", padding: "3rem 0" }}>
-              <i className="fa fa-search" style={{ fontSize: "2rem", opacity: 0.3 }} />
-              <h3 style={{ marginTop: "1rem" }}>Документы не найдены</h3>
-              <p style={{ opacity: 0.6 }}>По запросу «{query}» ничего не найдено в архиве</p>
+            <div className="empty-search-block">
+              <i className="fa fa-search empty-search-icon" />
+              <h3 className="empty-search-title">Документы не найдены</h3>
+              <p className="empty-search-msg">По запросу «{query}» ничего не найдено в архиве</p>
             </div>
           )}
 

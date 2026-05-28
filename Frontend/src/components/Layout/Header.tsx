@@ -32,10 +32,9 @@ const Header = () => {
           <div className="user-section">
             <div className="header-action-icons">
               <div
-                className="action-btn green-text"
+                className="action-btn green-text cursor-pointer"
                 onClick={() => setIsUploadOpen(true)}
                 title="Загрузить документы"
-                style={{ cursor: 'pointer' }}
               >
                 <i className="fa fa-upload" />
               </div>

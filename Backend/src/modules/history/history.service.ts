@@ -48,6 +48,11 @@ export class HistoryService {
     return { deleted: result.affected ?? 0 };
   }
 
+  async deleteById(id: number): Promise<{ deleted: number }> {
+    const result = await this.searchQueriesRepository.delete({ id: +id });
+    return { deleted: result.affected ?? 0 };
+  }
+
   async findByQueryText(queryText: string): Promise<SearchQueries | null> {
   return await this.searchQueriesRepository.findOne({
     where: {

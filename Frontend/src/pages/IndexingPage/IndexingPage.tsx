@@ -71,7 +71,7 @@ const IndexingPage = () => {
               </div>
             </div>
             <div className="progress-container">
-              <div className="progress-bar purple" style={{ width: "45%" }}></div>
+              <div className="progress-bar purple progress-45"></div>
               <span className="progress-percent purple">45%</span>
             </div>
           </div>
@@ -89,7 +89,7 @@ const IndexingPage = () => {
               </div>
             </div>
             <div className="progress-container">
-              <div className="progress-bar purple" style={{ width: "78%" }}></div>
+              <div className="progress-bar purple progress-78"></div>
               <span className="progress-percent purple">78%</span>
             </div>
           </div>

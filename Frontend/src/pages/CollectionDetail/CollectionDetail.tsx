@@ -294,7 +294,7 @@ const CollectionDetail = () => {
                   type="file"
                   multiple
                   onChange={(e) => setSelectedFiles(Array.from(e.target.files || []))}
-                  style={{ display: 'none' }}
+                  className="hidden-input"
                   id="fileInput"
                 />
                 <button className="btn-secondary" onClick={() => document.getElementById('fileInput')?.click()}>

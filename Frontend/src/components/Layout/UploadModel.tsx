@@ -130,7 +130,7 @@ const UploadModal = ({ isOpen, onClose }: UploadModalProps) => {
             type="file"
             multiple
             accept=".pdf,.docx,.txt,.xlsx"
-            style={{ display: "none" }}
+            className="hidden-input"
             onChange={(e) => e.target.files && addFiles(e.target.files)}
           />
           <div className="um-dropzone-icon">

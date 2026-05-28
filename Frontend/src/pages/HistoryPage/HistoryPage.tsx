@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "../../components/Layout/Layout";
 import ErrorToast from "../../components/ErrorToast/ErrorToast";
+import ConfirmModal from "../../components/ConfirmModal/ConfirmModal";
 import { HistoryItem, historyApi } from "@/api/historyApi";
 
 const PAGE_SIZE = 7;
@@ -16,12 +17,18 @@ const StatusBadge = ({ status }: { status?: string | null }) => {
   return <span className="history-badge success">Успешно</span>;
 };
 
+type ConfirmState =
+  | { type: "clear" }
+  | { type: "delete"; id: number }
+  | null;
+
 const HistoryPage = () => {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [clearing, setClearing] = useState(false);
   const [error, setError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [confirm, setConfirm] = useState<ConfirmState>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -82,23 +89,38 @@ const HistoryPage = () => {
     navigate("/search/results", { state: { query: queryText, userId: Number(userId) } });
   };
 
-  const clearHistory = async () => {
-    const userId = localStorage.getItem("userId");
-    if (!userId) return;
-    if (!window.confirm("Очистить всю историю запросов?")) return;
+  const handleConfirm = async () => {
+    if (!confirm) return;
 
-    setClearing(true);
-    try {
-      await historyApi.clearHistory(Number(userId));
-      sessionStorage.removeItem("solidSearch_cache");
-      setHistory([]);
-      setSearchQuery("");
-      setCurrentPage(1);
-    } catch (err: unknown) {
-      console.error("[clearHistory error]", err);
-      setError("Не удалось очистить историю.");
-    } finally {
-      setClearing(false);
+    if (confirm.type === "clear") {
+      const userId = localStorage.getItem("userId");
+      if (!userId) return;
+      setClearing(true);
+      try {
+        await historyApi.clearHistory(Number(userId));
+        sessionStorage.removeItem("solidSearch_cache");
+        setHistory([]);
+        setSearchQuery("");
+        setCurrentPage(1);
+      } catch (err: unknown) {
+        console.error("[clearHistory error]", err);
+        setError("Не удалось очистить историю.");
+      } finally {
+        setClearing(false);
+        setConfirm(null);
+      }
+    }
+
+    if (confirm.type === "delete") {
+      try {
+        await historyApi.deleteItem(confirm.id);
+        setHistory((prev) => prev.filter((item) => item.id !== confirm.id));
+      } catch (err) {
+        console.error("[deleteItem error]", err);
+        setError("Не удалось удалить запись.");
+      } finally {
+        setConfirm(null);
+      }
     }
   };
 
@@ -113,10 +135,9 @@ const HistoryPage = () => {
 
       <div className="history-filters">
         <button
-          className="history-filter-btn"
-          style={{ color: "#e4585a", borderColor: "#e4585a33" }}
+          className="history-filter-btn history-clear-btn"
           disabled={clearing || history.length === 0}
-          onClick={clearHistory}
+          onClick={() => setConfirm({ type: "clear" })}
         >
           {clearing ? (
             <><i className="fa fa-spinner fa-spin" /> Очистка...</>
@@ -135,8 +156,7 @@ const HistoryPage = () => {
           />
           {searchQuery && (
             <i
-              className="fa fa-times"
-              style={{ cursor: "pointer", color: "#555" }}
+              className="fa fa-times history-search-clear"
               onClick={() => setSearchQuery("")}
             />
           )}
@@ -157,7 +177,7 @@ const HistoryPage = () => {
           <tbody>
             {paginated.length === 0 && (
               <tr>
-                <td colSpan={5} style={{ textAlign: "center", color: "#555", padding: "24px" }}>
+                <td colSpan={5} className="history-empty-cell">
                   {searchQuery
                     ? `По запросу «${searchQuery}» ничего не найдено`
                     : "История пуста"}
@@ -181,12 +201,21 @@ const HistoryPage = () => {
                   <StatusBadge status={item.status} />
                 </td>
                 <td>
-                  <button
-                    className="history-action-btn"
-                    onClick={() => repeatSearch(item.query_text)}
-                  >
-                    <i className="fa fa-repeat" /> Повторить
-                  </button>
+                  <div className="history-actions-cell">
+                    <button
+                      className="history-action-btn"
+                      onClick={() => repeatSearch(item.query_text)}
+                    >
+                      <i className="fa fa-repeat" /> Повторить
+                    </button>
+                    <button
+                      className="history-action-btn history-delete-btn"
+                      onClick={() => setConfirm({ type: "delete", id: item.id })}
+                      title="Удалить запись"
+                    >
+                      <i className="fa fa-trash" />
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -215,8 +244,7 @@ const HistoryPage = () => {
               p === "..." ? (
                 <span
                   key={`dots-${i}`}
-                  className="history-page-btn"
-                  style={{ cursor: "default", color: "#555" }}
+                  className="history-page-btn history-page-dots"
                 >
                   …
                 </span>
@@ -241,6 +269,22 @@ const HistoryPage = () => {
           </div>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={confirm !== null}
+        title={confirm?.type === "clear" ? "Очистить историю?" : "Удалить запись?"}
+        message={
+          confirm?.type === "clear"
+            ? "Все запросы будут удалены безвозвратно. Это действие нельзя отменить."
+            : "Эта запись будет удалена из истории навсегда."
+        }
+        confirmText={confirm?.type === "clear" ? "Очистить всё" : "Удалить"}
+        cancelText="Отмена"
+        variant="danger"
+        loading={clearing}
+        onConfirm={handleConfirm}
+        onCancel={() => setConfirm(null)}
+      />
     </Layout>
   );
 };

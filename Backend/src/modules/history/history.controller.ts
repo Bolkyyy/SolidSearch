@@ -21,8 +21,13 @@ export class HistoryController {
     return this.historyService.findAllById(user_id);
   }
 
-  @Delete(":user_id")
+  @Delete("user/:user_id")
   async clearByUserId(@Param("user_id") user_id: number) {
     return this.historyService.clearByUserId(user_id);
+  }
+
+  @Delete("item/:id")
+  async deleteById(@Param("id") id: number) {
+    return this.historyService.deleteById(id);
   }
 }

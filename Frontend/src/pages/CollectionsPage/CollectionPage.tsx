@@ -61,7 +61,7 @@ const CollectionPage = () => {
   return (
     <Layout>
       {/* Шапка как на HomePage (кнопка справа) */}
-      <section className="welcome" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <section className="welcome flex-row">
         <div>
           <h1>Архив документов</h1>
           <p className="welcome-link">Управление коллекциями и архивами документов</p>
@@ -104,8 +104,8 @@ const CollectionPage = () => {
         {collections.map((col, idx) => (
           <div className="archive-item" key={idx}>
             <div className="archive-item-header">
-              <i className="fa fa-folder-open" style={{ marginRight: "8px", color: "#f59e0b" }} />
-              <h3 style={{ display: "inline-block" }}>{col.name}</h3>
+              <i className="fa fa-folder-open collection-folder-icon" />
+              <h3 className="inline-block">{col.name}</h3>
             </div>
             <div className="archive-info">
               <span><i className="fa fa-file-text-o"></i>{col.docs.toLocaleString()} документов</span>
