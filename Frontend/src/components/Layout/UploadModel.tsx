@@ -21,7 +21,7 @@ const UploadModal = ({ isOpen, onClose }: UploadModalProps) => {
 
   const addFiles = (newFiles: FileList | File[]) => {
     const arr = Array.from(newFiles).filter((f) =>
-      f.name.match(/\.(pdf|docx|txt|xlsx)$/i)
+      f.name.match(/\.(pdf|docx|txt|xlsx|png|jpg|jpeg|tiff|tif)$/i)
     );
     const mapped: UploadFile[] = arr.map((f) => ({ file: f, status: "pending" }));
     setFiles((prev) => [...prev, ...mapped]);
@@ -129,7 +129,7 @@ const UploadModal = ({ isOpen, onClose }: UploadModalProps) => {
             ref={fileInputRef}
             type="file"
             multiple
-            accept=".pdf,.docx,.txt,.xlsx"
+            accept=".pdf,.docx,.txt,.xlsx,.png,.jpg,.jpeg,.tiff,.tif"
             className="hidden-input"
             onChange={(e) => e.target.files && addFiles(e.target.files)}
           />
@@ -139,7 +139,7 @@ const UploadModal = ({ isOpen, onClose }: UploadModalProps) => {
           <p className="um-dropzone-text">
             Перетащите файлы сюда или <span className="um-link">нажмите для выбора</span>
           </p>
-          <p className="um-dropzone-hint">PDF, DOCX, TXT, XLSX</p>
+          <p className="um-dropzone-hint">PDF, DOCX, TXT, PNG, JPG, TIFF</p>
         </div>
 
         {/* File list */}

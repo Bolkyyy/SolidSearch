@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import Layout from "../../components/Layout/Layout";
 import { aiApi, type AiSettings } from "../../api/AI_api";
 import { User, usersApi } from "@/api/Users";
+import ConfirmModal from "../../components/ConfirmModal/ConfirmModal";
 
 const SettingsPage = () => {
   const [activeTab, setActiveTab] = useState("users");
@@ -24,6 +25,11 @@ const SettingsPage = () => {
   const [modalUserStatus, setModalUserStatus] = useState("");
   const [modalUserRole, setModalUserRole] = useState("");
   const [modalUserPassword, setModalUserPassword] = useState("");
+  // --- Delete confirm ---
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
+  const [deleteTargetName, setDeleteTargetName] = useState("");
+  const [deleteLoading, setDeleteLoading] = useState(false);
   // --- User update ---
   const [isVisibleModalEditUser, setVisibleModalEditUser] = useState(false)
   const [modalUserEditFullName, setModalUserEditFullName] = useState("");
@@ -50,11 +56,23 @@ const SettingsPage = () => {
     }
   }
 
-  async function handleDeleteUser(userId: number) {
-    const result = confirm("Вы уверены, что хотите удалить этого пользователя?");
-    if (result) {
-      await usersApi.deleteUser(userId);
+  function handleDeleteUser(userId: number, userName: string) {
+    setDeleteTargetId(userId);
+    setDeleteTargetName(userName);
+    setDeleteConfirmOpen(true);
+  }
+
+  async function handleConfirmDelete() {
+    if (deleteTargetId === null) return;
+    setDeleteLoading(true);
+    try {
+      await usersApi.deleteUser(deleteTargetId);
       await fetchUsers();
+    } finally {
+      setDeleteLoading(false);
+      setDeleteConfirmOpen(false);
+      setDeleteTargetId(null);
+      setDeleteTargetName("");
     }
   }
 
@@ -158,6 +176,7 @@ const SettingsPage = () => {
   // --- конец AI Settings ---
 
   return (
+    <>
     <Layout>
       <section className="welcome">
         <h1>Настройки</h1>
@@ -219,7 +238,7 @@ const SettingsPage = () => {
                       </td>
                       <td className="table-actions">
                         <i className="fa fa-edit" onClick={() => handleEditUser(user)}></i>
-                        <i className="fa fa-trash-alt" onClick={() => handleDeleteUser(user.id)}></i>
+                        <i className="fa fa-trash-alt" onClick={() => handleDeleteUser(user.id, user.full_name)}></i>
                       </td>
                     </tr>
                   )}
@@ -441,7 +460,7 @@ const SettingsPage = () => {
               <h2>
                 {modalMode === "add"
                   ? "Добавление новой модели"
-                  : "Настройка конфигурации модели"}
+                  : "Создание пользователя"}
               </h2>
               <button className="modal-close" onClick={() => setVisibleModalCreateUser(false)}>
                 &times;
@@ -513,7 +532,7 @@ const SettingsPage = () => {
                 className="save-settings-btn"
                 onClick={handleCreateUser}
               >
-                создать пользователя
+                Создать пользователя
               </button>
             </div>
           </div>
@@ -593,13 +612,26 @@ const SettingsPage = () => {
                 className="save-settings-btn"
                 onClick={handleUpdateUser}
               >
-                обновить пользователя
+                Обновить пользователя
               </button>
             </div>
           </div>
         </div>
       )}
     </Layout>
+
+    <ConfirmModal
+      isOpen={deleteConfirmOpen}
+      title="Удалить пользователя?"
+      message={`Вы уверены, что хотите удалить пользователя «${deleteTargetName}»? Это действие нельзя отменить.`}
+      confirmText="Удалить"
+      cancelText="Отмена"
+      variant="danger"
+      loading={deleteLoading}
+      onConfirm={handleConfirmDelete}
+      onCancel={() => setDeleteConfirmOpen(false)}
+    />
+    </>
   );
 };
 

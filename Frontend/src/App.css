@@ -3164,10 +3164,12 @@ body {
   padding: 8px 0;
   border-bottom: 1px solid rgba(255,255,255,0.05);
 }
-.metadata-item:last-child { border-bottom: none; }
 .metadata-label {
   font-size: 12px;
   color: rgba(255,255,255,0.5);
+}
+.last-item {
+  border-bottom: 1px solid rgba(255,255,255,0.05);
 }
 .metadata-value {
   font-size: 13px;
