@@ -4,15 +4,35 @@ import Layout from "../../components/Layout/Layout";
 import { fetchDashboardData, DashboardData } from "@/api/dashboard";
 const CollectionPage = () => {
   const [data, setData] = useState<DashboardData | null>(null);
-  
+
   // Добавляем состояние для коллекций и модального окна
   const [collections, setCollections] = useState([
-    { name: "Архив 2024", docs: 3245, size: "2.4 ГБ", formats: ["PDF", "DOCX", "TXT"] },
-    { name: "Архив 2023", docs: 8134, size: "5.8 ГБ", formats: ["PDF", "DOCX", "TXT"] },
-    { name: "Архив 2022", docs: 8120, size: "5.7 ГБ", formats: ["PDF", "DOCX", "TXT"] },
-    { name: "Текущие проекты", docs: 456, size: "890 МБ", formats: ["PDF", "DOCX", "TXT", "XLSX"] },
+    {
+      name: "Архив 2024",
+      docs: 3245,
+      size: "2.4 ГБ",
+      formats: ["PDF", "DOCX", "TXT"],
+    },
+    {
+      name: "Архив 2023",
+      docs: 8134,
+      size: "5.8 ГБ",
+      formats: ["PDF", "DOCX", "TXT"],
+    },
+    {
+      name: "Архив 2022",
+      docs: 8120,
+      size: "5.7 ГБ",
+      formats: ["PDF", "DOCX", "TXT"],
+    },
+    {
+      name: "Текущие проекты",
+      docs: 456,
+      size: "890 МБ",
+      formats: ["PDF", "DOCX", "TXT", "XLSX"],
+    },
   ]);
-  
+
   const [showModal, setShowModal] = useState(false);
   const [newCollectionName, setNewCollectionName] = useState("");
   const [newCollectionDocs, setNewCollectionDocs] = useState("");
@@ -30,7 +50,7 @@ const CollectionPage = () => {
 
   const toggleFormat = (format: string) => {
     if (selectedFormats.includes(format)) {
-      setSelectedFormats(selectedFormats.filter(f => f !== format));
+      setSelectedFormats(selectedFormats.filter((f) => f !== format));
     } else {
       setSelectedFormats([...selectedFormats, format]);
     }
@@ -46,7 +66,8 @@ const CollectionPage = () => {
       name: newCollectionName,
       docs: parseInt(newCollectionDocs) || 0,
       size: newCollectionSize || "0 МБ",
-      formats: selectedFormats.length > 0 ? selectedFormats : ["PDF", "DOCX", "TXT"],
+      formats:
+        selectedFormats.length > 0 ? selectedFormats : ["PDF", "DOCX", "TXT"],
     };
 
     setCollections([...collections, newCollection]);
@@ -64,9 +85,14 @@ const CollectionPage = () => {
       <section className="welcome flex-row">
         <div>
           <h1>Архив документов</h1>
-          <p className="welcome-link">Управление коллекциями и архивами документов</p>
+          <p className="welcome-link">
+            Управление коллекциями и архивами документов
+          </p>
         </div>
-        <button className="create-collection-btn" onClick={() => setShowModal(true)}>
+        <button
+          className="create-collection-btn"
+          onClick={() => setShowModal(true)}
+        >
           <i className="fa fa-plus"></i> Создать коллекцию
         </button>
       </section>
@@ -108,21 +134,34 @@ const CollectionPage = () => {
               <h3 className="inline-block">{col.name}</h3>
             </div>
             <div className="archive-info">
-              <span><i className="fa fa-file-text-o"></i>{col.docs.toLocaleString()} документов</span>
+              <span>
+                <i className="fa fa-file-text-o"></i>
+                {col.docs.toLocaleString()} документов
+              </span>
               <div className="file-formats">
                 {col.formats.map((fmt) => (
-                  <span key={fmt} className={`format-badge format-${fmt.toLowerCase()}`}>
+                  <span
+                    key={fmt}
+                    className={`format-badge format-${fmt.toLowerCase()}`}
+                  >
                     {fmt}
                   </span>
                 ))}
               </div>
-              <span><i className="fa fa-database"></i> {col.size}</span>
+              <span>
+                <i className="fa fa-database"></i> {col.size}
+              </span>
             </div>
             <div className="archive-buttons">
-              <Link to={`/collection/${encodeURIComponent(col.name)}`} className="btn-open">
+              <Link
+                to={`/collection/${encodeURIComponent(col.name)}`}
+                className="btn-open"
+              >
                 <i className="fa fa-folder-open"></i> Открыть
               </Link>
-              <Link to="/indexing" className="btn-reindex"><i className="fa fa-refresh"></i> Переиндексировать</Link>
+              <Link to="/indexing" className="btn-reindex">
+                <i className="fa fa-refresh"></i> Переиндексировать
+              </Link>
             </div>
           </div>
         ))}
@@ -134,7 +173,12 @@ const CollectionPage = () => {
           <div className="modal-container" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>Создание коллекции</h2>
-              <button className="modal-close" onClick={() => setShowModal(false)}>×</button>
+              <button
+                className="modal-close"
+                onClick={() => setShowModal(false)}
+              >
+                ×
+              </button>
             </div>
             <div className="modal-body">
               <div className="form-group">
@@ -168,14 +212,16 @@ const CollectionPage = () => {
               <div className="form-group">
                 <label>Форматы</label>
                 <div className="formats-checkbox-group">
-                  {availableFormats.map(format => (
+                  {availableFormats.map((format) => (
                     <label key={format} className="format-checkbox">
                       <input
                         type="checkbox"
                         checked={selectedFormats.includes(format)}
                         onChange={() => toggleFormat(format)}
                       />
-                      <span className={`format-badge format-${format.toLowerCase()}`}>
+                      <span
+                        className={`format-badge format-${format.toLowerCase()}`}
+                      >
                         {format}
                       </span>
                     </label>
@@ -184,8 +230,15 @@ const CollectionPage = () => {
               </div>
             </div>
             <div className="modal-footer">
-              <button className="btn-cancel" onClick={() => setShowModal(false)}>Отмена</button>
-              <button className="btn-create" onClick={handleCreateCollection}>Создать</button>
+              <button
+                className="btn-cancel"
+                onClick={() => setShowModal(false)}
+              >
+                Отмена
+              </button>
+              <button className="btn-create" onClick={handleCreateCollection}>
+                Создать
+              </button>
             </div>
           </div>
         </div>

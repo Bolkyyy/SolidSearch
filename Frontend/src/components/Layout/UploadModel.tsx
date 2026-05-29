@@ -21,9 +21,12 @@ const UploadModal = ({ isOpen, onClose }: UploadModalProps) => {
 
   const addFiles = (newFiles: FileList | File[]) => {
     const arr = Array.from(newFiles).filter((f) =>
-      f.name.match(/\.(pdf|docx|txt|xlsx|png|jpg|jpeg|tiff|tif)$/i)
+      f.name.match(/\.(pdf|docx|txt|xlsx|png|jpg|jpeg|tiff|tif)$/i),
     );
-    const mapped: UploadFile[] = arr.map((f) => ({ file: f, status: "pending" }));
+    const mapped: UploadFile[] = arr.map((f) => ({
+      file: f,
+      status: "pending",
+    }));
     setFiles((prev) => [...prev, ...mapped]);
   };
 
@@ -42,33 +45,39 @@ const UploadModal = ({ isOpen, onClose }: UploadModalProps) => {
       if (files[i].status !== "pending") continue;
 
       setFiles((prev) =>
-        prev.map((f, idx) => (idx === i ? { ...f, status: "uploading" } : f))
+        prev.map((f, idx) => (idx === i ? { ...f, status: "uploading" } : f)),
       );
 
       try {
         const formData = new FormData();
         formData.append("file", files[i].file);
 
-        const uploadRes = await axios.post("http://localhost:3001/documents/upload", formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
+        const uploadRes = await axios.post(
+          "http://localhost:3001/documents/upload",
+          formData,
+          {
+            headers: { "Content-Type": "multipart/form-data" },
+          },
+        );
 
         const documentId = uploadRes.data?.document?.id;
 
         if (documentId) {
-          await axios.post(`http://localhost:3001/documents/${documentId}/extract-text`);
+          await axios.post(
+            `http://localhost:3001/documents/${documentId}/extract-text`,
+          );
         }
 
         setFiles((prev) =>
-          prev.map((f, idx) => (idx === i ? { ...f, status: "success" } : f))
+          prev.map((f, idx) => (idx === i ? { ...f, status: "success" } : f)),
         );
       } catch (err: any) {
         const message =
           err?.response?.data?.message || "Ошибка при загрузке файла";
         setFiles((prev) =>
           prev.map((f, idx) =>
-            idx === i ? { ...f, status: "error", error: message } : f
-          )
+            idx === i ? { ...f, status: "error", error: message } : f,
+          ),
         );
       }
     }
@@ -79,7 +88,8 @@ const UploadModal = ({ isOpen, onClose }: UploadModalProps) => {
     onClose();
   };
 
-  const getExt = (name: string) => name.split(".").pop()?.toUpperCase() ?? "FILE";
+  const getExt = (name: string) =>
+    name.split(".").pop()?.toUpperCase() ?? "FILE";
 
   const formatSize = (bytes: number) => {
     if (bytes < 1024) return `${bytes} Б`;
@@ -105,8 +115,6 @@ const UploadModal = ({ isOpen, onClose }: UploadModalProps) => {
   return (
     <div className="um-overlay" onClick={handleClose}>
       <div className="um-modal" onClick={(e) => e.stopPropagation()}>
-
-        {/* Header */}
         <div className="um-header">
           <div className="um-title">
             <i className="fa fa-upload" />
@@ -117,11 +125,13 @@ const UploadModal = ({ isOpen, onClose }: UploadModalProps) => {
           </button>
         </div>
 
-        {/* Dropzone */}
         <div
           className={`um-dropzone${isDragging ? " um-dragging" : ""}`}
           onDrop={handleDrop}
-          onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setIsDragging(true);
+          }}
           onDragLeave={() => setIsDragging(false)}
           onClick={() => fileInputRef.current?.click()}
         >
@@ -137,12 +147,12 @@ const UploadModal = ({ isOpen, onClose }: UploadModalProps) => {
             <i className="fa fa-cloud-upload" />
           </div>
           <p className="um-dropzone-text">
-            Перетащите файлы сюда или <span className="um-link">нажмите для выбора</span>
+            Перетащите файлы сюда или{" "}
+            <span className="um-link">нажмите для выбора</span>
           </p>
           <p className="um-dropzone-hint">PDF, DOCX, TXT, PNG, JPG, TIFF</p>
         </div>
 
-        {/* File list */}
         {files.length > 0 && (
           <div className="um-file-list">
             {files.map((uf, idx) => {
@@ -157,14 +167,19 @@ const UploadModal = ({ isOpen, onClose }: UploadModalProps) => {
                   </div>
                   <div className="um-file-info">
                     <div className="um-file-name">{uf.file.name}</div>
-                    <div className="um-file-size">{formatSize(uf.file.size)}</div>
+                    <div className="um-file-size">
+                      {formatSize(uf.file.size)}
+                    </div>
                     {uf.status === "error" && (
                       <div className="um-file-err">{uf.error}</div>
                     )}
                   </div>
                   <div className="um-file-action">
                     {uf.status === "pending" && (
-                      <button className="um-remove-btn" onClick={() => removeFile(idx)}>
+                      <button
+                        className="um-remove-btn"
+                        onClick={() => removeFile(idx)}
+                      >
                         <i className="fa fa-times" />
                       </button>
                     )}
@@ -184,17 +199,17 @@ const UploadModal = ({ isOpen, onClose }: UploadModalProps) => {
           </div>
         )}
 
-        {/* Success banner */}
         {allDone && successCount > 0 && (
           <div className="um-success-banner">
             <i className="fa fa-check-circle" />
             <span>
-              {successCount} {successCount === 1 ? "файл загружен" : "файла загружено"} и добавлен в очередь индексации
+              {successCount}{" "}
+              {successCount === 1 ? "файл загружен" : "файла загружено"} и
+              добавлен в очередь индексации
             </span>
           </div>
         )}
 
-        {/* Footer */}
         <div className="um-footer">
           <button className="um-btn-cancel" onClick={handleClose}>
             {allDone ? "Закрыть" : "Отмена"}
@@ -202,11 +217,13 @@ const UploadModal = ({ isOpen, onClose }: UploadModalProps) => {
           {hasAnyPending && (
             <button className="um-btn-submit" onClick={uploadAll}>
               <i className="fa fa-upload" />
-              Загрузить {files.filter((f) => f.status === "pending").length} файл(а)
+              Загрузить {
+                files.filter((f) => f.status === "pending").length
+              }{" "}
+              файл(а)
             </button>
           )}
         </div>
-
       </div>
     </div>
   );

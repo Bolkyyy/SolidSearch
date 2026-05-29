@@ -14,7 +14,10 @@ const DocumentCard = () => {
 
   const navigate = useNavigate();
   const location = useLocation();
-  const docNavState = location.state as { returnQuery?: string; returnUserId?: number } | null;
+  const docNavState = location.state as {
+    returnQuery?: string;
+    returnUserId?: number;
+  } | null;
 
   const params = useParams();
   const documentId = params.id;
@@ -31,7 +34,7 @@ const DocumentCard = () => {
   }
 
   const formatDateOnly = (iso?: string) => {
-    if (!iso) return '—';
+    if (!iso) return "—";
     const date = new Date(iso);
     return date.toLocaleDateString("ru-RU", {
       day: "2-digit",
@@ -51,7 +54,6 @@ const DocumentCard = () => {
     });
   };
 
-
   useEffect(() => {
     if (!documentId) {
       setNotFound(true);
@@ -69,7 +71,10 @@ const DocumentCard = () => {
             onClick={() => {
               if (docNavState?.returnQuery) {
                 navigate("/search/results", {
-                  state: { query: docNavState.returnQuery, userId: docNavState.returnUserId ?? 0 },
+                  state: {
+                    query: docNavState.returnQuery,
+                    userId: docNavState.returnUserId ?? 0,
+                  },
                 });
               } else {
                 navigate(-1);

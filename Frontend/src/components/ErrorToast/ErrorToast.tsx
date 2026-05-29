@@ -30,10 +30,13 @@ const ErrorToast = ({ message, onClose, duration = 6000 }: Props) => {
         <span className="error-toast-title">Ошибка подключения</span>
         <span className="error-toast-msg">{message}</span>
       </div>
-      <button className="error-toast-close" onClick={() => {
-        setVisible(false);
-        setTimeout(onClose, 300);
-      }}>
+      <button
+        className="error-toast-close"
+        onClick={() => {
+          setVisible(false);
+          setTimeout(onClose, 300);
+        }}
+      >
         <i className="fa fa-times" />
       </button>
     </div>

@@ -23,10 +23,11 @@ const ConfirmModal = ({
   onConfirm,
   onCancel,
 }: ConfirmModalProps) => {
-  // Закрытие по Escape
   useEffect(() => {
     if (!isOpen) return;
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onCancel(); };
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onCancel();
+    };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
   }, [isOpen, onCancel]);
@@ -42,7 +43,6 @@ const ConfirmModal = ({
         aria-modal="true"
         aria-labelledby="confirm-title"
       >
-        {/* Иконка */}
         <div className={`confirm-icon-wrap confirm-icon-${variant}`}>
           {variant === "danger" ? (
             <i className="fa fa-exclamation-triangle" />
@@ -51,11 +51,11 @@ const ConfirmModal = ({
           )}
         </div>
 
-        {/* Текст */}
-        <h3 className="confirm-title" id="confirm-title">{title}</h3>
+        <h3 className="confirm-title" id="confirm-title">
+          {title}
+        </h3>
         <p className="confirm-message">{message}</p>
 
-        {/* Кнопки */}
         <div className="confirm-actions">
           <button
             className="confirm-btn confirm-btn-cancel"
@@ -70,7 +70,13 @@ const ConfirmModal = ({
             disabled={loading}
           >
             {loading ? (
-              <><i className="fa fa-spinner fa-spin" style={{ marginRight: "6px" }} />Выполняется...</>
+              <>
+                <i
+                  className="fa fa-spinner fa-spin"
+                  style={{ marginRight: "6px" }}
+                />
+                Выполняется...
+              </>
             ) : (
               confirmText
             )}

@@ -17,7 +17,8 @@ interface CachedResult {
 
 type CacheMap = Record<string, CachedResult>;
 
-const buildCacheKey = (q: string, uid: number) => `${uid}:${q.toLowerCase().trim()}`;
+const buildCacheKey = (q: string, uid: number) =>
+  `${uid}:${q.toLowerCase().trim()}`;
 
 const readCache = (query: string, userId: number): CachedResult | null => {
   try {
@@ -36,7 +37,9 @@ const saveCache = (data: CachedResult) => {
     map[buildCacheKey(data.query, data.userId)] = data;
     const keys = Object.keys(map);
     if (keys.length > MAX_CACHE_ENTRIES) {
-      keys.slice(0, keys.length - MAX_CACHE_ENTRIES).forEach((k) => delete map[k]);
+      keys
+        .slice(0, keys.length - MAX_CACHE_ENTRIES)
+        .forEach((k) => delete map[k]);
     }
     sessionStorage.setItem(CACHE_KEY, JSON.stringify(map));
   } catch {}
@@ -44,7 +47,11 @@ const saveCache = (data: CachedResult) => {
 
 const formatDate = (iso?: string) => {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric" });
+  return new Date(iso).toLocaleDateString("ru-RU", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
 };
 
 const getDocDescription = (doc: SearchDocument): string => {
@@ -54,7 +61,15 @@ const getDocDescription = (doc: SearchDocument): string => {
   return `${doc.document_type || "Документ"} от ${formatDate(doc.document_date)}`;
 };
 
-const DocCard = ({ doc, query, userId }: { doc: SearchDocument; query: string; userId: number }) => (
+const DocCard = ({
+  doc,
+  query,
+  userId,
+}: {
+  doc: SearchDocument;
+  query: string;
+  userId: number;
+}) => (
   <div className="doc-card">
     <div className="doc-card-header">
       <span className="doc-card-title">{doc.title}</span>
@@ -65,7 +80,11 @@ const DocCard = ({ doc, query, userId }: { doc: SearchDocument; query: string; u
     </div>
     <p className="doc-card-desc">{getDocDescription(doc)}</p>
     <div className="doc-card-actions">
-      <Link to={`/document/${doc.id}`} state={{ returnQuery: query, returnUserId: userId }} className="router-link">
+      <Link
+        to={`/document/${doc.id}`}
+        state={{ returnQuery: query, returnUserId: userId }}
+        className="router-link"
+      >
         <button className="btn-open">
           <i className="fa fa-external-link" aria-hidden="true"></i> Открыть
         </button>
@@ -74,18 +93,35 @@ const DocCard = ({ doc, query, userId }: { doc: SearchDocument; query: string; u
   </div>
 );
 
-const SourceItem = ({ doc, isLast, query, userId }: { doc: SearchDocument; isLast: boolean; query: string; userId: number }) => (
+const SourceItem = ({
+  doc,
+  isLast,
+  query,
+  userId,
+}: {
+  doc: SearchDocument;
+  isLast: boolean;
+  query: string;
+  userId: number;
+}) => (
   <div className={`source-item${isLast ? " source-item-last" : ""}`}>
     <div className="source-item-header">
       <span className="source-item-name">{doc.title}</span>
     </div>
     <div className="source-item-page">ID: {doc.id}</div>
     <p className="source-item-snippet">
-      {doc.files?.[0]?.normalized_text?.slice(0, 130) || "Краткое содержание недоступно"}…
+      {doc.files?.[0]?.normalized_text?.slice(0, 130) ||
+        "Краткое содержание недоступно"}
+      …
     </p>
-    <Link to={`/document/${doc.id}`} state={{ returnQuery: query, returnUserId: userId }} className="router-link">
+    <Link
+      to={`/document/${doc.id}`}
+      state={{ returnQuery: query, returnUserId: userId }}
+      className="router-link"
+    >
       <span className="source-item-link">
-        <i className="fa fa-folder-open" aria-hidden="true"></i> Открыть документ
+        <i className="fa fa-folder-open" aria-hidden="true"></i> Открыть
+        документ
       </span>
     </Link>
   </div>
@@ -101,7 +137,9 @@ const SearchResults = () => {
 
   const initialCache = query ? readCache(query, userId) : null;
 
-  const [documents, setDocuments] = useState<SearchDocument[]>(initialCache?.documents ?? []);
+  const [documents, setDocuments] = useState<SearchDocument[]>(
+    initialCache?.documents ?? [],
+  );
   const [answer, setAnswer] = useState<string>(initialCache?.answer ?? "");
   const [searching, setSearching] = useState(!initialCache);
   const [docsLoading, setDocsLoading] = useState(!initialCache);
@@ -154,13 +192,18 @@ const SearchResults = () => {
                 setAnswer((prev) => prev + data.token);
               } else if (data.type === "done") {
                 setAnswerLoading(false);
-                // Fallback если AI вернул пустой ответ, но документы нашлись
+                
                 if (!liveAnswer && liveDocs.length > 0) {
                   const names = liveDocs.map((d) => d.title).join(", ");
                   liveAnswer = `По вашему запросу найдены документы: ${names}.`;
                   setAnswer(liveAnswer);
                 }
-                saveCache({ query, userId, documents: liveDocs, answer: liveAnswer });
+                saveCache({
+                  query,
+                  userId,
+                  documents: liveDocs,
+                  answer: liveAnswer,
+                });
               } else if (data.type === "error") {
                 setError(data.message);
                 setDocsLoading(false);
@@ -208,29 +251,39 @@ const SearchResults = () => {
           {(searching || docsLoading) && (
             <div className="ai-answer-block">
               <div className="ai-answer-header">
-                <span className="ai-answer-icon"><i className="fas fa-robot"></i></span>
+                <span className="ai-answer-icon">
+                  <i className="fas fa-robot"></i>
+                </span>
                 <span className="ai-answer-label">
                   {searching ? "Идет поиск документов…" : "Загрузка…"}
                 </span>
               </div>
-              <p className="ai-answer-text"><i className="fa fa-spinner fa-spin"></i></p>
+              <p className="ai-answer-text">
+                <i className="fa fa-spinner fa-spin"></i>
+              </p>
             </div>
           )}
 
           {!searching && answerLoading && answer === "" && (
             <div className="ai-answer-block">
               <div className="ai-answer-header">
-                <span className="ai-answer-icon"><i className="fas fa-robot"></i></span>
+                <span className="ai-answer-icon">
+                  <i className="fas fa-robot"></i>
+                </span>
                 <span className="ai-answer-label">Формулируется ответ…</span>
               </div>
-              <p className="ai-answer-text"><i className="fa fa-spinner fa-spin"></i></p>
+              <p className="ai-answer-text">
+                <i className="fa fa-spinner fa-spin"></i>
+              </p>
             </div>
           )}
 
           {answer && (
             <div className="ai-answer-block">
               <div className="ai-answer-header">
-                <span className="ai-answer-icon"><i className="fas fa-robot"></i></span>
+                <span className="ai-answer-icon">
+                  <i className="fas fa-robot"></i>
+                </span>
                 <span className="ai-answer-label">Ответ системы</span>
               </div>
               <div className="ai-answer-text markdown-body">
@@ -255,21 +308,32 @@ const SearchResults = () => {
             <div className="empty-search-block">
               <i className="fa fa-search empty-search-icon" />
               <h3 className="empty-search-title">Документы не найдены</h3>
-              <p className="empty-search-msg">По запросу «{query}» ничего не найдено в архиве</p>
+              <p className="empty-search-msg">
+                По запросу «{query}» ничего не найдено в архиве
+              </p>
             </div>
           )}
 
-          {documents.map((doc) => <DocCard key={doc.id} doc={doc} query={query} userId={userId} />)}
+          {documents.map((doc) => (
+            <DocCard key={doc.id} doc={doc} query={query} userId={userId} />
+          ))}
         </div>
 
         {documents.length > 0 && (
           <div className="search-results-sidebar">
             <h4 className="sources-title">Источники</h4>
             {documents.map((doc, i) => (
-              <SourceItem key={doc.id} doc={doc} isLast={i === documents.length - 1} query={query} userId={userId} />
+              <SourceItem
+                key={doc.id}
+                doc={doc}
+                isLast={i === documents.length - 1}
+                query={query}
+                userId={userId}
+              />
             ))}
             <div className="sources-tip">
-              <i className="fas fa-lightbulb"></i> <strong>Совет:</strong> Кликните на источник, чтобы увидеть полный контекст.
+              <i className="fas fa-lightbulb"></i> <strong>Совет:</strong>{" "}
+              Кликните на источник, чтобы увидеть полный контекст.
             </div>
           </div>
         )}

@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { Documents } from './documents.entity';
-import { DocumentFiles } from '../document_files/document_files.entity';
+import { DocumentFiles } from './document_files.entity';
 import { UploadDocumentDto } from './dto/upload-document.dto';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -31,7 +31,9 @@ export class DocumentService {
   ) {}
 
   private async getAiClient(): Promise<{ client: OpenAI; model: string }> {
-    const settings = await this.aiSettingsRepository.findOne({ where: { id: 1 } });
+    const settings = await this.aiSettingsRepository.findOne({
+      where: { id: 1 },
+    });
 
     const rawKey = settings?.api_key || process.env.AI_API_KEY || '';
     let apiKey = rawKey;
@@ -50,7 +52,7 @@ export class DocumentService {
     return { client: new OpenAI({ apiKey, baseURL }), model };
   }
 
-  // Краткое содержание
+  // Краткое содержание из файла
 
   private async buildAiSummary(rawText: string): Promise<string> {
     if (rawText.trim().length < 100) return rawText.trim();
@@ -79,14 +81,15 @@ export class DocumentService {
         ],
       });
 
-      return response.choices[0].message.content?.trim() || rawText.slice(0, 500);
+      return (
+        response.choices[0].message.content?.trim() || rawText.slice(0, 500)
+      );
     } catch (e: any) {
       console.error('[SUMMARY ERROR]', e.message);
       return rawText.slice(0, 500).trim() + '…';
     }
   }
 
-  // Форматирование полного текста чанками 
   private splitIntoChunks(text: string, size: number): string[] {
     const chunks: string[] = [];
     let i = 0;
@@ -112,9 +115,10 @@ export class DocumentService {
     const isFirst = chunkIndex === 0;
     const isLast = chunkIndex === totalChunks - 1;
 
-    const contextHint = totalChunks > 1
-      ? `Это часть ${chunkIndex + 1} из ${totalChunks}. ${isFirst ? 'Начало документа.' : ''} ${isLast ? 'Конец документа.' : 'Продолжение следует.'}`
-      : '';
+    const contextHint =
+      totalChunks > 1
+        ? `Это часть ${chunkIndex + 1} из ${totalChunks}. ${isFirst ? 'Начало документа.' : ''} ${isLast ? 'Конец документа.' : 'Продолжение следует.'}`
+        : '';
 
     const response = await client.chat.completions.create({
       model,
@@ -153,7 +157,13 @@ export class DocumentService {
 
       const formattedChunks: string[] = [];
       for (let i = 0; i < chunks.length; i++) {
-        const formatted = await this.formatChunk(client, model, chunks[i], i, chunks.length);
+        const formatted = await this.formatChunk(
+          client,
+          model,
+          chunks[i],
+          i,
+          chunks.length,
+        );
         formattedChunks.push(formatted);
         console.log(`[FORMAT] Чанк ${i + 1}/${chunks.length} готов`);
       }
@@ -165,8 +175,12 @@ export class DocumentService {
     }
   }
 
-  // Retry-обёртка для DB-операций (защита от обрывов PgBouncer)
-  private async withRetry<T>(label: string, fn: () => Promise<T>, attempts = 4): Promise<T> {
+  // Защита от обрывов соединения с БДшкой
+  private async withRetry<T>(
+    label: string,
+    fn: () => Promise<T>,
+    attempts = 4,
+  ): Promise<T> {
     for (let i = 1; i <= attempts; i++) {
       try {
         return await fn();
@@ -178,8 +192,10 @@ export class DocumentService {
           err?.code === 'ECONNREFUSED';
         if (!isConn || i === attempts) throw err;
         const delay = 600 * i;
-        console.warn(`[RETRY] ${label}: попытка ${i}/${attempts}, повтор через ${delay}мс`);
-        await new Promise(r => setTimeout(r, delay));
+        console.warn(
+          `[RETRY] ${label}: попытка ${i}/${attempts}, повтор через ${delay}мс`,
+        );
+        await new Promise((r) => setTimeout(r, delay));
       }
     }
     throw new Error(`[RETRY] ${label}: все попытки исчерпаны`);
@@ -198,8 +214,14 @@ export class DocumentService {
       const rawText = await this.extractTextFromFile(fullPath, mimeType);
 
       if (!rawText.trim()) {
-        await this.withRetry('set empty', () => this.documentFilesRepository.update(fileId, { extraction_status: 'empty' }));
-        await this.withRetry('set processed', () => this.documentsRepository.update(documentId, { status: 'processed' }));
+        await this.withRetry('set empty', () =>
+          this.documentFilesRepository.update(fileId, {
+            extraction_status: 'empty',
+          }),
+        );
+        await this.withRetry('set processed', () =>
+          this.documentsRepository.update(documentId, { status: 'processed' }),
+        );
         return;
       }
 
@@ -222,8 +244,16 @@ export class DocumentService {
     } catch (e) {
       console.error(`[PROCESS ERROR] document_id: ${documentId}`, e);
       try {
-        await this.withRetry('set failed', () => this.documentFilesRepository.update(fileId, { extraction_status: 'failed' }));
-        await this.withRetry('set extraction_failed', () => this.documentsRepository.update(documentId, { status: 'extraction_failed' }));
+        await this.withRetry('set failed', () =>
+          this.documentFilesRepository.update(fileId, {
+            extraction_status: 'failed',
+          }),
+        );
+        await this.withRetry('set extraction_failed', () =>
+          this.documentsRepository.update(documentId, {
+            status: 'extraction_failed',
+          }),
+        );
       } catch (e2) {
         console.error(`[PROCESS ERROR] не удалось обновить статус`, e2);
       }
@@ -236,7 +266,9 @@ export class DocumentService {
     file: Express.Multer.File,
     dto: UploadDocumentDto,
   ): Promise<{ document: Documents; file: DocumentFiles }> {
-    const originalName = Buffer.from(file.originalname, 'latin1').toString('utf8');
+    const originalName = Buffer.from(file.originalname, 'latin1').toString(
+      'utf8',
+    );
 
     const document = await this.withRetry('save document', () =>
       this.documentsRepository.save({
@@ -262,9 +294,12 @@ export class DocumentService {
       }),
     );
 
-    this.processAndSave(documentFile.id, document.id, file.path, file.mimetype).catch((e) =>
-      console.error('[UPLOAD PROCESS ERROR]', e),
-    );
+    this.processAndSave(
+      documentFile.id,
+      document.id,
+      file.path,
+      file.mimetype,
+    ).catch((e) => console.error('[UPLOAD PROCESS ERROR]', e));
 
     return { document, file: documentFile };
   }
@@ -272,12 +307,20 @@ export class DocumentService {
   async extractAllText(): Promise<{ message: string; total: number }> {
     const allFiles = await this.documentFilesRepository.find();
     for (const file of allFiles) {
-      await this.documentFilesRepository.update(file.id, { extraction_status: 'pending' });
-      this.processAndSave(file.id, file.document_id, file.file_path, file.file_type).catch((e) =>
-        console.error('[RE-EXTRACT-ALL ERROR]', e),
-      );
+      await this.documentFilesRepository.update(file.id, {
+        extraction_status: 'pending',
+      });
+      this.processAndSave(
+        file.id,
+        file.document_id,
+        file.file_path,
+        file.file_type,
+      ).catch((e) => console.error('[RE-EXTRACT-ALL ERROR]', e));
     }
-    return { message: `Переизвлечение запущено для ${allFiles.length} файлов`, total: allFiles.length };
+    return {
+      message: `Переизвлечение запущено для ${allFiles.length} файлов`,
+      total: allFiles.length,
+    };
   }
 
   async extractText(documentId: number): Promise<{ message: string }> {
@@ -288,10 +331,15 @@ export class DocumentService {
     if (!files.length) throw new NotFoundException('Файлы не найдены');
 
     for (const file of files) {
-      await this.documentFilesRepository.update(file.id, { extraction_status: 'pending' });
-      this.processAndSave(file.id, documentId, file.file_path, file.file_type).catch((e) =>
-        console.error('[RE-EXTRACT ERROR]', e),
-      );
+      await this.documentFilesRepository.update(file.id, {
+        extraction_status: 'pending',
+      });
+      this.processAndSave(
+        file.id,
+        documentId,
+        file.file_path,
+        file.file_type,
+      ).catch((e) => console.error('[RE-EXTRACT ERROR]', e));
     }
 
     return { message: `Извлечение запущено для ${files.length} файлов` };
@@ -299,34 +347,44 @@ export class DocumentService {
 
   private transliterate(word: string): string | null {
     const map: Record<string, string> = {
-      'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'yo','ж':'zh',
-      'з':'z','и':'i','й':'y','к':'k','л':'l','м':'m','н':'n','о':'o',
-      'п':'p','р':'r','с':'s','т':'t','у':'u','ф':'f','х':'kh','ц':'ts',
-      'ч':'ch','ш':'sh','щ':'sch','ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya',
+      а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', е: 'e', ё: 'yo', ж: 'zh', з: 'z', и: 'i',
+      й: 'y', к: 'k', л: 'l', м: 'm', н: 'n', о: 'o', п: 'p', р: 'r', с: 's', т: 't',
+      у: 'u', ф: 'f', х: 'kh', ц: 'ts', ч: 'ch', ш: 'sh', щ: 'sch', ъ: '', ы: 'y',
+      ь: '', э: 'e', ю: 'yu', я: 'ya',
     };
     const hasRussian = /[а-яё]/i.test(word);
     if (!hasRussian) return null;
-    return word.toLowerCase().split('').map((c) => map[c] ?? c).join('');
+    return word
+      .toLowerCase()
+      .split('')
+      .map((c) => map[c] ?? c)
+      .join('');
   }
 
   private getSynonyms(word: string): string[] {
     const groups = [
-      ['квиз','викторина','тест','опрос','quiz'],
-      ['договор','контракт','соглашение'],
-      ['задача','задачи','задание','план','todo'],
-      ['архив','хранилище','repository'],
-      ['поиск','search','найти','искать'],
-      ['лазер','лазеры','laser'],
-      ['криминалистика','экспертиза','forensic'],
-      ['казак','казаки','казачий','казачьи','казачье'],
-      ['формула','формулы','уравнение'],
-      ['физика','physics'],
-      ['распределение','distribution'],
-      ['интеграция','integration','внедрение'],
+      ['квиз', 'викторина', 'тест', 'опрос', 'quiz'],
+      ['договор', 'контракт', 'соглашение'],
+      ['задача', 'задачи', 'задание', 'план', 'todo'],
+      ['архив', 'хранилище', 'repository'],
+      ['поиск', 'search', 'найти', 'искать'],
+      ['лазер', 'лазеры', 'laser'],
+      ['криминалистика', 'экспертиза', 'forensic'],
+      ['казак', 'казаки', 'казачий', 'казачьи', 'казачье'],
+      ['формула', 'формулы', 'уравнение'],
+      ['физика', 'physics'],
+      ['распределение', 'distribution'],
+      ['интеграция', 'integration', 'внедрение'],
     ];
     const result: string[] = [];
     for (const group of groups) {
-      if (group.some((w) => word.startsWith(w.slice(0, Math.min(w.length, 4))) || w.startsWith(word.slice(0, 4)))) {
+      if (
+        group.some(
+          (w) =>
+            word.startsWith(w.slice(0, Math.min(w.length, 4))) ||
+            w.startsWith(word.slice(0, 4)),
+        )
+      ) {
         result.push(...group.filter((w) => w !== word));
       }
     }
@@ -335,9 +393,9 @@ export class DocumentService {
 
   async searchDocuments(query: string): Promise<Documents[]> {
     const stopWords = new Set([
-      'найди','найти','покажи','документ','документы','файл','файлы',
-      'про','для','все','мне','нужно','хочу','где','как','что','это',
-      'такое','какие','который','которые','нужен','можно','есть',
+      'найди', 'найти', 'покажи', 'документ', 'документы', 'файл', 'файлы', 'про',
+      'для', 'все', 'мне', 'нужно', 'хочу', 'где', 'как', 'что', 'это', 'такое',
+      'какие', 'который', 'которые', 'нужен', 'можно', 'есть',
     ]);
     const baseWords = query
       .toLowerCase()
@@ -353,7 +411,10 @@ export class DocumentService {
       searchWords.push(w);
       const synonyms = this.getSynonyms(w);
       for (const s of synonyms) searchWords.push(s);
-      const stem = w.replace(/(ую|ой|ый|ий|ая|яя|ое|ее|ом|ем|ых|их|ам|ям|ов|ев|ах|ях|ей|ью|ю|у|а|я|о|е|и|ы)$/i, '');
+      const stem = w.replace(
+        /(ую|ой|ый|ий|ая|яя|ое|ее|ом|ем|ых|их|ам|ям|ов|ев|ах|ях|ей|ью|ю|у|а|я|о|е|и|ы)$/i,
+        '',
+      );
       if (stem.length > 3 && stem !== w) searchWords.push(stem);
       const translit = this.transliterate(w);
       if (translit) searchWords.push(translit);
@@ -367,11 +428,19 @@ export class DocumentService {
     if (words.length === 0) return [];
 
     const params: Record<string, string> = {};
-    words.forEach((w, i) => { params[`w${i}`] = `%${w}%`; });
+    words.forEach((w, i) => {
+      params[`w${i}`] = `%${w}%`;
+    });
 
-    const titleConds = words.map((_, i) => `LOWER(doc.title) LIKE :w${i}`).join(' OR ');
-    const fileNameConds = words.map((_, i) => `LOWER(f.file_name) LIKE :w${i}`).join(' OR ');
-    const summConds = words.map((_, i) => `LOWER(f.normalized_text) LIKE :w${i}`).join(' OR ');
+    const titleConds = words
+      .map((_, i) => `LOWER(doc.title) LIKE :w${i}`)
+      .join(' OR ');
+    const fileNameConds = words
+      .map((_, i) => `LOWER(f.file_name) LIKE :w${i}`)
+      .join(' OR ');
+    const summConds = words
+      .map((_, i) => `LOWER(f.normalized_text) LIKE :w${i}`)
+      .join(' OR ');
 
     const where = `(${titleConds}) OR (${fileNameConds}) OR (${summConds})`;
 
@@ -406,7 +475,10 @@ export class DocumentService {
     return document;
   }
 
-  private async extractTextFromFile(filePath: string, mimeType: string): Promise<string> {
+  private async extractTextFromFile(
+    filePath: string,
+    mimeType: string,
+  ): Promise<string> {
     const buffer = fs.readFileSync(filePath);
 
     switch (mimeType) {
@@ -447,7 +519,8 @@ export class DocumentService {
   private getDocumentType(mimeType: string): string {
     const types: Record<string, string> = {
       'application/pdf': 'PDF',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'DOCX',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+        'DOCX',
       'application/msword': 'DOC',
       'text/plain': 'TXT',
       'image/png': 'PNG',

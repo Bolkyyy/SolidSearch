@@ -48,7 +48,9 @@ const SearchPage = () => {
 
         <div className="hero-section">
           <h1 className="hero-title">Найдите любой документ за секунды</h1>
-          <p className="hero-subtitle">Введите запрос и получите точные результаты</p>
+          <p className="hero-subtitle">
+            Введите запрос и получите точные результаты
+          </p>
         </div>
 
         <div className="ai-search-container">
@@ -85,9 +87,7 @@ const SearchPage = () => {
           </div>
         </div>
 
-        {error && (
-          <ErrorToast message={error} onClose={() => setError("")} />
-        )}
+        {error && <ErrorToast message={error} onClose={() => setError("")} />}
 
         <div className="quick-filters-section">
           <h3 className="filters-title">Быстрые фильтры</h3>

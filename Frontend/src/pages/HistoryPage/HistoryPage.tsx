@@ -17,10 +17,7 @@ const StatusBadge = ({ status }: { status?: string | null }) => {
   return <span className="history-badge success">Успешно</span>;
 };
 
-type ConfirmState =
-  | { type: "clear" }
-  | { type: "delete"; id: number }
-  | null;
+type ConfirmState = { type: "clear" } | { type: "delete"; id: number } | null;
 
 const HistoryPage = () => {
   const [history, setHistory] = useState<HistoryItem[]>([]);
@@ -47,15 +44,13 @@ const HistoryPage = () => {
   const filtered = useMemo(() => {
     if (!searchQuery.trim()) return history;
     const q = searchQuery.toLowerCase();
-    return history.filter((item) =>
-      item.query_text?.toLowerCase().includes(q)
-    );
+    return history.filter((item) => item.query_text?.toLowerCase().includes(q));
   }, [history, searchQuery]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginated = filtered.slice(
     (currentPage - 1) * PAGE_SIZE,
-    currentPage * PAGE_SIZE
+    currentPage * PAGE_SIZE,
   );
 
   const pageNumbers = useMemo(() => {
@@ -67,7 +62,8 @@ const HistoryPage = () => {
       let i = Math.max(2, currentPage - 1);
       i <= Math.min(totalPages - 1, currentPage + 1);
       i++
-    ) pages.push(i);
+    )
+      pages.push(i);
     if (currentPage < totalPages - 2) pages.push("...");
     pages.push(totalPages);
     return pages;
@@ -84,9 +80,14 @@ const HistoryPage = () => {
 
   const repeatSearch = (queryText: string) => {
     const userId = localStorage.getItem("userId");
-    if (!userId) { setError("Пользователь не авторизован"); return; }
+    if (!userId) {
+      setError("Пользователь не авторизован");
+      return;
+    }
     if (!queryText?.trim()) return;
-    navigate("/search/results", { state: { query: queryText, userId: Number(userId) } });
+    navigate("/search/results", {
+      state: { query: queryText, userId: Number(userId) },
+    });
   };
 
   const handleConfirm = async () => {
@@ -140,9 +141,13 @@ const HistoryPage = () => {
           onClick={() => setConfirm({ type: "clear" })}
         >
           {clearing ? (
-            <><i className="fa fa-spinner fa-spin" /> Очистка...</>
+            <>
+              <i className="fa fa-spinner fa-spin" /> Очистка...
+            </>
           ) : (
-            <><i className="fa fa-trash" /> Очистить историю</>
+            <>
+              <i className="fa fa-trash" /> Очистить историю
+            </>
           )}
         </button>
 
@@ -190,7 +195,9 @@ const HistoryPage = () => {
                   <div className="history-query-text">{item.query_text}</div>
                 </td>
                 <td>
-                  <span className="history-date">{formatDate(item.created_at)}</span>
+                  <span className="history-date">
+                    {formatDate(item.created_at)}
+                  </span>
                 </td>
                 <td>
                   <span className="history-results">
@@ -210,7 +217,9 @@ const HistoryPage = () => {
                     </button>
                     <button
                       className="history-action-btn history-delete-btn"
-                      onClick={() => setConfirm({ type: "delete", id: item.id })}
+                      onClick={() =>
+                        setConfirm({ type: "delete", id: item.id })
+                      }
                       title="Удалить запись"
                     >
                       <i className="fa fa-trash" />
@@ -228,7 +237,7 @@ const HistoryPage = () => {
               ? "Нет записей"
               : `Показано ${(currentPage - 1) * PAGE_SIZE + 1}–${Math.min(
                   currentPage * PAGE_SIZE,
-                  filtered.length
+                  filtered.length,
                 )} из ${filtered.length}`}
           </span>
           <div className="history-pagination-controls">
@@ -256,7 +265,7 @@ const HistoryPage = () => {
                 >
                   {p}
                 </button>
-              )
+              ),
             )}
 
             <button
@@ -272,7 +281,9 @@ const HistoryPage = () => {
 
       <ConfirmModal
         isOpen={confirm !== null}
-        title={confirm?.type === "clear" ? "Очистить историю?" : "Удалить запись?"}
+        title={
+          confirm?.type === "clear" ? "Очистить историю?" : "Удалить запись?"
+        }
         message={
           confirm?.type === "clear"
             ? "Все запросы будут удалены безвозвратно. Это действие нельзя отменить."

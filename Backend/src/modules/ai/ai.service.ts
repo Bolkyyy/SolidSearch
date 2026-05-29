@@ -58,7 +58,11 @@ export class AiService {
     return query.toLowerCase().trim().replace(/\s+/g, ' ');
   }
 
-  private async withRetry<T>(label: string, fn: () => Promise<T>, attempts = 4): Promise<T> {
+  private async withRetry<T>(
+    label: string,
+    fn: () => Promise<T>,
+    attempts = 4,
+  ): Promise<T> {
     for (let i = 1; i <= attempts; i++) {
       try {
         return await fn();
@@ -70,8 +74,10 @@ export class AiService {
           err?.code === 'ECONNREFUSED';
         if (!isConn || i === attempts) throw err;
         const delay = 600 * i;
-        console.warn(`[AI RETRY] ${label}: попытка ${i}/${attempts}, повтор через ${delay}мс`);
-        await new Promise(r => setTimeout(r, delay));
+        console.warn(
+          `[AI RETRY] ${label}: попытка ${i}/${attempts}, повтор через ${delay}мс`,
+        );
+        await new Promise((r) => setTimeout(r, delay));
       }
     }
     throw new Error(`[AI RETRY] ${label}: все попытки исчерпаны`);
@@ -88,20 +94,32 @@ export class AiService {
       .join('\n\n---\n\n');
   }
 
-  private async getClient(): Promise<{ client: OpenAI; model: string; provider: string }> {
+  private async getClient(): Promise<{
+    client: OpenAI;
+    model: string;
+    provider: string;
+  }> {
     const settings = await this.aiRepository.findOne({ where: { id: 1 } });
     const rawKey = settings?.api_key || process.env.AI_API_KEY || '';
     let apiKey = rawKey;
-    try { apiKey = decrypt(rawKey); } catch {}
+    try {
+      apiKey = decrypt(rawKey);
+    } catch {}
     const model = settings?.model_name || 'deepseek-chat';
     const baseURL = settings?.base_url || 'https://api.deepseek.com/v1';
     const provider = settings?.provider_code || 'deepseek';
-    return { client: new OpenAI({ apiKey, baseURL, timeout: 30_000 }), model, provider };
+    return {
+      client: new OpenAI({ apiKey, baseURL, timeout: 30_000 }),
+      model,
+      provider,
+    };
   }
 
-
   private async aiSelectDocuments(
-    client: OpenAI, model: string, query: string, allDocs: Documents[],
+    client: OpenAI,
+    model: string,
+    query: string,
+    allDocs: Documents[],
   ): Promise<Documents[]> {
     const docList = allDocs
       .map((d) => {
@@ -147,7 +165,11 @@ export class AiService {
     return this.documentService.findByIds(ids);
   }
 
-  async streamAnswer(query: string, userId: number | undefined, res: Response): Promise<void> {
+  async streamAnswer(
+    query: string,
+    userId: number | undefined,
+    res: Response,
+  ): Promise<void> {
     const send = (data: object) => {
       res.write(`data: ${JSON.stringify(data)}\n\n`);
       if (typeof (res as any).flush === 'function') (res as any).flush();
@@ -159,21 +181,24 @@ export class AiService {
       send({ type: 'searching' });
       console.log('[SEARCH] Query:', query);
 
-      // быстрый поиск по БД
       let documents = await this.withRetry('searchDocuments', () =>
         this.documentService.searchDocuments(query),
       );
 
       console.log('[SEARCH] DB found', documents.length, 'documents');
 
-      // если БД нашла мало — AI дополняет поиск среди всех документов
       if (documents.length <= 1) {
         console.log('[SEARCH] Few results, running AI selection to find more');
         const allDocs = await this.withRetry('findall', () =>
           this.documentService.findall(),
         );
         if (allDocs.length > 0) {
-          const aiDocs = await this.aiSelectDocuments(client, model, query, allDocs);
+          const aiDocs = await this.aiSelectDocuments(
+            client,
+            model,
+            query,
+            allDocs,
+          );
           const existingIds = new Set(documents.map((d) => d.id));
           for (const doc of aiDocs) {
             if (!existingIds.has(doc.id)) documents.push(doc);
@@ -205,7 +230,6 @@ export class AiService {
         return;
       }
 
-      // AI генерирует ответ по найденным документам
       const context = this.buildDocumentContext(documents);
       const stream = await client.chat.completions.create({
         model,
@@ -260,7 +284,12 @@ export class AiService {
   async generateAnswer(
     query: string,
     userId?: number,
-  ): Promise<{ answer: string; fromCache: boolean; documentIds: number[]; documents: Documents[] }> {
+  ): Promise<{
+    answer: string;
+    fromCache: boolean;
+    documentIds: number[];
+    documents: Documents[];
+  }> {
     const normalized = this.normalizeQuery(query);
     const documents = await this.withRetry('searchDocuments', () =>
       this.documentService.searchDocuments(query),

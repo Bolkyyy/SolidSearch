@@ -1,5 +1,5 @@
 import { Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
-import { DocumentFiles } from "../document_files/document_files.entity";
+import { DocumentFiles } from "./document_files.entity";
 import { DocumentMetadata } from "../document_metadata/document_metadata.entity";
 
 @Entity({ name: 'documents', schema: 'solidsearchdb' })

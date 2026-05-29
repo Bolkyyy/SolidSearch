@@ -1,5 +1,5 @@
 import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
-import { Documents } from "../documents/documents.entity";
+import { Documents } from "./documents.entity";
 
 @Entity({ name: 'document_files', schema: 'solidsearchdb' })
 export class DocumentFiles {
