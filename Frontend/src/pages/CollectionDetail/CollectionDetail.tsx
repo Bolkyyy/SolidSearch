@@ -1,256 +1,254 @@
-// Frontend/src/pages/CollectionDetail/CollectionDetail.tsx
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 import Layout from "../../components/Layout/Layout";
-interface Document {
-  id: string;
+import { DocumentsApi, Document } from "@/api/documentsApi";
+import ConfirmModal from "../../components/ConfirmModal/ConfirmModal";
+import ErrorModal from "../../components/ErrorModal/ErrorModal";
+
+interface Collection {
+  id: number;
   name: string;
-  type: string;
-  size: string;
-  dateAdded: string;
-  status: "indexed" | "processing" | "error";
+  description: string;
+  code: string;
+  is_active: boolean;
+  source_id: number;
 }
 
+const BASE = "http://localhost:3001";
+
 const CollectionDetail = () => {
-  const { collectionName } = useParams();
+  const { collectionId } = useParams<{ collectionId: string }>();
   const navigate = useNavigate();
+
+  const [collection, setCollection] = useState<Collection | null>(null);
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedType, setSelectedType] = useState("all");
-  const [showUploadModal, setShowUploadModal] = useState(false);
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
-  // Данные коллекции
-  const collectionData: { [key: string]: any } = {
-    "Архив 2024": {
-      name: "Архив 2024",
-      description: "Документы за 2024 год",
-      totalDocs: 3245,
-      size: "2.4 ГБ",
-      formats: ["PDF", "DOCX", "TXT"],
-      createdAt: "2024-01-01",
-    },
-    "Архив 2023": {
-      name: "Архив 2023",
-      description: "Документы за 2023 год",
-      totalDocs: 8134,
-      size: "5.8 ГБ",
-      formats: ["PDF", "DOCX", "TXT"],
-      createdAt: "2023-01-01",
-    },
-    "Текущие проекты": {
-      name: "Текущие проекты",
-      description: "Активные проекты компании",
-      totalDocs: 456,
-      size: "890 МБ",
-      formats: ["PDF", "DOCX", "TXT", "XLSX"],
-      createdAt: "2025-01-01",
-    },
-  };
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [allDocuments, setAllDocuments] = useState<Document[]>([]);
+  const [addSearch, setAddSearch] = useState("");
+  const [adding, setAdding] = useState<number | null>(null);
+  const [loadingAll, setLoadingAll] = useState(false);
 
-  const [documents, setDocuments] = useState<Document[]>([
-    {
-      id: "1",
-      name: "Годовой отчет 2024.pdf",
-      type: "PDF",
-      size: "2.3 МБ",
-      dateAdded: "2024-12-15",
-      status: "indexed",
-    },
-    {
-      id: "2",
-      name: "Техническая документация.docx",
-      type: "DOCX",
-      size: "1.1 МБ",
-      dateAdded: "2024-12-10",
-      status: "indexed",
-    },
-    {
-      id: "3",
-      name: "Заметки встречи.txt",
-      type: "TXT",
-      size: "45 КБ",
-      dateAdded: "2024-12-05",
-      status: "processing",
-    },
-    {
-      id: "4",
-      name: "Презентация проекта.pptx",
-      type: "PPTX",
-      size: "5.7 МБ",
-      dateAdded: "2024-11-28",
-      status: "indexed",
-    },
-    {
-      id: "5",
-      name: "Финансовая модель.xlsx",
-      type: "XLSX",
-      size: "890 КБ",
-      dateAdded: "2024-11-20",
-      status: "error",
-    },
-    {
-      id: "6",
-      name: "Договор поставки.pdf",
-      type: "PDF",
-      size: "1.2 МБ",
-      dateAdded: "2024-11-15",
-      status: "indexed",
-    },
-    {
-      id: "7",
-      name: "Инструкция пользователя.docx",
-      type: "DOCX",
-      size: "3.4 МБ",
-      dateAdded: "2024-11-10",
-      status: "indexed",
-    },
-    {
-      id: "8",
-      name: "Логи сервера.txt",
-      type: "TXT",
-      size: "128 КБ",
-      dateAdded: "2024-11-05",
-      status: "indexed",
-    },
-  ]);
+  const [removeTarget, setRemoveTarget] = useState<Document | null>(null);
+  const [removing, setRemoving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const collection = collectionData[collectionName as string];
+  const id = Number(collectionId);
 
   useEffect(() => {
-    if (!collection) {
+    if (!id) {
       navigate("/collections");
-    }
-  }, [collection, navigate]);
-
-  if (!collection) {
-    return null;
-  }
-
-  const handleReindex = () => {
-    alert(
-      `Переиндексация коллекции "${collection.name}" запущена. Это может занять несколько минут.`,
-    );
-  };
-
-  const handleDeleteDocument = (id: string, name: string) => {
-    if (window.confirm(`Удалить документ "${name}"?`)) {
-      setDocuments(documents.filter((doc) => doc.id !== id));
-    }
-  };
-
-  const handleFileUpload = () => {
-    if (selectedFiles.length === 0) {
-      alert("Выберите файлы для загрузки");
       return;
     }
 
-    const newDocuments: Document[] = selectedFiles.map((file, index) => ({
-      id: Date.now().toString() + index,
-      name: file.name,
-      type: file.name.split(".").pop()?.toUpperCase() || "FILE",
-      size: (file.size / 1024 / 1024).toFixed(2) + " МБ",
-      dateAdded: new Date().toISOString().split("T")[0],
-      status: "processing",
-    }));
+    const load = async () => {
+      try {
+        const [colRes, docs] = await Promise.all([
+          axios.get(`${BASE}/document_collection`),
+          DocumentsApi.getByCollectionId(id),
+        ]);
+        const found = colRes.data.find((c: Collection) => c.id === id);
+        if (!found) {
+          navigate("/collections");
+          return;
+        }
+        setCollection(found);
+        setDocuments(docs);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    setDocuments([...newDocuments, ...documents]);
-    setSelectedFiles([]);
-    setShowUploadModal(false);
-    alert(`Загружено ${selectedFiles.length} файлов. Начинается обработка...`);
+    load();
+  }, [id, navigate]);
+
+  const openAddModal = async () => {
+    setShowAddModal(true);
+    setLoadingAll(true);
+    try {
+      const all = await DocumentsApi.getAll();
+      const existingIds = new Set(documents.map((d) => d.id));
+      setAllDocuments(all.filter((d) => !existingIds.has(d.id)));
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingAll(false);
+    }
   };
 
-  const getFileIcon = (type: string): string => {
-    const icons: { [key: string]: string } = {
+  const handleAddDocument = async (doc: Document) => {
+    setAdding(doc.id);
+    try {
+      const updated = await DocumentsApi.addToCollection(doc.id, id);
+      setDocuments((prev) => [updated, ...prev]);
+      setAllDocuments((prev) => prev.filter((d) => d.id !== doc.id));
+    } catch {
+      setErrorMessage("Не удалось добавить документ в коллекцию. Проверьте соединение с сервером и попробуйте снова.");
+    } finally {
+      setAdding(null);
+    }
+  };
+  const handleConfirmRemove = async () => {
+    if (!removeTarget) return;
+    setRemoving(true);
+    try {
+      await DocumentsApi.addToCollection(removeTarget.id, 0);
+      setDocuments((prev) => prev.filter((d) => d.id !== removeTarget.id));
+      setRemoveTarget(null);
+    } catch {
+      console.error("Ошибка при удалении документа из коллекции");
+    } finally {
+      setRemoving(false);
+    }
+  };
+
+  const getFileIcon = (type: string) => {
+    const icons: Record<string, string> = {
       PDF: "fa-file-pdf-o",
       DOCX: "fa-file-word-o",
+      DOC: "fa-file-word-o",
       TXT: "fa-file-text-o",
       XLSX: "fa-file-excel-o",
       PPTX: "fa-file-powerpoint-o",
     };
-    return icons[type] || "fa-file-o";
+    return icons[type?.toUpperCase()] || "fa-file-o";
   };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "indexed":
+      case "processed":
         return (
           <span className="status-success">
-            <i className="fa fa-check-circle"></i> Индексирован
+            <i className="fa fa-check-circle" /> Индексирован
           </span>
         );
       case "processing":
         return (
           <span className="status-warning">
-            <i className="fa fa-spinner fa-spin"></i> Обработка
+            <i className="fa fa-spinner fa-spin" /> Обработка
           </span>
         );
-      case "error":
+      case "extraction_failed":
         return (
           <span className="status-error">
-            <i className="fa fa-exclamation-circle"></i> Ошибка
+            <i className="fa fa-exclamation-circle" /> Ошибка
           </span>
         );
       default:
-        return null;
+        return (
+          <span className="status-warning">
+            <i className="fa fa-clock-o" /> Ожидание
+          </span>
+        );
     }
   };
 
+  const getTotalSize = (files: Document["files"]) => {
+    if (!files?.length) return "—";
+    const total = files.reduce((sum, f) => sum + (f.file_size || 0), 0);
+    if (total === 0) return "—";
+    if (total < 1024) return `${total} Б`;
+    if (total < 1024 * 1024) return `${(total / 1024).toFixed(1)} КБ`;
+    return `${(total / 1024 / 1024).toFixed(1)} МБ`;
+  };
+
+  const getDocType = (doc: Document) =>
+    doc.document_type || doc.files?.[0]?.file_type || "—";
+
+  const types = Array.from(
+    new Set(
+      documents
+        .map((d) => getDocType(d).toUpperCase())
+        .filter((t) => t !== "—"),
+    ),
+  );
+
   const filteredDocuments = documents.filter((doc) => {
-    const matchesSearch = doc.name
-      .toLowerCase()
+    const matchSearch = doc.title
+      ?.toLowerCase()
       .includes(searchTerm.toLowerCase());
-    const matchesType = selectedType === "all" || doc.type === selectedType;
-    return matchesSearch && matchesType;
+    const matchType =
+      selectedType === "all" || getDocType(doc).toUpperCase() === selectedType;
+    return matchSearch && matchType;
   });
+
+  const filteredAddDocs = allDocuments.filter((doc) =>
+    doc.title?.toLowerCase().includes(addSearch.toLowerCase()),
+  );
+
+  if (loading) {
+    return (
+      <Layout>
+        <div
+          style={{
+            textAlign: "center",
+            padding: "80px",
+            color: "rgba(255,255,255,0.5)",
+          }}
+        >
+          <i className="fa fa-spinner fa-spin fa-2x" />
+          <p style={{ marginTop: 16 }}>Загрузка...</p>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!collection) return null;
 
   return (
     <Layout>
       <div className="collection-detail-container">
-        {/* Хлебные крошки */}
         <div className="breadcrumbs">
           <Link to="/collections">Архив документов</Link>
-          <i className="fa fa-chevron-right"></i>
+          <i className="fa fa-chevron-right" />
           <span>{collection.name}</span>
         </div>
 
-        {/* Заголовок коллекции */}
         <div className="collection-header-detail">
           <div className="collection-header-content">
             <div className="collection-title-section">
               <h1>
-                <i className="fa fa-folder-open"></i>
+                <i className="fa fa-folder-open" style={{ marginRight: 10 }} />
                 {collection.name}
               </h1>
               <p className="collection-description">{collection.description}</p>
               <div className="collection-meta">
                 <span>
-                  <i className="fa fa-calendar"></i> Создана:{" "}
-                  {collection.createdAt}
-                </span>
-                <span>
-                  <i className="fa fa-database"></i> {collection.size}
-                </span>
-                <span>
-                  <i className="fa fa-file-text-o"></i> {collection.totalDocs}{" "}
+                  <i className="fa fa-file-text-o" /> {documents.length}{" "}
                   документов
+                </span>
+                <span>
+                  <i
+                    className="fa fa-circle"
+                    style={{
+                      color: collection.is_active ? "#10b981" : "#ef4444",
+                      marginRight: 4,
+                    }}
+                  />
+                  {collection.is_active ? "Активна" : "Неактивна"}
                 </span>
               </div>
             </div>
             <div className="collection-actions-detail">
-              <button
-                className="btn-upload"
-                onClick={() => setShowUploadModal(true)}
-              >
-                <i className="fa fa-upload"></i> Загрузить
+              <button className="btn-upload" onClick={openAddModal}>
+                <i className="fa fa-plus" /> Добавить документ
               </button>
-              <button className="btn-reindex-detail" onClick={handleReindex}>
-                <i className="fa fa-refresh"></i> Переиндексировать
+              <button
+                className="btn-reindex-detail"
+                onClick={() => alert("Переиндексация запущена")}
+              >
+                <i className="fa fa-refresh" /> Переиндексировать
               </button>
             </div>
           </div>
         </div>
 
-        {/* Статистика */}
         <div className="stats-mini-grid">
           <div className="stat-mini-card total">
             <div className="stat-mini-value">{documents.length}</div>
@@ -258,28 +256,31 @@ const CollectionDetail = () => {
           </div>
           <div className="stat-mini-card indexed">
             <div className="stat-mini-value">
-              {documents.filter((d) => d.status === "indexed").length}
+              {documents.filter((d) => d.status === "processed").length}
             </div>
             <div className="stat-mini-label">Проиндексировано</div>
           </div>
           <div className="stat-mini-card processing">
             <div className="stat-mini-value">
-              {documents.filter((d) => d.status === "processing").length}
+              {
+                documents.filter(
+                  (d) => d.status === "processing" || d.status === "pending",
+                ).length
+              }
             </div>
             <div className="stat-mini-label">В обработке</div>
           </div>
           <div className="stat-mini-card errors">
             <div className="stat-mini-value">
-              {documents.filter((d) => d.status === "error").length}
+              {documents.filter((d) => d.status === "extraction_failed").length}
             </div>
             <div className="stat-mini-label">Ошибки</div>
           </div>
         </div>
 
-        {/* Поиск и фильтры */}
         <div className="documents-controls">
           <div className="search-box">
-            <i className="fa fa-search"></i>
+            <i className="fa fa-search" />
             <input
               type="text"
               placeholder="Поиск по документам..."
@@ -294,27 +295,29 @@ const CollectionDetail = () => {
             >
               Все
             </button>
-            {collection.formats.map((format: string) => (
+            {types.map((type) => (
               <button
-                key={format}
-                className={`filter-btn ${selectedType === format ? "active" : ""}`}
-                onClick={() => setSelectedType(format)}
+                key={type}
+                className={`filter-btn ${
+                  selectedType === type ? "active" : ""
+                }`}
+                onClick={() => setSelectedType(type)}
               >
-                {format}
+                {type}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Таблица документов */}
         <div className="documents-table-wrapper">
           <table className="documents-table">
             <thead>
               <tr>
                 <th>Название</th>
                 <th>Тип</th>
+                <th>Файлов</th>
                 <th>Размер</th>
-                <th>Дата добавления</th>
+                <th>Дата документа</th>
                 <th>Статус</th>
                 <th></th>
               </tr>
@@ -322,32 +325,54 @@ const CollectionDetail = () => {
             <tbody>
               {filteredDocuments.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="empty-state">
-                    <i className="fa fa-inbox"></i>
+                  <td colSpan={7} className="empty-state">
+                    <i className="fa fa-inbox" />
                     <p>Документы не найдены</p>
                   </td>
                 </tr>
               ) : (
                 filteredDocuments.map((doc) => (
-                  <tr key={doc.id}>
+                  <tr
+                    key={doc.id}
+                    onClick={() => navigate(`/document/${doc.id}`)}
+                    style={{ cursor: "pointer" }}
+                    title="Открыть документ"
+                  >
                     <td>
                       <div className="doc-name-cell">
-                        <i className={`fa ${getFileIcon(doc.type)}`}></i>
-                        <span>{doc.name}</span>
+                        <i className={`fa ${getFileIcon(getDocType(doc))}`} />
+                        <span>{doc.title}</span>
                       </div>
                     </td>
                     <td>
-                      <span className="doc-type-badge">{doc.type}</span>
+                      <span className="doc-type-badge">
+                        {getDocType(doc).toUpperCase()}
+                      </span>
                     </td>
-                    <td>{doc.size}</td>
-                    <td>{doc.dateAdded}</td>
+                    <td style={{ textAlign: "center" }}>
+                      {doc.files?.length ?? 0}
+                    </td>
+                    <td>{getTotalSize(doc.files)}</td>
+                    <td>
+                      {doc.document_date
+                        ? new Date(doc.document_date).toLocaleDateString(
+                            "ru-RU",
+                          )
+                        : doc.created_at
+                          ? new Date(doc.created_at).toLocaleDateString("ru-RU")
+                          : "—"}
+                    </td>
                     <td>{getStatusBadge(doc.status)}</td>
                     <td>
                       <button
                         className="delete-doc-btn"
-                        onClick={() => handleDeleteDocument(doc.id, doc.name)}
+                        title="Убрать из коллекции"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setRemoveTarget(doc);
+                        }}
                       >
-                        <i className="fa fa-trash"></i>
+                        <i className="fa fa-trash" />
                       </button>
                     </td>
                   </tr>
@@ -358,84 +383,132 @@ const CollectionDetail = () => {
         </div>
       </div>
 
-      {/* Модальное окно загрузки */}
-      {showUploadModal && (
-        <div
-          className="modal-overlay"
-          onClick={() => setShowUploadModal(false)}
-        >
-          <div
-            className="modal-container-upload"
-            onClick={(e) => e.stopPropagation()}
-          >
+      {showAddModal && (
+        <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
+          <div className="add-doc-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>Загрузка документов</h2>
+              <h2>
+                <i className="fa fa-plus-circle" style={{ marginRight: 8 }} />
+                Добавить документ
+              </h2>
               <button
                 className="modal-close"
-                onClick={() => setShowUploadModal(false)}
+                onClick={() => setShowAddModal(false)}
               >
-                <i className="fa fa-times"></i>
+                ×
               </button>
             </div>
-            <div className="modal-body">
-              <div
-                className="upload-area"
-                onDrop={(e) => {
-                  e.preventDefault();
-                  setSelectedFiles(Array.from(e.dataTransfer.files));
-                }}
-                onDragOver={(e) => e.preventDefault()}
-              >
-                <i className="fa fa-cloud-upload fa-3x"></i>
-                <p>Перетащите файлы сюда или</p>
-                <input
-                  type="file"
-                  multiple
-                  onChange={(e) =>
-                    setSelectedFiles(Array.from(e.target.files || []))
-                  }
-                  className="hidden-input"
-                  id="fileInput"
-                />
+
+            <div className="add-doc-search-wrap">
+              <i className="fa fa-search" />
+              <input
+                type="text"
+                placeholder="Поиск по названию..."
+                value={addSearch}
+                onChange={(e) => setAddSearch(e.target.value)}
+                autoFocus
+              />
+              {addSearch && (
                 <button
-                  className="btn-secondary"
-                  onClick={() => document.getElementById("fileInput")?.click()}
+                  className="add-doc-clear"
+                  onClick={() => setAddSearch("")}
                 >
-                  Выбрать файлы
+                  <i className="fa fa-times" />
                 </button>
-                {selectedFiles.length > 0 && (
-                  <div className="selected-files">
-                    <p>Выбрано файлов: {selectedFiles.length}</p>
-                    <ul>
-                      {selectedFiles.slice(0, 5).map((file, i) => (
-                        <li key={i}>
-                          {file.name} ({(file.size / 1024 / 1024).toFixed(2)}{" "}
-                          МБ)
-                        </li>
-                      ))}
-                      {selectedFiles.length > 5 && (
-                        <li>...и ещё {selectedFiles.length - 5}</li>
-                      )}
-                    </ul>
-                  </div>
-                )}
-              </div>
+              )}
             </div>
+
+            <div className="add-doc-list">
+              {loadingAll ? (
+                <div className="add-doc-empty">
+                  <i className="fa fa-spinner fa-spin fa-2x" />
+                  <p>Загрузка документов...</p>
+                </div>
+              ) : filteredAddDocs.length === 0 ? (
+                <div className="add-doc-empty">
+                  <i className="fa fa-inbox fa-2x" />
+                  <p>
+                    {allDocuments.length === 0
+                      ? "Все документы уже в этой коллекции"
+                      : "Ничего не найдено"}
+                  </p>
+                </div>
+              ) : (
+                <div className="add-doc-grid">
+                  {filteredAddDocs.map((doc) => (
+                    <div key={doc.id} className="add-doc-card">
+                      <div className="add-doc-card-icon">
+                        <i className={`fa ${getFileIcon(getDocType(doc))}`} />
+                      </div>
+                      <div className="add-doc-card-info">
+                        <div className="add-doc-card-title" title={doc.title}>
+                          {doc.title}
+                        </div>
+                        <div className="add-doc-card-meta">
+                          <span className="doc-type-badge">
+                            {getDocType(doc).toUpperCase()}
+                          </span>
+                          {getStatusBadge(doc.status)}
+                        </div>
+                      </div>
+                      <button
+                        className={`add-doc-card-btn${adding === doc.id ? " loading" : ""}`}
+                        disabled={adding === doc.id}
+                        onClick={() => handleAddDocument(doc)}
+                      >
+                        {adding === doc.id ? (
+                          <>
+                            <i className="fa fa-spinner fa-spin" />{" "}
+                            Добавление...
+                          </>
+                        ) : (
+                          <>
+                            <i className="fa fa-plus" /> Добавить
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className="modal-footer">
+              {!loadingAll && (
+                <span className="add-doc-footer-hint">
+                  Доступно: {allDocuments.length} · Найдено:{" "}
+                  {filteredAddDocs.length}
+                </span>
+              )}
               <button
                 className="btn-cancel"
-                onClick={() => setShowUploadModal(false)}
+                onClick={() => setShowAddModal(false)}
               >
-                Отмена
-              </button>
-              <button className="btn-upload-submit" onClick={handleFileUpload}>
-                <i className="fa fa-upload"></i> Загрузить{" "}
-                {selectedFiles.length > 0 ? `(${selectedFiles.length})` : ""}
+                Закрыть
               </button>
             </div>
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={removeTarget !== null}
+        title="Убрать документ из коллекции?"
+        message={`Документ «${removeTarget?.title}» будет убран из этой коллекции. Сам документ останется в системе.`}
+        confirmText="Убрать"
+        cancelText="Отмена"
+        variant="danger"
+        loading={removing}
+        onConfirm={handleConfirmRemove}
+        onCancel={() => setRemoveTarget(null)}
+      />
+
+      <ErrorModal
+        isOpen={errorMessage !== null}
+        title="Ошибка добавления"
+        message={errorMessage ?? ""}
+        onClose={() => setErrorMessage(null)}
+      />
     </Layout>
   );
 };

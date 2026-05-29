@@ -5,12 +5,21 @@ import { DocumentCollection } from './document_collection.entity';
 
 @Injectable()
 export class DocumentCollectionService {
-    constructor(
-        @InjectRepository(DocumentCollection)
-        private readonly documentFilesRepository: Repository<DocumentCollection>,
-    ) {}
+  constructor(
+    @InjectRepository(DocumentCollection)
+    private readonly documentCollectionRepository: Repository<DocumentCollection>,
+  ) {}
 
-    async findall(): Promise<DocumentCollection[]> {
-        return await this.documentFilesRepository.find();
-    }
+  async findall(): Promise<DocumentCollection[]> {
+    return await this.documentCollectionRepository.find();
+  }
+
+  async create(dto: Partial<DocumentCollection>): Promise<DocumentCollection> {
+    const collection = this.documentCollectionRepository.create(dto);
+    return await this.documentCollectionRepository.save(collection);
+  }
+
+  async remove(id: number): Promise<void> {
+    await this.documentCollectionRepository.delete(id);
+  }
 }

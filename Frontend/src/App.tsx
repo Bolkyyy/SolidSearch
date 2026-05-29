@@ -27,7 +27,7 @@ function App() {
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/search/results" element={<SearchResults />} />
         <Route path="/document/:id" element={<DocumentCard />} />
-        <Route path="/collection/:collectionName" element={<CollectionDetail />} />
+        <Route path="/collection/:collectionId" element={<CollectionDetail />} />
       </Routes>
     </Router>
   );

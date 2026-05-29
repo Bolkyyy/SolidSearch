@@ -52,8 +52,6 @@ export class DocumentService {
     return { client: new OpenAI({ apiKey, baseURL }), model };
   }
 
-  // Краткое содержание из файла
-
   private async buildAiSummary(rawText: string): Promise<string> {
     if (rawText.trim().length < 100) return rawText.trim();
 
@@ -175,7 +173,6 @@ export class DocumentService {
     }
   }
 
-  // Защита от обрывов соединения с БДшкой
   private async withRetry<T>(
     label: string,
     fn: () => Promise<T>,
@@ -200,8 +197,6 @@ export class DocumentService {
     }
     throw new Error(`[RETRY] ${label}: все попытки исчерпаны`);
   }
-
-  // Обработка файла
 
   private async processAndSave(
     fileId: number,
@@ -240,27 +235,20 @@ export class DocumentService {
       await this.withRetry('set doc processed', () =>
         this.documentsRepository.update(documentId, { status: 'processed' }),
       );
-      console.log(`[PROCESS] document_id: ${documentId} — готово`);
-    } catch (e) {
-      console.error(`[PROCESS ERROR] document_id: ${documentId}`, e);
-      try {
-        await this.withRetry('set failed', () =>
-          this.documentFilesRepository.update(fileId, {
-            extraction_status: 'failed',
-          }),
-        );
-        await this.withRetry('set extraction_failed', () =>
-          this.documentsRepository.update(documentId, {
-            status: 'extraction_failed',
-          }),
-        );
-      } catch (e2) {
-        console.error(`[PROCESS ERROR] не удалось обновить статус`, e2);
-      }
+    } catch (e: any) {
+      console.error('[PROCESS ERROR]', e.message);
+      await this.withRetry('set failed', () =>
+        this.documentFilesRepository.update(fileId, {
+          extraction_status: 'extraction_failed',
+        }),
+      );
+      await this.withRetry('set doc failed', () =>
+        this.documentsRepository.update(documentId, {
+          status: 'extraction_failed',
+        }),
+      );
     }
   }
-
-  // Загрузка документа
 
   async uploadDocument(
     file: Express.Multer.File,
@@ -272,7 +260,7 @@ export class DocumentService {
 
     const document = await this.withRetry('save document', () =>
       this.documentsRepository.save({
-        collection_id: dto.collection_id ?? 1,
+        collection_id: dto.collection_id ?? null,
         title: dto.title ?? originalName,
         document_type: this.getDocumentType(file.mimetype),
         archive_number: dto.archive_number ?? '',
@@ -345,12 +333,55 @@ export class DocumentService {
     return { message: `Извлечение запущено для ${files.length} файлов` };
   }
 
+  async findall(): Promise<Documents[]> {
+    return await this.documentsRepository.find({
+      relations: ['files', 'metadata'],
+      order: { created_at: 'DESC' },
+    });
+  }
+
+  async findByCollectionId(collectionId: number): Promise<Documents[]> {
+    return await this.documentsRepository.find({
+      where: { collection_id: collectionId },
+      relations: ['files', 'metadata'],
+      order: { created_at: 'DESC' },
+    });
+  }
+
+  async findbyid(id: number): Promise<Documents> {
+    const document = await this.documentsRepository.findOne({
+      where: { id },
+      relations: ['files', 'metadata'],
+    });
+    if (!document) throw new NotFoundException(`Document ${id} not found`);
+    return document;
+  }
+
+  async findByIds(ids: number[]): Promise<Documents[]> {
+    if (ids.length === 0) return [];
+    return await this.documentsRepository.find({
+      where: { id: In(ids) },
+      relations: ['files', 'metadata'],
+    });
+  }
+
+  async setCollectionId(
+    documentId: number,
+    collectionId: number | null,
+  ): Promise<Documents> {
+    await this.withRetry('set collection_id', () =>
+      this.documentsRepository.update(documentId, {
+        collection_id: collectionId,
+      }),
+    );
+    return await this.findbyid(documentId);
+  }
+
   private transliterate(word: string): string | null {
     const map: Record<string, string> = {
-      а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', е: 'e', ё: 'yo', ж: 'zh', з: 'z', и: 'i',
-      й: 'y', к: 'k', л: 'l', м: 'm', н: 'n', о: 'o', п: 'p', р: 'r', с: 's', т: 't',
-      у: 'u', ф: 'f', х: 'kh', ц: 'ts', ч: 'ch', ш: 'sh', щ: 'sch', ъ: '', ы: 'y',
-      ь: '', э: 'e', ю: 'yu', я: 'ya',
+      а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', е: 'e', ё: 'yo', ж: 'zh', з: 'z', и: 'i', й: 'y',
+      к: 'k', л: 'l', м: 'm', н: 'n', о: 'o', п: 'p', р: 'r',  с: 's',  т: 't', у: 'u', ф: 'f',
+      х: 'kh', ц: 'ts', ч: 'ch', ш: 'sh', щ: 'sch', ъ: '', ы: 'y', ь: '', э: 'e', ю: 'yu', я: 'ya',
     };
     const hasRussian = /[а-яё]/i.test(word);
     if (!hasRussian) return null;
@@ -393,9 +424,9 @@ export class DocumentService {
 
   async searchDocuments(query: string): Promise<Documents[]> {
     const stopWords = new Set([
-      'найди', 'найти', 'покажи', 'документ', 'документы', 'файл', 'файлы', 'про',
-      'для', 'все', 'мне', 'нужно', 'хочу', 'где', 'как', 'что', 'это', 'такое',
-      'какие', 'который', 'которые', 'нужен', 'можно', 'есть',
+      'найди', 'найти', 'покажи', 'документ', 'документы', 'файл', 'файлы',
+      'про', 'для', 'все', 'мне', 'нужно', 'хочу', 'где', 'как', 'что', 'это',
+      'такое', 'какие', 'который', 'которые', 'нужен', 'можно', 'есть',
     ]);
     const baseWords = query
       .toLowerCase()
@@ -452,27 +483,6 @@ export class DocumentService {
       .orderBy('doc.created_at', 'DESC')
       .limit(20)
       .getMany();
-  }
-
-  async findall(): Promise<Documents[]> {
-    return await this.documentsRepository.find({ relations: ['files'] });
-  }
-
-  async findByIds(ids: number[]): Promise<Documents[]> {
-    if (ids.length === 0) return [];
-    return await this.documentsRepository.find({
-      where: { id: In(ids) },
-      relations: ['files'],
-    });
-  }
-
-  async findbyid(id: number): Promise<Documents> {
-    const document = await this.documentsRepository.findOne({
-      where: { id },
-      relations: ['files', 'metadata'],
-    });
-    if (!document) throw new NotFoundException(`Document ${id} not found`);
-    return document;
   }
 
   private async extractTextFromFile(

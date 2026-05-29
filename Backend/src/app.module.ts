@@ -10,6 +10,7 @@ import { AiModule } from './modules/ai/ai.module';
 import { HistoryModule } from './modules/history/history.module';
 import { SearchQueriesModule } from './models/search_queries/search-queries.module';
 import { UsersModule } from './models/users/users.module';
+import { DocumentCollectionModule } from './models/document_collection/document_collection.module';
 
 @Module({
   imports: [
@@ -52,7 +53,8 @@ import { UsersModule } from './models/users/users.module';
     DocumentsModule,
     AiModule,
     SearchQueriesModule,
-    UsersModule
+    UsersModule,
+    DocumentCollectionModule,
   ],
   controllers: [AppController],
   providers: [AppService],
