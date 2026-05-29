@@ -50,8 +50,6 @@ export class DocumentService {
     return { client: new OpenAI({ apiKey, baseURL }), model };
   }
 
-  // Краткое содержание
-
   private async buildAiSummary(rawText: string): Promise<string> {
     if (rawText.trim().length < 100) return rawText.trim();
 
@@ -86,7 +84,6 @@ export class DocumentService {
     }
   }
 
-  // Форматирование полного текста чанками 
   private splitIntoChunks(text: string, size: number): string[] {
     const chunks: string[] = [];
     let i = 0;
@@ -112,9 +109,10 @@ export class DocumentService {
     const isFirst = chunkIndex === 0;
     const isLast = chunkIndex === totalChunks - 1;
 
-    const contextHint = totalChunks > 1
-      ? `Это часть ${chunkIndex + 1} из ${totalChunks}. ${isFirst ? 'Начало документа.' : ''} ${isLast ? 'Конец документа.' : 'Продолжение следует.'}`
-      : '';
+    const contextHint =
+      totalChunks > 1
+        ? `Это часть ${chunkIndex + 1} из ${totalChunks}. ${isFirst ? 'Начало документа.' : ''} ${isLast ? 'Конец документа.' : 'Продолжение следует.'}`
+        : '';
 
     const response = await client.chat.completions.create({
       model,
@@ -165,7 +163,6 @@ export class DocumentService {
     }
   }
 
-  // Retry-обёртка для DB-операций (защита от обрывов PgBouncer)
   private async withRetry<T>(label: string, fn: () => Promise<T>, attempts = 4): Promise<T> {
     for (let i = 1; i <= attempts; i++) {
       try {
@@ -179,13 +176,11 @@ export class DocumentService {
         if (!isConn || i === attempts) throw err;
         const delay = 600 * i;
         console.warn(`[RETRY] ${label}: попытка ${i}/${attempts}, повтор через ${delay}мс`);
-        await new Promise(r => setTimeout(r, delay));
+        await new Promise((r) => setTimeout(r, delay));
       }
     }
     throw new Error(`[RETRY] ${label}: все попытки исчерпаны`);
   }
-
-  // Обработка файла
 
   private async processAndSave(
     fileId: number,
@@ -198,8 +193,12 @@ export class DocumentService {
       const rawText = await this.extractTextFromFile(fullPath, mimeType);
 
       if (!rawText.trim()) {
-        await this.withRetry('set empty', () => this.documentFilesRepository.update(fileId, { extraction_status: 'empty' }));
-        await this.withRetry('set processed', () => this.documentsRepository.update(documentId, { status: 'processed' }));
+        await this.withRetry('set empty', () =>
+          this.documentFilesRepository.update(fileId, { extraction_status: 'empty' }),
+        );
+        await this.withRetry('set processed', () =>
+          this.documentsRepository.update(documentId, { status: 'processed' }),
+        );
         return;
       }
 
@@ -218,19 +217,16 @@ export class DocumentService {
       await this.withRetry('set doc processed', () =>
         this.documentsRepository.update(documentId, { status: 'processed' }),
       );
-      console.log(`[PROCESS] document_id: ${documentId} — готово`);
-    } catch (e) {
-      console.error(`[PROCESS ERROR] document_id: ${documentId}`, e);
-      try {
-        await this.withRetry('set failed', () => this.documentFilesRepository.update(fileId, { extraction_status: 'failed' }));
-        await this.withRetry('set extraction_failed', () => this.documentsRepository.update(documentId, { status: 'extraction_failed' }));
-      } catch (e2) {
-        console.error(`[PROCESS ERROR] не удалось обновить статус`, e2);
-      }
+    } catch (e: any) {
+      console.error('[PROCESS ERROR]', e.message);
+      await this.withRetry('set failed', () =>
+        this.documentFilesRepository.update(fileId, { extraction_status: 'extraction_failed' }),
+      );
+      await this.withRetry('set doc failed', () =>
+        this.documentsRepository.update(documentId, { status: 'extraction_failed' }),
+      );
     }
   }
-
-  // Загрузка документа
 
   async uploadDocument(
     file: Express.Multer.File,
@@ -240,7 +236,7 @@ export class DocumentService {
 
     const document = await this.withRetry('save document', () =>
       this.documentsRepository.save({
-        collection_id: dto.collection_id ?? 1,
+        collection_id: dto.collection_id ?? null,
         title: dto.title ?? originalName,
         document_type: this.getDocumentType(file.mimetype),
         archive_number: dto.archive_number ?? '',
@@ -277,7 +273,10 @@ export class DocumentService {
         console.error('[RE-EXTRACT-ALL ERROR]', e),
       );
     }
-    return { message: `Переизвлечение запущено для ${allFiles.length} файлов`, total: allFiles.length };
+    return {
+      message: `Переизвлечение запущено для ${allFiles.length} файлов`,
+      total: allFiles.length,
+    };
   }
 
   async extractText(documentId: number): Promise<{ message: string }> {
@@ -297,36 +296,90 @@ export class DocumentService {
     return { message: `Извлечение запущено для ${files.length} файлов` };
   }
 
+  // Все документы
+  async findall(): Promise<Documents[]> {
+    return await this.documentsRepository.find({
+      relations: ['files', 'metadata'],
+      order: { created_at: 'DESC' },
+    });
+  }
+
+  // Документы конкретной коллекции
+  async findByCollectionId(collectionId: number): Promise<Documents[]> {
+    return await this.documentsRepository.find({
+      where: { collection_id: collectionId },
+      relations: ['files', 'metadata'],
+      order: { created_at: 'DESC' },
+    });
+  }
+
+  // Один документ
+  async findbyid(id: number): Promise<Documents> {
+    const document = await this.documentsRepository.findOne({
+      where: { id },
+      relations: ['files', 'metadata'],
+    });
+    if (!document) throw new NotFoundException(`Document ${id} not found`);
+    return document;
+  }
+
+  // Документы по массиву ID
+  async findByIds(ids: number[]): Promise<Documents[]> {
+    if (ids.length === 0) return [];
+    return await this.documentsRepository.find({
+      where: { id: In(ids) },
+      relations: ['files', 'metadata'],
+    });
+  }
+
+  // Привязать / открепить документ от коллекции
+  async setCollectionId(documentId: number, collectionId: number | null): Promise<Documents> {
+    await this.withRetry('set collection_id', () =>
+      this.documentsRepository.update(documentId, { collection_id: collectionId }),
+    );
+    return await this.findbyid(documentId);
+  }
+
   private transliterate(word: string): string | null {
     const map: Record<string, string> = {
-      'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'yo','ж':'zh',
-      'з':'z','и':'i','й':'y','к':'k','л':'l','м':'m','н':'n','о':'o',
-      'п':'p','р':'r','с':'s','т':'t','у':'u','ф':'f','х':'kh','ц':'ts',
-      'ч':'ch','ш':'sh','щ':'sch','ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya',
+      а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', е: 'e', ё: 'yo', ж: 'zh',
+      з: 'z', и: 'i', й: 'y', к: 'k', л: 'l', м: 'm', н: 'n', о: 'o',
+      п: 'p', р: 'r', с: 's', т: 't', у: 'u', ф: 'f', х: 'kh', ц: 'ts',
+      ч: 'ch', ш: 'sh', щ: 'sch', ъ: '', ы: 'y', ь: '', э: 'e', ю: 'yu', я: 'ya',
     };
     const hasRussian = /[а-яё]/i.test(word);
     if (!hasRussian) return null;
-    return word.toLowerCase().split('').map((c) => map[c] ?? c).join('');
+    return word
+      .toLowerCase()
+      .split('')
+      .map((c) => map[c] ?? c)
+      .join('');
   }
 
   private getSynonyms(word: string): string[] {
     const groups = [
-      ['квиз','викторина','тест','опрос','quiz'],
-      ['договор','контракт','соглашение'],
-      ['задача','задачи','задание','план','todo'],
-      ['архив','хранилище','repository'],
-      ['поиск','search','найти','искать'],
-      ['лазер','лазеры','laser'],
-      ['криминалистика','экспертиза','forensic'],
-      ['казак','казаки','казачий','казачьи','казачье'],
-      ['формула','формулы','уравнение'],
-      ['физика','physics'],
-      ['распределение','distribution'],
-      ['интеграция','integration','внедрение'],
+      ['квиз', 'викторина', 'тест', 'опрос', 'quiz'],
+      ['договор', 'контракт', 'соглашение'],
+      ['задача', 'задачи', 'задание', 'план', 'todo'],
+      ['архив', 'хранилище', 'repository'],
+      ['поиск', 'search', 'найти', 'искать'],
+      ['лазер', 'лазеры', 'laser'],
+      ['криминалистика', 'экспертиза', 'forensic'],
+      ['казак', 'казаки', 'казачий', 'казачьи', 'казачье'],
+      ['формула', 'формулы', 'уравнение'],
+      ['физика', 'physics'],
+      ['распределение', 'distribution'],
+      ['интеграция', 'integration', 'внедрение'],
     ];
     const result: string[] = [];
     for (const group of groups) {
-      if (group.some((w) => word.startsWith(w.slice(0, Math.min(w.length, 4))) || w.startsWith(word.slice(0, 4)))) {
+      if (
+        group.some(
+          (w) =>
+            word.startsWith(w.slice(0, Math.min(w.length, 4))) ||
+            w.startsWith(word.slice(0, 4)),
+        )
+      ) {
         result.push(...group.filter((w) => w !== word));
       }
     }
@@ -335,9 +388,9 @@ export class DocumentService {
 
   async searchDocuments(query: string): Promise<Documents[]> {
     const stopWords = new Set([
-      'найди','найти','покажи','документ','документы','файл','файлы',
-      'про','для','все','мне','нужно','хочу','где','как','что','это',
-      'такое','какие','который','которые','нужен','можно','есть',
+      'найди', 'найти', 'покажи', 'документ', 'документы', 'файл', 'файлы',
+      'про', 'для', 'все', 'мне', 'нужно', 'хочу', 'где', 'как', 'что', 'это',
+      'такое', 'какие', 'который', 'которые', 'нужен', 'можно', 'есть',
     ]);
     const baseWords = query
       .toLowerCase()
@@ -353,7 +406,10 @@ export class DocumentService {
       searchWords.push(w);
       const synonyms = this.getSynonyms(w);
       for (const s of synonyms) searchWords.push(s);
-      const stem = w.replace(/(ую|ой|ый|ий|ая|яя|ое|ее|ом|ем|ых|их|ам|ям|ов|ев|ах|ях|ей|ью|ю|у|а|я|о|е|и|ы)$/i, '');
+      const stem = w.replace(
+        /(ую|ой|ый|ий|ая|яя|ое|ее|ом|ем|ых|их|ам|ям|ов|ев|ах|ях|ей|ью|ю|у|а|я|о|е|и|ы)$/i,
+        '',
+      );
       if (stem.length > 3 && stem !== w) searchWords.push(stem);
       const translit = this.transliterate(w);
       if (translit) searchWords.push(translit);
@@ -367,7 +423,9 @@ export class DocumentService {
     if (words.length === 0) return [];
 
     const params: Record<string, string> = {};
-    words.forEach((w, i) => { params[`w${i}`] = `%${w}%`; });
+    words.forEach((w, i) => {
+      params[`w${i}`] = `%${w}%`;
+    });
 
     const titleConds = words.map((_, i) => `LOWER(doc.title) LIKE :w${i}`).join(' OR ');
     const fileNameConds = words.map((_, i) => `LOWER(f.file_name) LIKE :w${i}`).join(' OR ');
@@ -383,27 +441,6 @@ export class DocumentService {
       .orderBy('doc.created_at', 'DESC')
       .limit(20)
       .getMany();
-  }
-
-  async findall(): Promise<Documents[]> {
-    return await this.documentsRepository.find({ relations: ['files'] });
-  }
-
-  async findByIds(ids: number[]): Promise<Documents[]> {
-    if (ids.length === 0) return [];
-    return await this.documentsRepository.find({
-      where: { id: In(ids) },
-      relations: ['files'],
-    });
-  }
-
-  async findbyid(id: number): Promise<Documents> {
-    const document = await this.documentsRepository.findOne({
-      where: { id },
-      relations: ['files', 'metadata'],
-    });
-    if (!document) throw new NotFoundException(`Document ${id} not found`);
-    return document;
   }
 
   private async extractTextFromFile(filePath: string, mimeType: string): Promise<string> {

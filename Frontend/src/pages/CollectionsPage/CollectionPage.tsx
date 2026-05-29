@@ -1,72 +1,88 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import axios from "axios";
 import Layout from "../../components/Layout/Layout";
 import { fetchDashboardData, DashboardData } from "@/api/dashboard";
+
+interface Collection {
+  id: number;
+  name: string;
+  description: string;
+  code: string;
+  is_active: boolean;
+  source_id: number;
+}
+
+const BASE = "http://localhost:3001";
+
 const CollectionPage = () => {
   const [data, setData] = useState<DashboardData | null>(null);
-  
-  // Добавляем состояние для коллекций и модального окна
-  const [collections, setCollections] = useState([
-    { name: "Архив 2024", docs: 3245, size: "2.4 ГБ", formats: ["PDF", "DOCX", "TXT"] },
-    { name: "Архив 2023", docs: 8134, size: "5.8 ГБ", formats: ["PDF", "DOCX", "TXT"] },
-    { name: "Архив 2022", docs: 8120, size: "5.7 ГБ", formats: ["PDF", "DOCX", "TXT"] },
-    { name: "Текущие проекты", docs: 456, size: "890 МБ", formats: ["PDF", "DOCX", "TXT", "XLSX"] },
-  ]);
-  
+  const [collections, setCollections] = useState<Collection[]>([]);
+  const [loadingCols, setLoadingCols] = useState(true);
+
   const [showModal, setShowModal] = useState(false);
-  const [newCollectionName, setNewCollectionName] = useState("");
-  const [newCollectionDocs, setNewCollectionDocs] = useState("");
-  const [newCollectionSize, setNewCollectionSize] = useState("");
-  const [selectedFormats, setSelectedFormats] = useState<string[]>([]);
+  const [newName, setNewName] = useState("");
+  const [newDescription, setNewDescription] = useState("");
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
-    fetchDashboardData().then(setData);
+    fetchDashboardData().then(setData).catch(() => {});
+    loadCollections();
   }, []);
+
+  const loadCollections = () => {
+    setLoadingCols(true);
+    axios
+      .get(`${BASE}/document_collection`)
+      .then((res) => setCollections(res.data))
+      .catch(() => {})
+      .finally(() => setLoadingCols(false));
+  };
 
   const totalDocuments = data?.totalDocuments ?? 0;
   const totalIndexed = data?.totalIndexed ?? 0;
 
-  const availableFormats = ["PDF", "DOCX", "TXT", "XLSX", "PPTX"];
-
-  const toggleFormat = (format: string) => {
-    if (selectedFormats.includes(format)) {
-      setSelectedFormats(selectedFormats.filter(f => f !== format));
-    } else {
-      setSelectedFormats([...selectedFormats, format]);
-    }
-  };
-
-  const handleCreateCollection = () => {
-    if (!newCollectionName.trim()) {
+  const handleCreateCollection = async () => {
+    if (!newName.trim()) {
       alert("Введите название коллекции");
       return;
     }
-
-    const newCollection = {
-      name: newCollectionName,
-      docs: parseInt(newCollectionDocs) || 0,
-      size: newCollectionSize || "0 МБ",
-      formats: selectedFormats.length > 0 ? selectedFormats : ["PDF", "DOCX", "TXT"],
-    };
-
-    setCollections([...collections, newCollection]);
-    setNewCollectionName("");
-    setNewCollectionDocs("");
-    setNewCollectionSize("");
-    setSelectedFormats([]);
-    setShowModal(false);
-    alert(`Коллекция "${newCollectionName}" создана!`);
+    setCreating(true);
+    try {
+      const res = await axios.post(`${BASE}/document_collection`, {
+        name: newName,
+        description: newDescription,
+        code: newName
+          .toLowerCase()
+          .replace(/\s+/g, "_")
+          .replace(/[^a-z0-9_]/g, ""),
+        is_active: true,
+        source_id: 1,
+      });
+      setCollections((prev) => [...prev, res.data]);
+      setNewName("");
+      setNewDescription("");
+      setShowModal(false);
+    } catch {
+      alert("Ошибка при создании коллекции");
+    } finally {
+      setCreating(false);
+    }
   };
 
   return (
     <Layout>
-      {/* Шапка как на HomePage (кнопка справа) */}
       <section className="welcome flex-row">
         <div>
           <h1>Архив документов</h1>
-          <p className="welcome-link">Управление коллекциями и архивами документов</p>
+          <p className="welcome-link">
+            Управление коллекциями и архивами документов
+          </p>
         </div>
-        <button className="create-collection-btn" onClick={() => setShowModal(true)}>
+        <button
+          className="create-collection-btn"
+          onClick={() => setShowModal(true)}
+        >
           <i className="fa fa-plus"></i> Создать коллекцию
         </button>
       </section>
@@ -74,13 +90,13 @@ const CollectionPage = () => {
       {/* Статистика */}
       <div className="stats-cards">
         <div className="stat-card-archive">
-          <i className="fa fa-file-text card-icon blue"></i>
+          <i className="fa fa-folder card-icon blue"></i>
           <p>Всего коллекций</p>
           <h2>{collections.length}</h2>
-          <span className="trend-up">+0</span>
+          <span className="trend-up">актуально</span>
         </div>
         <div className="stat-card-archive">
-          <i className="fa fa-check-circle card-icon green"></i>
+          <i className="fa fa-file-text card-icon green"></i>
           <p>Всего документов</p>
           <h2>{totalDocuments}</h2>
           <span className="trend-up-index">+{totalDocuments}</span>
@@ -100,41 +116,65 @@ const CollectionPage = () => {
       </div>
 
       {/* Сетка коллекций */}
-      <div className="archives-grid">
-        {collections.map((col, idx) => (
-          <div className="archive-item" key={idx}>
-            <div className="archive-item-header">
-              <i className="fa fa-folder-open collection-folder-icon" />
-              <h3 className="inline-block">{col.name}</h3>
-            </div>
-            <div className="archive-info">
-              <span><i className="fa fa-file-text-o"></i>{col.docs.toLocaleString()} документов</span>
-              <div className="file-formats">
-                {col.formats.map((fmt) => (
-                  <span key={fmt} className={`format-badge format-${fmt.toLowerCase()}`}>
-                    {fmt}
-                  </span>
-                ))}
+      {loadingCols ? (
+        <div style={{ textAlign: "center", padding: 40, color: "rgba(255,255,255,0.5)" }}>
+          <i className="fa fa-spinner fa-spin fa-2x" />
+          <p style={{ marginTop: 12 }}>Загрузка коллекций...</p>
+        </div>
+      ) : collections.length === 0 ? (
+        <div style={{ textAlign: "center", padding: 60, color: "rgba(255,255,255,0.4)" }}>
+          <i className="fa fa-folder-open fa-3x" style={{ marginBottom: 16, display: "block" }} />
+          <p>Коллекций пока нет. Создайте первую!</p>
+        </div>
+      ) : (
+        <div className="archives-grid">
+          {collections.map((col) => (
+            <div className="archive-item" key={col.id}>
+              <div className="archive-item-header">
+                <i className="fa fa-folder-open collection-folder-icon" />
+                <h3 className="inline-block">{col.name}</h3>
               </div>
-              <span><i className="fa fa-database"></i> {col.size}</span>
+              <div className="archive-info">
+                <span>{col.description || "Нет описания"}</span>
+                <span>
+                  <i
+                    className="fa fa-circle"
+                    style={{
+                      color: col.is_active ? "#10b981" : "#ef4444",
+                      marginRight: 4,
+                    }}
+                  />
+                  {col.is_active ? "Активна" : "Неактивна"}
+                </span>
+              </div>
+              <div className="archive-buttons">
+                <Link to={`/collection/${col.id}`} className="btn-open">
+                  <i className="fa fa-folder-open"></i> Открыть
+                </Link>
+                <Link to="/indexing" className="btn-reindex">
+                  <i className="fa fa-refresh"></i> Переиндексировать
+                </Link>
+              </div>
             </div>
-            <div className="archive-buttons">
-              <Link to={`/collection/${encodeURIComponent(col.name)}`} className="btn-open">
-                <i className="fa fa-folder-open"></i> Открыть
-              </Link>
-              <Link to="/indexing" className="btn-reindex"><i className="fa fa-refresh"></i> Переиндексировать</Link>
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
-      {/* Модальное окно создания коллекции */}
+      {/* Модал создания коллекции */}
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal-container" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="modal-container"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="modal-header">
               <h2>Создание коллекции</h2>
-              <button className="modal-close" onClick={() => setShowModal(false)}>×</button>
+              <button
+                className="modal-close"
+                onClick={() => setShowModal(false)}
+              >
+                ×
+              </button>
             </div>
             <div className="modal-body">
               <div className="form-group">
@@ -142,50 +182,44 @@ const CollectionPage = () => {
                 <input
                   type="text"
                   placeholder="Введите название"
-                  value={newCollectionName}
-                  onChange={(e) => setNewCollectionName(e.target.value)}
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
                   autoFocus
+                  onKeyDown={(e) =>
+                    e.key === "Enter" && handleCreateCollection()
+                  }
                 />
               </div>
               <div className="form-group">
-                <label>Количество документов</label>
-                <input
-                  type="number"
-                  placeholder="Например: 100"
-                  value={newCollectionDocs}
-                  onChange={(e) => setNewCollectionDocs(e.target.value)}
-                />
-              </div>
-              <div className="form-group">
-                <label>Размер</label>
+                <label>Описание</label>
                 <input
                   type="text"
-                  placeholder="Например: 1.2 ГБ"
-                  value={newCollectionSize}
-                  onChange={(e) => setNewCollectionSize(e.target.value)}
+                  placeholder="Краткое описание коллекции"
+                  value={newDescription}
+                  onChange={(e) => setNewDescription(e.target.value)}
                 />
-              </div>
-              <div className="form-group">
-                <label>Форматы</label>
-                <div className="formats-checkbox-group">
-                  {availableFormats.map(format => (
-                    <label key={format} className="format-checkbox">
-                      <input
-                        type="checkbox"
-                        checked={selectedFormats.includes(format)}
-                        onChange={() => toggleFormat(format)}
-                      />
-                      <span className={`format-badge format-${format.toLowerCase()}`}>
-                        {format}
-                      </span>
-                    </label>
-                  ))}
-                </div>
               </div>
             </div>
             <div className="modal-footer">
-              <button className="btn-cancel" onClick={() => setShowModal(false)}>Отмена</button>
-              <button className="btn-create" onClick={handleCreateCollection}>Создать</button>
+              <button
+                className="btn-cancel"
+                onClick={() => setShowModal(false)}
+              >
+                Отмена
+              </button>
+              <button
+                className="btn-create"
+                onClick={handleCreateCollection}
+                disabled={creating}
+              >
+                {creating ? (
+                  <>
+                    <i className="fa fa-spinner fa-spin" /> Создание...
+                  </>
+                ) : (
+                  "Создать"
+                )}
+              </button>
             </div>
           </div>
         </div>

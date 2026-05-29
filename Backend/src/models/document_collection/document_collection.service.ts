@@ -7,10 +7,15 @@ import { DocumentCollection } from './document_collection.entity';
 export class DocumentCollectionService {
     constructor(
         @InjectRepository(DocumentCollection)
-        private readonly documentFilesRepository: Repository<DocumentCollection>,
+        private readonly documentCollectionRepository: Repository<DocumentCollection>,
     ) {}
 
     async findall(): Promise<DocumentCollection[]> {
-        return await this.documentFilesRepository.find();
+        return await this.documentCollectionRepository.find();
+    }
+
+    async create(dto: Partial<DocumentCollection>): Promise<DocumentCollection> {
+        const collection = this.documentCollectionRepository.create(dto);
+        return await this.documentCollectionRepository.save(collection);
     }
 }

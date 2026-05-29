@@ -9,7 +9,8 @@ import IndexingPage from './pages/IndexingPage/IndexingPage';
 import SettingsPage from './pages/SettingsPage/SettingsPage';
 import SearchResults from './pages/SearchResults/SearchResults';
 import DocumentCard from './pages/DocumentCard/DocumentCard';
-import CollectionDetail from "./pages/CollectionDetail/CollectionDetail";
+import CollectionDetail from './pages/CollectionDetail/CollectionDetail';
+
 import './App.css';
 
 function App() {
@@ -27,7 +28,8 @@ function App() {
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/search/results" element={<SearchResults />} />
         <Route path="/document/:id" element={<DocumentCard />} />
-        <Route path="/collection/:collectionName" element={<CollectionDetail />} />
+        {/* collectionId вместо collectionName */}
+        <Route path="/collection/:collectionId" element={<CollectionDetail />} />
       </Routes>
     </Router>
   );

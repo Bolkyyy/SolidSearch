@@ -6,8 +6,6 @@ import { User, usersApi } from "@/api/Users";
 const SettingsPage = () => {
   const [activeTab, setActiveTab] = useState("users");
   const [modalMode, setModalMode] = useState<"add" | "edit" | null>(null);
-
-  // --- AI Settings state ---
   const [aiSettings, setAiSettings] = useState<AiSettings | null>(null);
   const [loadingSettings, setLoadingSettings] = useState(false);
   const [formProvider, setFormProvider] = useState("");
@@ -16,7 +14,6 @@ const SettingsPage = () => {
   const [formIsActive, setFormIsActive] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  // --- Users state ---
   const [users, setUsers] = useState<User[] | null>(null);
   const [isVisibleModalCreateUser, setVisibleModalCreateUser] = useState(false)
   const [modalUserFullName, setModalUserFullName] = useState("");
@@ -38,7 +35,6 @@ const SettingsPage = () => {
     } catch (e) {
       console.error(e);
     } finally {
-      // setLoadingSettings(false);
     }
   }
 
@@ -56,14 +52,12 @@ useEffect(() => {
 }, [activeTab]);
 
 async function fetchUsers() {
-  // setLoadingSettings(true);
   try {
     const data = await usersApi.getUsers();
     setUsers(data)
   } catch (e) {
     console.error(e);
   } finally {
-    // setLoadingSettings(false);
   }
 }
 
@@ -120,7 +114,6 @@ async function handleSave() {
     setSaving(false);
   }
 }
-// --- конец AI Settings ---
 
 return (
   <Layout>
