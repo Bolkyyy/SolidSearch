@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import axios from "axios";
 import Layout from "../../components/Layout/Layout";
 import { fetchDashboardData, DashboardData } from "@/api/dashboard";
+import ConfirmModal from "../../components/ConfirmModal/ConfirmModal";
+import { DocumentsApi } from "@/api/documentsApi";
 
 interface Collection {
   id: number;
@@ -25,9 +27,25 @@ const CollectionPage = () => {
   const [newDescription, setNewDescription] = useState("");
   const [creating, setCreating] = useState(false);
 
+  const [deleteTarget, setDeleteTarget] = useState<Collection | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const [collectionSizes, setCollectionSizes] = useState<Record<number, number>>({});
+
   useEffect(() => {
     fetchDashboardData().then(setData).catch(() => {});
     loadCollections();
+    DocumentsApi.getAll()
+      .then((docs) => {
+        const sizes: Record<number, number> = {};
+        for (const doc of docs) {
+          if (!doc.collection_id) continue;
+          const docSize = (doc.files ?? []).reduce((s, f) => s + (f.file_size ?? 0), 0);
+          sizes[doc.collection_id] = (sizes[doc.collection_id] ?? 0) + docSize;
+        }
+        setCollectionSizes(sizes);
+      })
+      .catch(() => {});
   }, []);
 
   const loadCollections = () => {
@@ -42,20 +60,40 @@ const CollectionPage = () => {
   const totalDocuments = data?.totalDocuments ?? 0;
   const totalIndexed = data?.totalIndexed ?? 0;
 
-  const handleCreateCollection = async () => {
-    if (!newName.trim()) {
-      alert("Введите название коллекции");
-      return;
+  const formatSize = (bytes: number) => {
+    if (bytes === 0) return "0 МБ";
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} КБ`;
+    if (bytes < 1024 * 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(2)} МБ`;
+    return `${(bytes / 1024 / 1024 / 1024).toFixed(2)} ГБ`;
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await axios.delete(`${BASE}/document_collection/${deleteTarget.id}`);
+      setCollections((prev) => prev.filter((c) => c.id !== deleteTarget.id));
+      setDeleteTarget(null);
+    } catch (err) {
+      console.error("Ошибка при удалении коллекции:", err);
+    } finally {
+      setDeleting(false);
     }
+  };
+
+  const handleCreateCollection = async () => {
+    if (!newName.trim()) return;
     setCreating(true);
     try {
+      const baseCode = newName
+        .toLowerCase()
+        .replace(/\s+/g, "_")
+        .replace(/[^a-z0-9_]/g, "");
+      const code = (baseCode || "collection") + "_" + Date.now();
       const res = await axios.post(`${BASE}/document_collection`, {
         name: newName,
         description: newDescription,
-        code: newName
-          .toLowerCase()
-          .replace(/\s+/g, "_")
-          .replace(/[^a-z0-9_]/g, ""),
+        code,
         is_active: true,
         source_id: 1,
       });
@@ -63,8 +101,8 @@ const CollectionPage = () => {
       setNewName("");
       setNewDescription("");
       setShowModal(false);
-    } catch {
-      alert("Ошибка при создании коллекции");
+    } catch (err) {
+      console.error("Ошибка при создании коллекции:", err);
     } finally {
       setCreating(false);
     }
@@ -87,43 +125,52 @@ const CollectionPage = () => {
         </button>
       </section>
 
-      {/* Статистика */}
       <div className="stats-cards">
         <div className="stat-card-archive">
           <i className="fa fa-folder card-icon blue"></i>
           <p>Всего коллекций</p>
           <h2>{collections.length}</h2>
-          <span className="trend-up">актуально</span>
         </div>
         <div className="stat-card-archive">
           <i className="fa fa-file-text card-icon green"></i>
           <p>Всего документов</p>
           <h2>{totalDocuments}</h2>
-          <span className="trend-up-index">+{totalDocuments}</span>
         </div>
         <div className="stat-card-archive">
           <i className="fa fa-bolt card-icon purple"></i>
           <p>Проиндексировано</p>
           <h2>{totalIndexed}</h2>
-          <span className="trend-up-request">+{totalIndexed}</span>
         </div>
         <div className="stat-card-archive">
           <i className="fa fa-history card-icon orange"></i>
           <p>Требуют внимания</p>
           <h2>1</h2>
-          <span className="trend-down">-</span>
         </div>
       </div>
 
-      {/* Сетка коллекций */}
       {loadingCols ? (
-        <div style={{ textAlign: "center", padding: 40, color: "rgba(255,255,255,0.5)" }}>
+        <div
+          style={{
+            textAlign: "center",
+            padding: 40,
+            color: "rgba(255,255,255,0.5)",
+          }}
+        >
           <i className="fa fa-spinner fa-spin fa-2x" />
           <p style={{ marginTop: 12 }}>Загрузка коллекций...</p>
         </div>
       ) : collections.length === 0 ? (
-        <div style={{ textAlign: "center", padding: 60, color: "rgba(255,255,255,0.4)" }}>
-          <i className="fa fa-folder-open fa-3x" style={{ marginBottom: 16, display: "block" }} />
+        <div
+          style={{
+            textAlign: "center",
+            padding: 60,
+            color: "rgba(255,255,255,0.4)",
+          }}
+        >
+          <i
+            className="fa fa-folder-open fa-3x"
+            style={{ marginBottom: 16, display: "block" }}
+          />
           <p>Коллекций пока нет. Создайте первую!</p>
         </div>
       ) : (
@@ -136,15 +183,9 @@ const CollectionPage = () => {
               </div>
               <div className="archive-info">
                 <span>{col.description || "Нет описания"}</span>
-                <span>
-                  <i
-                    className="fa fa-circle"
-                    style={{
-                      color: col.is_active ? "#10b981" : "#ef4444",
-                      marginRight: 4,
-                    }}
-                  />
-                  {col.is_active ? "Активна" : "Неактивна"}
+                <span className="collection-size">
+                  <i className="fa fa-database" />
+                  {formatSize(collectionSizes[col.id] ?? 0)}
                 </span>
               </div>
               <div className="archive-buttons">
@@ -154,21 +195,27 @@ const CollectionPage = () => {
                 <Link to="/indexing" className="btn-reindex">
                   <i className="fa fa-refresh"></i> Переиндексировать
                 </Link>
+                <button
+                  className="btn-delete-collection"
+                  onClick={() => setDeleteTarget(col)}
+                  title="Удалить коллекцию"
+                >
+                  <i className="fa fa-trash" />
+                </button>
               </div>
             </div>
           ))}
         </div>
       )}
 
-      {/* Модал создания коллекции */}
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div
-            className="modal-container"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="modal-container" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>Создание коллекции</h2>
+              <h2>
+                <i className="fa fa-folder-o" />
+                Новая коллекция
+              </h2>
               <button
                 className="modal-close"
                 onClick={() => setShowModal(false)}
@@ -178,10 +225,10 @@ const CollectionPage = () => {
             </div>
             <div className="modal-body">
               <div className="form-group">
-                <label>Название коллекции *</label>
+                <label>Название *</label>
                 <input
                   type="text"
-                  placeholder="Введите название"
+                  placeholder="Например: Договоры 2024"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
                   autoFocus
@@ -194,7 +241,7 @@ const CollectionPage = () => {
                 <label>Описание</label>
                 <input
                   type="text"
-                  placeholder="Краткое описание коллекции"
+                  placeholder="Краткое описание (необязательно)"
                   value={newDescription}
                   onChange={(e) => setNewDescription(e.target.value)}
                 />
@@ -224,6 +271,18 @@ const CollectionPage = () => {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={deleteTarget !== null}
+        title="Удалить коллекцию?"
+        message={`Коллекция «${deleteTarget?.name}» будет удалена безвозвратно. Это действие нельзя отменить.`}
+        confirmText="Удалить"
+        cancelText="Отмена"
+        variant="danger"
+        loading={deleting}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </Layout>
   );
 };

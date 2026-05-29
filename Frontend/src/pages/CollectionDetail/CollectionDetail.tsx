@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import Layout from "../../components/Layout/Layout";
 import { DocumentsApi, Document } from "@/api/documentsApi";
+import ConfirmModal from "../../components/ConfirmModal/ConfirmModal";
 
 interface Collection {
   id: number;
@@ -30,6 +31,9 @@ const CollectionDetail = () => {
   const [addSearch, setAddSearch] = useState("");
   const [adding, setAdding] = useState<number | null>(null);
   const [loadingAll, setLoadingAll] = useState(false);
+
+  const [removeTarget, setRemoveTarget] = useState<Document | null>(null);
+  const [removing, setRemoving] = useState(false);
 
   const id = Number(collectionId);
 
@@ -88,13 +92,17 @@ const CollectionDetail = () => {
       setAdding(null);
     }
   };
-  const handleRemoveDocument = async (docId: number, docTitle: string) => {
-    if (!window.confirm(`Убрать документ "${docTitle}" из коллекции?`)) return;
+  const handleConfirmRemove = async () => {
+    if (!removeTarget) return;
+    setRemoving(true);
     try {
-      await DocumentsApi.addToCollection(docId, 0);
-      setDocuments((prev) => prev.filter((d) => d.id !== docId));
+      await DocumentsApi.addToCollection(removeTarget.id, 0);
+      setDocuments((prev) => prev.filter((d) => d.id !== removeTarget.id));
+      setRemoveTarget(null);
     } catch {
-      alert("Ошибка при удалении документа");
+      console.error("Ошибка при удалении документа из коллекции");
+    } finally {
+      setRemoving(false);
     }
   };
 
@@ -369,7 +377,7 @@ const CollectionDetail = () => {
                         title="Убрать из коллекции"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleRemoveDocument(doc.id, doc.title);
+                          setRemoveTarget(doc);
                         }}
                       >
                         <i className="fa fa-trash" />
@@ -384,148 +392,110 @@ const CollectionDetail = () => {
       </div>
 
       {showAddModal && (
-        <div
-          className="modal-overlay"
-          onClick={() => setShowAddModal(false)}
-        >
-          <div
-            className="modal-container-upload"
-            style={{
-              maxWidth: 720,
-              maxHeight: "80vh",
-              display: "flex",
-              flexDirection: "column",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
+        <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
+          <div className="add-doc-modal" onClick={(e) => e.stopPropagation()}>
+
             <div className="modal-header">
               <h2>
-                <i className="fa fa-database" style={{ marginRight: 10 }} />
-                Добавить документ из базы
+                <i className="fa fa-plus-circle" style={{ marginRight: 8 }} />
+                Добавить документ
               </h2>
-              <button
-                className="modal-close"
-                onClick={() => setShowAddModal(false)}
-              >
-                <i className="fa fa-times" />
+              <button className="modal-close" onClick={() => setShowAddModal(false)}>
+                ×
               </button>
             </div>
 
-            <div
-              style={{
-                padding: "12px 24px",
-                borderBottom: "1px solid rgba(255,255,255,0.1)",
-              }}
-            >
-              <div className="search-box" style={{ maxWidth: "100%" }}>
-                <i className="fa fa-search" />
-                <input
-                  type="text"
-                  placeholder="Поиск по названию..."
-                  value={addSearch}
-                  onChange={(e) => setAddSearch(e.target.value)}
-                  autoFocus
-                />
-              </div>
+            <div className="add-doc-search-wrap">
+              <i className="fa fa-search" />
+              <input
+                type="text"
+                placeholder="Поиск по названию..."
+                value={addSearch}
+                onChange={(e) => setAddSearch(e.target.value)}
+                autoFocus
+              />
+              {addSearch && (
+                <button className="add-doc-clear" onClick={() => setAddSearch("")}>
+                  <i className="fa fa-times" />
+                </button>
+              )}
             </div>
 
-            <div style={{ overflowY: "auto", flex: 1 }}>
+            <div className="add-doc-list">
               {loadingAll ? (
-                <div
-                  style={{
-                    textAlign: "center",
-                    padding: 40,
-                    color: "rgba(255,255,255,0.5)",
-                  }}
-                >
+                <div className="add-doc-empty">
                   <i className="fa fa-spinner fa-spin fa-2x" />
-                  <p style={{ marginTop: 12 }}>Загрузка документов...</p>
+                  <p>Загрузка документов...</p>
                 </div>
               ) : filteredAddDocs.length === 0 ? (
-                <div
-                  style={{
-                    textAlign: "center",
-                    padding: 40,
-                    color: "rgba(255,255,255,0.5)",
-                  }}
-                >
+                <div className="add-doc-empty">
                   <i className="fa fa-inbox fa-2x" />
-                  <p style={{ marginTop: 12 }}>
+                  <p>
                     {allDocuments.length === 0
                       ? "Все документы уже в этой коллекции"
                       : "Ничего не найдено"}
                   </p>
                 </div>
               ) : (
-                <table className="documents-table">
-                  <thead>
-                    <tr>
-                      <th>Название</th>
-                      <th>Тип</th>
-                      <th>Файлов</th>
-                      <th>Размер</th>
-                      <th>Статус</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredAddDocs.map((doc) => (
-                      <tr key={doc.id} style={{ cursor: "default" }}>
-                        <td>
-                          <div className="doc-name-cell">
-                            <i
-                              className={`fa ${getFileIcon(getDocType(doc))}`}
-                            />
-                            <span>{doc.title}</span>
-                          </div>
-                        </td>
-                        <td>
+                <div className="add-doc-grid">
+                  {filteredAddDocs.map((doc) => (
+                    <div key={doc.id} className="add-doc-card">
+                      <div className="add-doc-card-icon">
+                        <i className={`fa ${getFileIcon(getDocType(doc))}`} />
+                      </div>
+                      <div className="add-doc-card-info">
+                        <div className="add-doc-card-title" title={doc.title}>
+                          {doc.title}
+                        </div>
+                        <div className="add-doc-card-meta">
                           <span className="doc-type-badge">
                             {getDocType(doc).toUpperCase()}
                           </span>
-                        </td>
-                        <td style={{ textAlign: "center" }}>
-                          {doc.files?.length ?? 0}
-                        </td>
-                        <td>{getTotalSize(doc.files)}</td>
-                        <td>{getStatusBadge(doc.status)}</td>
-                        <td>
-                          <button
-                            className="btn-upload-submit"
-                            style={{ padding: "6px 14px", fontSize: 13 }}
-                            disabled={adding === doc.id}
-                            onClick={() => handleAddDocument(doc)}
-                          >
-                            {adding === doc.id ? (
-                              <>
-                                <i className="fa fa-spinner fa-spin" />{" "}
-                                Добавление...
-                              </>
-                            ) : (
-                              <>
-                                <i className="fa fa-plus" /> Добавить
-                              </>
-                            )}
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                          {getStatusBadge(doc.status)}
+                        </div>
+                      </div>
+                      <button
+                        className={`add-doc-card-btn${adding === doc.id ? " loading" : ""}`}
+                        disabled={adding === doc.id}
+                        onClick={() => handleAddDocument(doc)}
+                      >
+                        {adding === doc.id ? (
+                          <><i className="fa fa-spinner fa-spin" /> Добавление...</>
+                        ) : (
+                          <><i className="fa fa-plus" /> Добавить</>
+                        )}
+                      </button>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
 
             <div className="modal-footer">
-              <button
-                className="btn-cancel"
-                onClick={() => setShowAddModal(false)}
-              >
+              {!loadingAll && (
+                <span className="add-doc-footer-hint">
+                  Доступно: {allDocuments.length} · Найдено: {filteredAddDocs.length}
+                </span>
+              )}
+              <button className="btn-cancel" onClick={() => setShowAddModal(false)}>
                 Закрыть
               </button>
             </div>
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={removeTarget !== null}
+        title="Убрать документ из коллекции?"
+        message={`Документ «${removeTarget?.title}» будет убран из этой коллекции. Сам документ останется в системе.`}
+        confirmText="Убрать"
+        cancelText="Отмена"
+        variant="danger"
+        loading={removing}
+        onConfirm={handleConfirmRemove}
+        onCancel={() => setRemoveTarget(null)}
+      />
     </Layout>
   );
 };

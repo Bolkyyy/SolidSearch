@@ -18,4 +18,8 @@ export class DocumentCollectionService {
         const collection = this.documentCollectionRepository.create(dto);
         return await this.documentCollectionRepository.save(collection);
     }
+
+    async remove(id: number): Promise<void> {
+        await this.documentCollectionRepository.delete(id);
+    }
 }

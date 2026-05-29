@@ -32,8 +32,11 @@ export class HistoryService {
     return this.searchQueriesRepository.save(post);
   }
 
-  async findAll() : Promise<SearchQueries[]> {
-    return await this.searchQueriesRepository.find();
+  async findAll(limit = 20) : Promise<SearchQueries[]> {
+    return await this.searchQueriesRepository.find({
+      order: { created_at: 'DESC' },
+      take: limit,
+    });
   }
 
   async findAllById(user_id: number) {
