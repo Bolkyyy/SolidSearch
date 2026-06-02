@@ -51,14 +51,10 @@ import { DocumentCollectionModule } from './models/document_collection/document_
     DashboardModule,
     HistoryModule,
     DocumentsModule,
-<<<<<<< HEAD
-    SearchQueriesModule
-=======
     AiModule,
     SearchQueriesModule,
     UsersModule,
     DocumentCollectionModule,
->>>>>>> 39bb838a98ac5e325b7c8eaf7b3cec2c01eb1f97
   ],
   controllers: [AppController],
   providers: [AppService],
