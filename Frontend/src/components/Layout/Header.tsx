@@ -1,6 +1,6 @@
-import { useLocation } from 'react-router-dom';
-import { useEffect, useState } from 'react';
-import UploadModal from './UploadModel';
+import { useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
+import UploadModal from "./UploadModel";
 
 interface UserState {
   user?: {
@@ -9,15 +9,15 @@ interface UserState {
 }
 
 const Header = () => {
-  const [userName, setUserName] = useState('');
+  const [userName, setUserName] = useState("");
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const location = useLocation();
 
   useEffect(() => {
     const state = location.state as UserState;
     const stateUser = state?.user?.full_name;
-    const storedName = localStorage.getItem('userFullName');
-    setUserName(stateUser || storedName || 'Пользователь');
+    const storedName = localStorage.getItem("userFullName");
+    setUserName(stateUser || storedName || "Пользователь");
   }, [location.state]);
 
   return (
@@ -26,20 +26,25 @@ const Header = () => {
         <div className="header-top-row">
           <div className="search-wrapper">
             <i className="fa fa-search" />
-            <input type="text" className="search-bar" placeholder="Быстрый поиск..." />
+            <input
+              type="text"
+              className="search-bar"
+              placeholder="Быстрый поиск..."
+            />
           </div>
 
           <div className="user-section">
             <div className="header-action-icons">
               <div
-                className="action-btn green-text"
+                className="action-btn green-text cursor-pointer"
                 onClick={() => setIsUploadOpen(true)}
                 title="Загрузить документы"
-                style={{ cursor: 'pointer' }}
               >
                 <i className="fa fa-upload" />
               </div>
-              <div className="action-btn"><i className="fa fa-bell" /></div>
+              <div className="action-btn">
+                <i className="fa fa-bell" />
+              </div>
             </div>
             <div className="vertical-line" />
             <div className="user-profile">
@@ -47,7 +52,9 @@ const Header = () => {
                 <div className="user-name">{userName}</div>
                 <div className="user-post">Разработчик</div>
               </div>
-              <div className="user-avatar"><i className="fa fa-user-circle" /></div>
+              <div className="user-avatar">
+                <i className="fa fa-user-circle" />
+              </div>
             </div>
           </div>
         </div>

@@ -1,55 +1,170 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import Layout from "../../components/Layout/Layout";
+import ErrorToast from "../../components/ErrorToast/ErrorToast";
+import ConfirmModal from "../../components/ConfirmModal/ConfirmModal";
 import { HistoryItem, historyApi } from "@/api/historyApi";
+
+const PAGE_SIZE = 7;
+
+const StatusBadge = ({ status }: { status?: string | null }) => {
+  if (status === "success")
+    return <span className="history-badge success">Успешно</span>;
+  if (status === "not_found")
+    return <span className="history-badge pending">Не найдено</span>;
+  if (status === "error")
+    return <span className="history-badge error">Ошибка</span>;
+  return <span className="history-badge success">Успешно</span>;
+};
+
+type ConfirmState = { type: "clear" } | { type: "delete"; id: number } | null;
 
 const HistoryPage = () => {
   const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [clearing, setClearing] = useState(false);
+  const [error, setError] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [confirm, setConfirm] = useState<ConfirmState>(null);
+  const navigate = useNavigate();
 
-  // Поиск документов по айди пользователя
   useEffect(() => {
     const userId = localStorage.getItem("userId");
     if (!userId) return;
-
     historyApi
       .getByUserId(Number(userId))
       .then((data) => setHistory(data))
       .catch((err) => console.error(err));
   }, []);
 
-  // Формат времени для времени и даты
-  const formatDate = (iso: string) => {
-    const date = new Date(iso);
-    return date.toLocaleString("ru-RU", {
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+
+  const filtered = useMemo(() => {
+    if (!searchQuery.trim()) return history;
+    const q = searchQuery.toLowerCase();
+    return history.filter((item) => item.query_text?.toLowerCase().includes(q));
+  }, [history, searchQuery]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paginated = filtered.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE,
+  );
+
+  const pageNumbers = useMemo(() => {
+    if (totalPages <= 7)
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    const pages: (number | "...")[] = [1];
+    if (currentPage > 3) pages.push("...");
+    for (
+      let i = Math.max(2, currentPage - 1);
+      i <= Math.min(totalPages - 1, currentPage + 1);
+      i++
+    )
+      pages.push(i);
+    if (currentPage < totalPages - 2) pages.push("...");
+    pages.push(totalPages);
+    return pages;
+  }, [totalPages, currentPage]);
+
+  const formatDate = (iso: string) =>
+    new Date(iso).toLocaleString("ru-RU", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
     });
+
+  const repeatSearch = (queryText: string) => {
+    const userId = localStorage.getItem("userId");
+    if (!userId) {
+      setError("Пользователь не авторизован");
+      return;
+    }
+    if (!queryText?.trim()) return;
+    navigate("/search/results", {
+      state: { query: queryText, userId: Number(userId) },
+    });
+  };
+
+  const handleConfirm = async () => {
+    if (!confirm) return;
+
+    if (confirm.type === "clear") {
+      const userId = localStorage.getItem("userId");
+      if (!userId) return;
+      setClearing(true);
+      try {
+        await historyApi.clearHistory(Number(userId));
+        sessionStorage.removeItem("solidSearch_cache");
+        setHistory([]);
+        setSearchQuery("");
+        setCurrentPage(1);
+      } catch (err: unknown) {
+        console.error("[clearHistory error]", err);
+        setError("Не удалось очистить историю.");
+      } finally {
+        setClearing(false);
+        setConfirm(null);
+      }
+    }
+
+    if (confirm.type === "delete") {
+      try {
+        await historyApi.deleteItem(confirm.id);
+        setHistory((prev) => prev.filter((item) => item.id !== confirm.id));
+      } catch (err) {
+        console.error("[deleteItem error]", err);
+        setError("Не удалось удалить запись.");
+      } finally {
+        setConfirm(null);
+      }
+    }
   };
 
   return (
     <Layout>
+      {error && <ErrorToast message={error} onClose={() => setError("")} />}
+
       <section className="welcome">
         <h1>История запросов</h1>
         <p className="welcome-link">Обзор активности и статистика системы</p>
       </section>
+
       <div className="history-filters">
-        {["all", "success", "error", "pending"].map((filter) => (
-          <button key={filter} className="history-filter-btn">
-            {
-              {
-                all: "Все",
-                success: "Успешные",
-                error: "Ошибки",
-                pending: "В ожидании",
-              }[filter]
-            }
-          </button>
-        ))}
+        <button
+          className="history-filter-btn history-clear-btn"
+          disabled={clearing || history.length === 0}
+          onClick={() => setConfirm({ type: "clear" })}
+        >
+          {clearing ? (
+            <>
+              <i className="fa fa-spinner fa-spin" /> Очистка...
+            </>
+          ) : (
+            <>
+              <i className="fa fa-trash" /> Очистить историю
+            </>
+          )}
+        </button>
+
         <div className="history-search">
           <i className="fa fa-search" />
-          <input type="text" placeholder="Поиск по запросам..." />
+          <input
+            type="text"
+            placeholder="Поиск по запросам..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          {searchQuery && (
+            <i
+              className="fa fa-times history-search-clear"
+              onClick={() => setSearchQuery("")}
+            />
+          )}
         </div>
       </div>
 
@@ -65,12 +180,16 @@ const HistoryPage = () => {
             </tr>
           </thead>
           <tbody>
-            {history.length === 0 && (
+            {paginated.length === 0 && (
               <tr>
-                <td colSpan={3}>История пуста</td>
+                <td colSpan={5} className="history-empty-cell">
+                  {searchQuery
+                    ? `По запросу «${searchQuery}» ничего не найдено`
+                    : "История пуста"}
+                </td>
               </tr>
             )}
-            {history.map((item) => (
+            {paginated.map((item) => (
               <tr key={item.id}>
                 <td>
                   <div className="history-query-text">{item.query_text}</div>
@@ -81,37 +200,102 @@ const HistoryPage = () => {
                   </span>
                 </td>
                 <td>
-                  <span className="history-results">5</span>
+                  <span className="history-results">
+                    {item.result_count != null ? item.result_count : "—"}
+                  </span>
                 </td>
                 <td>
-                  <span className="history-badge success">Успешно</span>
+                  <StatusBadge status={item.status} />
                 </td>
                 <td>
-                  <button className="history-action-btn">
-                    <i className="fa fa-repeat" /> Повторить
-                  </button>
+                  <div className="history-actions-cell">
+                    <button
+                      className="history-action-btn"
+                      onClick={() => repeatSearch(item.query_text)}
+                    >
+                      <i className="fa fa-repeat" /> Повторить
+                    </button>
+                    <button
+                      className="history-action-btn history-delete-btn"
+                      onClick={() =>
+                        setConfirm({ type: "delete", id: item.id })
+                      }
+                      title="Удалить запись"
+                    >
+                      <i className="fa fa-trash" />
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
+
         <div className="history-pagination">
           <span className="history-pagination-info">
-            Показано 3 из 4 записей
+            {filtered.length === 0
+              ? "Нет записей"
+              : `Показано ${(currentPage - 1) * PAGE_SIZE + 1}–${Math.min(
+                  currentPage * PAGE_SIZE,
+                  filtered.length,
+                )} из ${filtered.length}`}
           </span>
           <div className="history-pagination-controls">
-            <button className="history-page-btn">
+            <button
+              className="history-page-btn"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((p) => p - 1)}
+            >
               <i className="fa fa-chevron-left" />
             </button>
-            <button className="history-page-btn active">1</button>
-            <button className="history-page-btn">2</button>
-            <button className="history-page-btn">3</button>
-            <button className="history-page-btn">
+
+            {pageNumbers.map((p, i) =>
+              p === "..." ? (
+                <span
+                  key={`dots-${i}`}
+                  className="history-page-btn history-page-dots"
+                >
+                  …
+                </span>
+              ) : (
+                <button
+                  key={p}
+                  className={`history-page-btn${currentPage === p ? " active" : ""}`}
+                  onClick={() => setCurrentPage(p)}
+                >
+                  {p}
+                </button>
+              ),
+            )}
+
+            <button
+              className="history-page-btn"
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage((p) => p + 1)}
+            >
               <i className="fa fa-chevron-right" />
             </button>
           </div>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={confirm !== null}
+        title={
+          confirm?.type === "clear" ? "Очистить историю?" : "Удалить запись?"
+        }
+        message={
+          confirm?.type === "clear"
+            ? "Все запросы будут удалены безвозвратно. Это действие нельзя отменить."
+            : "Эта запись будет удалена из истории навсегда."
+        }
+        confirmText={confirm?.type === "clear" ? "Очистить всё" : "Удалить"}
+        cancelText="Отмена"
+        variant="danger"
+        loading={clearing}
+        onConfirm={handleConfirm}
+        onCancel={() => setConfirm(null)}
+      />
     </Layout>
   );
 };

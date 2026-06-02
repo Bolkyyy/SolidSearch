@@ -1,4 +1,6 @@
-import axios from 'axios';
+import axios from "axios";
+
+const BASE = "http://localhost:3001";
 
 export interface DocumentFile {
   id: number;
@@ -10,6 +12,8 @@ export interface DocumentFile {
   page_count: number;
   extracted_text: string;
   normalized_text: string;
+  extraction_status: string;
+  uploaded_at: string;
 }
 
 export interface DocumentMetadata {
@@ -38,8 +42,31 @@ export interface Document {
 }
 
 export const DocumentsApi = {
+  getAll: async (): Promise<Document[]> => {
+    const { data } = await axios.get(`${BASE}/documents`);
+    return data;
+  },
+
+  getByCollectionId: async (collectionId: number): Promise<Document[]> => {
+    const { data } = await axios.get(
+      `${BASE}/documents?collection_id=${collectionId}`,
+    );
+    return data;
+  },
+
   getById: async (id: number): Promise<Document> => {
-    const { data } = await axios.get(`http://localhost:3001/documents/${id}`);
+    const { data } = await axios.get(`${BASE}/documents/${id}`);
+    return data;
+  },
+
+  addToCollection: async (
+    documentId: number,
+    collectionId: number,
+  ): Promise<Document> => {
+    const { data } = await axios.post(
+      `${BASE}/documents/${documentId}/add-to-collection`,
+      { collection_id: collectionId },
+    );
     return data;
   },
 };

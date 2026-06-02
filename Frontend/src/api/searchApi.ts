@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios from "axios";
 
 export interface HistoryItem {
   id: number;
@@ -7,7 +7,7 @@ export interface HistoryItem {
   user_id: number;
 }
 
-const API_BASE = 'http://localhost:3001';
+const API_BASE = "http://localhost:3001";
 
 export const historyApi = {
   getByUserId: async (userId: number): Promise<HistoryItem[]> => {

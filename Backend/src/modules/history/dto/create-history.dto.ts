@@ -13,5 +13,12 @@ export class CreateHistoryDto {
     query_type?: string;
 
     @IsOptional()
+    @IsString()
+    status?: string;
+
+    @IsOptional()
+    result_count?: number;
+
+    @IsOptional()
     filters_json?: any;
 }

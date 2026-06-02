@@ -1,4 +1,5 @@
 import axios from 'axios';
+import type { SearchResult } from '../interfaces/SearchPageInterface';
 
 export interface AiSettings {
   id: number;
@@ -51,9 +52,9 @@ export const aiApi = {
     return response.data;
   },
 
-  search: async (query: string): Promise<SearchResponse> => {
-    const response = await axios.post(`http://localhost:3001/search`, { query });
-    return response.data;
+  search: async (query: string, userId: number): Promise<SearchResult> => {
+    const { data } = await axios.post<SearchResult>(`http://localhost:3001/search`, { query, userId });
+    return data;
   },
 
   getAnswer: async (id: number): Promise<any> => {

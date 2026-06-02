@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios from "axios";
 
 export interface DashboardData {
   totalDocuments: number;
@@ -10,6 +10,6 @@ export interface DashboardData {
 }
 
 export const fetchDashboardData = async (): Promise<DashboardData> => {
-  const response = await axios.get<DashboardData>('/api/dashboard');
+  const response = await axios.get<DashboardData>("/api/dashboard");
   return response.data;
 };

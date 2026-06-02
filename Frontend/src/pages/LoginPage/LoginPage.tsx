@@ -46,7 +46,7 @@ const LoginPage = () => {
       localStorage.setItem("userId", String(userData.id));
 
       console.log("userId сохранён:", userData.id);
-      
+
       navigate("/home", { state: { user: userData } });
     } catch (error: any) {
       console.error("Ошибка при логине:", error);

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import Layout from "../../components/Layout/Layout";
-import { Link, useParams } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Document, DocumentsApi } from "@/api/documentsApi";
 
 const DocumentCard = () => {
@@ -11,6 +11,13 @@ const DocumentCard = () => {
   // const meta = documentData?.metadata?.[0];
 
   const [notFound, setNotFound] = useState(false);
+
+  const navigate = useNavigate();
+  const location = useLocation();
+  const docNavState = location.state as {
+    returnQuery?: string;
+    returnUserId?: number;
+  } | null;
 
   const params = useParams();
   const documentId = params.id;
@@ -27,7 +34,7 @@ const DocumentCard = () => {
   }
 
   const formatDateOnly = (iso?: string) => {
-    if (!iso) return '—';
+    if (!iso) return "—";
     const date = new Date(iso);
     return date.toLocaleDateString("ru-RU", {
       day: "2-digit",
@@ -47,7 +54,6 @@ const DocumentCard = () => {
     });
   };
 
-
   useEffect(() => {
     if (!documentId) {
       setNotFound(true);
@@ -60,12 +66,24 @@ const DocumentCard = () => {
     return (
       <Layout>
         <div className="document-card-page">
-          <Link to="/search/results" className="router-link">
-            <div className="back-button">
-              <i className="fa fa-arrow-left"></i> Назад к результатам
-            </div>
-          </Link>
-          <div style={{ textAlign: "center", marginTop: "4rem" }}>
+          <button
+            className="back-button"
+            onClick={() => {
+              if (docNavState?.returnQuery) {
+                navigate("/search/results", {
+                  state: {
+                    query: docNavState.returnQuery,
+                    userId: docNavState.returnUserId ?? 0,
+                  },
+                });
+              } else {
+                navigate(-1);
+              }
+            }}
+          >
+            <i className="fa fa-arrow-left"></i> Назад к результатам
+          </button>
+          <div className="empty-state-center">
             <h2>Документ не найден</h2>
             <p>
               Возможно, он был удалён или вы перешли по некорректной ссылке.
@@ -79,12 +97,23 @@ const DocumentCard = () => {
   return (
     <Layout>
       <div className="document-card-page">
-        {/* Кнопка назад */}
-        <Link to="/search/results" className="router-link">
-          <div className="back-button">
-            <i className="fa fa-arrow-left"></i> Назад к результатам
-          </div>
-        </Link>
+        <button
+          onClick={() => {
+            if (docNavState?.returnQuery) {
+              navigate("/search/results", {
+                state: {
+                  query: docNavState.returnQuery,
+                  userId: docNavState.returnUserId ?? 0,
+                },
+              });
+            } else {
+              navigate(-1);
+            }
+          }}
+          className="back-button"
+        >
+          <i className="fa fa-arrow-left"></i> Назад к результатам поиска
+        </button>
 
         {/* Заголовок документа */}
         <div className="document-header">
@@ -103,12 +132,12 @@ const DocumentCard = () => {
           >
             Обзор
           </button>
-          <button
+          {/* <button
             className={`tab-btn ${activeTab === "fragments" ? "active" : ""}`}
             onClick={() => setActiveTab("fragments")}
           >
             Фрагменты
-          </button>
+          </button> */}
           <button
             className={`tab-btn ${activeTab === "fulltext" ? "active" : ""}`}
             onClick={() => setActiveTab("fulltext")}
@@ -131,9 +160,8 @@ const DocumentCard = () => {
           {/* Новая кнопка скачивания */}
           <button className="tab-btn download-btn-tab">
             <i
-              className="fa fa-cloud-download"
+              className="fa fa-cloud-download btn-icon-prefix"
               aria-hidden="true"
-              style={{ marginRight: "8px" }}
             ></i>
             Скачать
           </button>
@@ -157,31 +185,7 @@ const DocumentCard = () => {
                       ) : (
                         <>
                           <div className="overview-section">
-                            <h3>Описание договора</h3>
-                            <p>
-                              Договор на выполнение работ по капитальному ремонту
-                              железнодорожных путей участка км 15-25 общей
-                              протяженностью 10 км, заключенный между заказчиком и
-                              ООО "СтройПуть".
-                            </p>
-                          </div>
-
-                          <div className="overview-section">
-                            <h3>Условия договора</h3>
-                            <p>
-                              Общая стоимость работ составляет 12 500 000
-                              (двенадцать миллионов пятьсот тысяч) рублей. Срок
-                              выполнения работ: с 01.04.2019 по 31.08.2019.
-                            </p>
-                          </div>
-
-                          <div className="overview-section">
-                            <h3>Выполнение работ</h3>
-                            <p>
-                              Все работы выполнены в полном объеме и в соответствии
-                              с техническим заданием. Подписан акт приемки №128-2019
-                              от 20.08.2019.
-                            </p>
+                            <p> Обзор документа не доступен </p>
                           </div>
                         </>
                       )}
@@ -191,7 +195,7 @@ const DocumentCard = () => {
               )}
 
               {/* Фрагменты */}
-              {activeTab === "fragments" && (
+              {/* {activeTab === "fragments" && (
                 <div className="fragments-tab">
                   <div className="key-fragments">
                     <h2>Ключевые фрагменты</h2>
@@ -236,7 +240,7 @@ const DocumentCard = () => {
                     </div>
                   </div>
                 </div>
-              )}
+              )} */}
 
               {/* Полный текст */}
               {activeTab === "fulltext" && (
@@ -291,13 +295,13 @@ const DocumentCard = () => {
                         MB
                       </span>
                     </div>
-                    <div className="metadata-item">
+                    <div className="metadata-item last-item">
                       <span className="metadata-label">Язык</span>
                       <span className="metadata-value">
                         {documentData?.language || "Неизвестно"}
                       </span>
                     </div>
-                    <div className="metadata-item">
+                    {/* <div className="metadata-item">
                       <span className="metadata-label">
                         Последнее изменение
                       </span>
@@ -310,7 +314,7 @@ const DocumentCard = () => {
                       <span className="metadata-value">
                         text-embedding-ada-002 - мок
                       </span>
-                    </div>
+                    </div> */}
                   </div>
                 </div>
               )}
@@ -382,7 +386,7 @@ const DocumentCard = () => {
                       {formatDateOnly(documentData.document_date)}
                     </span>
                   </div>
-                  <div className="info-row">
+                  {/* <div className="info-row">
                     <span className="info-label">Номер:</span>
                     <span className="info-value">
                       {documentData.archive_number || "Неизвестно"}
@@ -405,7 +409,7 @@ const DocumentCard = () => {
                     <span className="info-value">
                       {documentData.author_name || "Нет информации"}
                     </span>
-                  </div>
+                  </div> */}
                 </div>
               </div>
             )}

@@ -14,6 +14,12 @@ export class SearchQueries {
     @Column({ nullable: true })
     query_type: string;
 
+    @Column({ nullable: true })
+    status: string;
+
+    @Column({ nullable: true })
+    result_count: number;
+
     @Column({ type: 'json', nullable: true })
     filters_json: any;
 

@@ -1,37 +1,41 @@
 import Layout from "../../components/Layout/Layout";
+import ErrorToast from "../../components/ErrorToast/ErrorToast";
 import { useState } from "react";
-import axios from "axios";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+
+const EXAMPLE_QUERIES = [
+  "Найти договор на ремонт путей за 2019 год",
+  "Показать акты с подрядчиком за 2021 год",
+  "Какие документы содержат сумму выше 5 млн рублей",
+];
 
 const SearchPage = () => {
   const [query, setQuery] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!query.trim()) return;
+  const runSearch = (searchQuery: string) => {
+    if (!searchQuery.trim()) return;
 
     const userId = localStorage.getItem("userId");
     if (!userId) {
-      setMessage("Ошибка: пользователь не авторизован");
+      setError("Ошибка: пользователь не авторизован");
       return;
     }
 
-    setIsLoading(true);
-    setMessage("");
+    navigate("/search/results", {
+      state: { query: searchQuery, userId: Number(userId) },
+    });
+  };
 
-    try {
-      await axios.post("http://localhost:3001/search-queries", {
-        user_id: Number(userId),
-        query_text: query,
-      });
-      setMessage(`Запрос "${query}" успешно сохранён`);
-    } catch (err: any) {
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    runSearch(query);
+  };
+
+  const handleExampleClick = (example: string) => {
+    setQuery(example);
+    runSearch(example);
   };
 
   return (
@@ -44,7 +48,9 @@ const SearchPage = () => {
 
         <div className="hero-section">
           <h1 className="hero-title">Найдите любой документ за секунды</h1>
-          <p className="hero-subtitle">Введите запрос и получите точные результаты</p>
+          <p className="hero-subtitle">
+            Введите запрос и получите точные результаты
+          </p>
         </div>
 
         <div className="ai-search-container">
@@ -56,13 +62,11 @@ const SearchPage = () => {
               className="ai-input"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              disabled={isLoading}
             />
             <div className="ai-search-actions">
               <i className="fa fa-microphone mic-icon"></i>
-              <button type="submit" className="ai-search-btn" disabled={isLoading}>
-                {isLoading ? "Поиск..." : "Найти"}
-                <i className="fa fa-arrow-right"></i>
+              <button type="submit" className="ai-search-btn">
+                Найти <i className="fa fa-arrow-right"></i>
               </button>
             </div>
           </form>
@@ -70,12 +74,20 @@ const SearchPage = () => {
           <div className="query-examples">
             <span className="examples-label">Примеры запросов:</span>
             <div className="chips-container">
-              <Link to='results' className="chip router-link"><span>Найти договор на ремонт путей за 2019 год</span></Link>
-              <Link to='results' className="chip router-link"><span>Показать акты с подрядчиком за 2021 год</span></Link>
-              <Link to='results' className="chip router-link"><span>Какие документы содержат сумму выше 5 млн рублей</span></Link>
+              {EXAMPLE_QUERIES.map((ex) => (
+                <button
+                  key={ex}
+                  className="chip"
+                  onClick={() => handleExampleClick(ex)}
+                >
+                  <span>{ex}</span>
+                </button>
+              ))}
             </div>
           </div>
         </div>
+
+        {error && <ErrorToast message={error} onClose={() => setError("")} />}
 
         <div className="quick-filters-section">
           <h3 className="filters-title">Быстрые фильтры</h3>
@@ -133,27 +145,27 @@ const SearchPage = () => {
 
         <div className="features-grid">
           <div className="feature-card blue-card">
-            <div className="feature-icon"><i className="fa fa-question-circle"></i></div>
+            <div className="feature-icon">
+              <i className="fa fa-question-circle"></i>
+            </div>
             <h4>Естественный язык</h4>
             <p>Спрашивайте как обычно: "Найди договор с компанией Х"</p>
           </div>
           <div className="feature-card purple-card">
-            <div className="feature-icon"><i className="fa fa-check-double"></i></div>
+            <div className="feature-icon">
+              <i className="fa fa-check-double"></i>
+            </div>
             <h4>Точные цитаты</h4>
             <p>Каждый ответ подкреплен ссылками на источники</p>
           </div>
           <div className="feature-card teal-card">
-            <div className="feature-icon"><i className="fa fa-bolt"></i></div>
+            <div className="feature-icon">
+              <i className="fa fa-bolt"></i>
+            </div>
             <h4>Быстро</h4>
             <p>Ответ за 1-2 секунды из миллионов документов</p>
           </div>
         </div>
-
-        {message && (
-          <div style={{ marginTop: "20px", padding: "10px", background: "#e0f7fa", borderRadius: "8px" }}>
-            {message}
-          </div>
-        )}
       </div>
     </Layout>
   );
