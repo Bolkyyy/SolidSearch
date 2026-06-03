@@ -36,6 +36,13 @@ export class HistoryService {
     return await this.searchQueriesRepository.find();
   }
 
+  async findRecent(limit = 5): Promise<SearchQueries[]> {
+    return this.searchQueriesRepository.find({
+      order: { created_at: 'DESC' },
+      take: limit,
+    });
+  }
+
   async findAllById(user_id: number) {
     return this.searchQueriesRepository.find({
       where: { user_id: +user_id },

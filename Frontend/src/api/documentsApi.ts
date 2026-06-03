@@ -16,16 +16,6 @@ export interface DocumentFile {
   uploaded_at: string;
 }
 
-export interface DocumentMetadata {
-  id: number;
-  document_id: number;
-  contractor_name: string;
-  contract_number: string;
-  total_amount: number;
-  responsible_person: string;
-  extra_json: object | null;
-}
-
 export interface Document {
   id: number;
   collection_id: number;
@@ -38,7 +28,6 @@ export interface Document {
   language: string;
   created_at: string;
   files: DocumentFile[];
-  metadata: DocumentMetadata[];
 }
 
 export const DocumentsApi = {

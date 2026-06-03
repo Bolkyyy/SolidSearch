@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Param, ParseIntPipe, UseInterceptors, UploadedFile, Body, Query,} from '@nestjs/common';
+import { Controller, Get, Post, Param, ParseIntPipe, UseInterceptors, UploadedFile, Body, Query } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
@@ -12,9 +12,7 @@ export class DocumentsController {
   @Get()
   async findAll(@Query('collection_id') collectionId?: string) {
     if (collectionId !== undefined) {
-      return await this.documentsService.findByCollectionId(
-        Number(collectionId),
-      );
+      return await this.documentsService.findByCollectionId(Number(collectionId));
     }
     return await this.documentsService.findall();
   }
@@ -35,16 +33,18 @@ export class DocumentsController {
         },
       }),
       fileFilter: (req, file, cb) => {
-        const allowed = [
-          'application/pdf',
-          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-          'application/msword',
-          'text/plain',
-          'image/png',
-          'image/jpeg',
-          'image/tiff',
-        ];
-        allowed.includes(file.mimetype)
+        const allowedExts = new Set([
+          '.pdf', '.docx', '.doc', '.txt',
+          '.png', '.jpg', '.jpeg', '.tiff', '.tif', '.webp',
+          '.xls', '.xlsx',
+          '.ppt', '.pptx',
+          '.rtf',
+          '.md', '.markdown',
+          '.csv',
+          '.ods',
+        ]);
+        const ext = extname(file.originalname).toLowerCase();
+        allowedExts.has(ext)
           ? cb(null, true)
           : cb(new Error('Формат не поддерживается'), false);
       },

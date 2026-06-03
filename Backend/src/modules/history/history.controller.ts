@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Delete, Param } from '@nestjs/common';
+import { Controller, Get, Post, Body, Delete, Param, Query } from '@nestjs/common';
 import { HistoryService } from './history.service';
 import { CreateHistoryDto } from './dto/create-history.dto';
 
@@ -14,6 +14,11 @@ export class HistoryController {
   @Get()
   async findAll() {
     return this.historyService.findAll();
+  }
+
+  @Get('recent')
+  async findRecent(@Query('limit') limit?: string) {
+    return this.historyService.findRecent(limit ? parseInt(limit, 10) : 5);
   }
 
   @Get(":user_id")

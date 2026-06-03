@@ -48,8 +48,8 @@ const HomePage = () => {
       .catch(() => {});
 
     axios
-      .get(`${BASE}/history`)
-      .then((res) => setActivity((res.data as ActivityItem[]).slice(0, 4)))
+      .get(`${BASE}/history/recent?limit=4`)
+      .then((res) => setActivity(res.data as ActivityItem[]))
       .catch(() => {});
 
     usersApi
@@ -79,7 +79,7 @@ const HomePage = () => {
       </section>
 
       <div className="stats-grid">
-        <div className="stat-card">
+        <div className="stat-card-blue">
           <i className="fa fa-file-text card-icon blue" />
           <p>Всего документов</p>
           <h2>{totalDocuments}</h2>
@@ -136,11 +136,8 @@ const HomePage = () => {
                   <span className="search-query" title={item.query_text}>
                     {item.query_type === "ai" ? (
                       <>
-                        <i
-                          className="fa fa-magic"
-                          style={{ marginRight: 4, color: "#a78bfa" }}
-                        />
-                        AI: "
+                        <i className="fa fa-search" style={{ marginRight: 4}}/>
+                        Поиск: "
                       </>
                     ) : (
                       <>

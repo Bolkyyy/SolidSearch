@@ -21,7 +21,9 @@ const UploadModal = ({ isOpen, onClose }: UploadModalProps) => {
 
   const addFiles = (newFiles: FileList | File[]) => {
     const arr = Array.from(newFiles).filter((f) =>
-      f.name.match(/\.(pdf|docx|txt|xlsx|png|jpg|jpeg|tiff|tif)$/i),
+      f.name.match(
+        /\.(pdf|docx|doc|txt|xlsx|xls|ods|pptx|ppt|rtf|md|markdown|csv|png|jpg|jpeg|tiff|tif|webp)$/i,
+      ),
     );
     const mapped: UploadFile[] = arr.map((f) => ({
       file: f,
@@ -100,8 +102,23 @@ const UploadModal = ({ isOpen, onClose }: UploadModalProps) => {
   const extColor: Record<string, string> = {
     PDF: "#ef4444",
     DOCX: "#3b82f6",
+    DOC: "#3b82f6",
     TXT: "#a0a0a0",
+    MD: "#a0a0a0",
+    MARKDOWN: "#a0a0a0",
     XLSX: "#10b981",
+    XLS: "#10b981",
+    CSV: "#f59e0b",
+    ODS: "#10b981",
+    PPTX: "#f97316",
+    PPT: "#f97316",
+    RTF: "#8b5cf6",
+    PNG: "#06b6d4",
+    JPG: "#06b6d4",
+    JPEG: "#06b6d4",
+    TIFF: "#06b6d4",
+    TIF: "#06b6d4",
+    WEBP: "#06b6d4",
   };
 
   const hasAnyPending = files.some((f) => f.status === "pending");
@@ -139,7 +156,7 @@ const UploadModal = ({ isOpen, onClose }: UploadModalProps) => {
             ref={fileInputRef}
             type="file"
             multiple
-            accept=".pdf,.docx,.txt,.xlsx,.png,.jpg,.jpeg,.tiff,.tif"
+            accept=".pdf,.docx,.doc,.txt,.xlsx,.xls,.ods,.pptx,.ppt,.rtf,.md,.markdown,.csv,.png,.jpg,.jpeg,.tiff,.tif,.webp"
             className="hidden-input"
             onChange={(e) => e.target.files && addFiles(e.target.files)}
           />
@@ -150,7 +167,37 @@ const UploadModal = ({ isOpen, onClose }: UploadModalProps) => {
             Перетащите файлы сюда или{" "}
             <span className="um-link">нажмите для выбора</span>
           </p>
-          <p className="um-dropzone-hint">PDF, DOCX, TXT, PNG, JPG, TIFF</p>
+          <div className="um-hint-row">
+            <p className="um-dropzone-hint">PDF, DOCX, XLSX, PPTX, CSV, RTF и другие</p>
+            <div className="um-info-wrap">
+              <button
+                className="um-info-btn"
+                onClick={(e) => e.stopPropagation()}
+                tabIndex={-1}
+              >
+                i
+              </button>
+              <div className="um-info-tooltip">
+                <div className="um-tooltip-title">Поддерживаемые форматы</div>
+                <div className="um-tooltip-group">
+                  <span className="um-tooltip-label">Документы</span>
+                  <span className="um-tooltip-formats">PDF, DOCX, DOC, TXT, RTF, MD</span>
+                </div>
+                <div className="um-tooltip-group">
+                  <span className="um-tooltip-label">Таблицы</span>
+                  <span className="um-tooltip-formats">XLSX, XLS, ODS, CSV</span>
+                </div>
+                <div className="um-tooltip-group">
+                  <span className="um-tooltip-label">Презентации</span>
+                  <span className="um-tooltip-formats">PPTX, PPT</span>
+                </div>
+                <div className="um-tooltip-group">
+                  <span className="um-tooltip-label">Изображения</span>
+                  <span className="um-tooltip-formats">PNG, JPG, WEBP, TIFF</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {files.length > 0 && (

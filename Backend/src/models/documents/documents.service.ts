@@ -7,12 +7,18 @@ import { UploadDocumentDto } from './dto/upload-document.dto';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as mammoth from 'mammoth';
+import * as XLSX from 'xlsx';
 import Tesseract from 'tesseract.js';
 import WordExtractor from 'word-extractor';
 import OpenAI from 'openai';
 import { AiSettings } from '../../modules/ai/entity/ai-settings.entity';
 import { decrypt } from '../../modules/ai/Encryption/crypto';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const pdfjsLib = require('pdfjs-dist/legacy/build/pdf');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { parseOffice } = require('officeparser');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const CFB = require('cfb');
 
 const CHUNK_SIZE = 6000;
 const CHUNK_MAX_TOKENS = 1500;
@@ -225,6 +231,8 @@ export class DocumentService {
         this.buildAiFormattedText(rawText),
       ]);
 
+      const detectedLanguage = this.detectLanguage(rawText);
+
       await this.withRetry('save extracted text', () =>
         this.documentFilesRepository.update(fileId, {
           extracted_text: formattedText,
@@ -233,7 +241,10 @@ export class DocumentService {
         }),
       );
       await this.withRetry('set doc processed', () =>
-        this.documentsRepository.update(documentId, { status: 'processed' }),
+        this.documentsRepository.update(documentId, {
+          status: 'processed',
+          language: detectedLanguage,
+        }),
       );
     } catch (e: any) {
       console.error('[PROCESS ERROR]', e.message);
@@ -257,17 +268,18 @@ export class DocumentService {
     const originalName = Buffer.from(file.originalname, 'latin1').toString(
       'utf8',
     );
+    const mimeType = this.normalizeMimeType(file.path, file.mimetype);
 
     const document = await this.withRetry('save document', () =>
       this.documentsRepository.save({
         collection_id: dto.collection_id ?? null,
         title: dto.title ?? originalName,
-        document_type: this.getDocumentType(file.mimetype),
+        document_type: this.getDocumentType(mimeType),
         archive_number: dto.archive_number ?? '',
         document_date: new Date(),
         author_name: dto.author_name ?? '',
         status: 'processing',
-        language: dto.language ?? 'ru',
+        language: 'Определяется...',
       }),
     );
 
@@ -275,7 +287,7 @@ export class DocumentService {
       this.documentFilesRepository.save({
         document_id: document.id,
         file_name: originalName,
-        file_type: file.mimetype,
+        file_type: mimeType,
         file_path: file.path,
         file_size: file.size,
         extraction_status: 'pending',
@@ -286,7 +298,7 @@ export class DocumentService {
       documentFile.id,
       document.id,
       file.path,
-      file.mimetype,
+      mimeType,
     ).catch((e) => console.error('[UPLOAD PROCESS ERROR]', e));
 
     return { document, file: documentFile };
@@ -335,15 +347,7 @@ export class DocumentService {
 
   async findall(): Promise<Documents[]> {
     return await this.documentsRepository.find({
-      relations: ['files', 'metadata'],
-      order: { created_at: 'DESC' },
-    });
-  }
-
-  async findByCollectionId(collectionId: number): Promise<Documents[]> {
-    return await this.documentsRepository.find({
-      where: { collection_id: collectionId },
-      relations: ['files', 'metadata'],
+      relations: ['files'],
       order: { created_at: 'DESC' },
     });
   }
@@ -351,17 +355,25 @@ export class DocumentService {
   async findbyid(id: number): Promise<Documents> {
     const document = await this.documentsRepository.findOne({
       where: { id },
-      relations: ['files', 'metadata'],
+      relations: ['files'],
     });
     if (!document) throw new NotFoundException(`Document ${id} not found`);
     return document;
+  }
+
+  async findByCollectionId(collectionId: number): Promise<Documents[]> {
+    return await this.documentsRepository.find({
+      where: { collection_id: collectionId },
+      relations: ['files'],
+      order: { created_at: 'DESC' },
+    });
   }
 
   async findByIds(ids: number[]): Promise<Documents[]> {
     if (ids.length === 0) return [];
     return await this.documentsRepository.find({
       where: { id: In(ids) },
-      relations: ['files', 'metadata'],
+      relations: ['files'],
     });
   }
 
@@ -370,12 +382,11 @@ export class DocumentService {
     collectionId: number | null,
   ): Promise<Documents> {
     await this.withRetry('set collection_id', () =>
-      this.documentsRepository.update(documentId, {
-        collection_id: collectionId,
-      }),
+      this.documentsRepository.update(documentId, { collection_id: collectionId }),
     );
     return await this.findbyid(documentId);
   }
+
 
   private transliterate(word: string): string | null {
     const map: Record<string, string> = {
@@ -485,13 +496,51 @@ export class DocumentService {
       .getMany();
   }
 
+  private detectLanguage(text: string): string {
+    const cyrillic = (text.match(/[Ѐ-ӿ]/g) ?? []).length;
+    const latin = (text.match(/[a-zA-Z]/g) ?? []).length;
+    const total = cyrillic + latin;
+    if (total < 20) return 'Неизвестен';
+    const ratio = cyrillic / total;
+    if (ratio > 0.6) return 'Русский';
+    if (ratio < 0.4) return 'Английский';
+    return 'Смешанный';
+  }
+
+  private normalizeMimeType(filePath: string, mimeType: string): string {
+    const ext = path.extname(filePath).toLowerCase();
+    const extMap: Record<string, string> = {
+      '.pdf': 'application/pdf',
+      '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      '.doc': 'application/msword',
+      '.txt': 'text/plain',
+      '.png': 'image/png',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.tiff': 'image/tiff',
+      '.tif': 'image/tiff',
+      '.webp': 'image/webp',
+      '.xls': 'application/vnd.ms-excel',
+      '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      '.ppt': 'application/vnd.ms-powerpoint',
+      '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      '.rtf': 'application/rtf',
+      '.md': 'text/markdown',
+      '.markdown': 'text/markdown',
+      '.csv': 'text/csv',
+      '.ods': 'application/vnd.oasis.opendocument.spreadsheet',
+    };
+    return extMap[ext] ?? mimeType;
+  }
+
   private async extractTextFromFile(
     filePath: string,
     mimeType: string,
   ): Promise<string> {
     const buffer = fs.readFileSync(filePath);
+    const effectiveMime = this.normalizeMimeType(filePath, mimeType);
 
-    switch (mimeType) {
+    switch (effectiveMime) {
       case 'application/pdf': {
         const uint8Array = new Uint8Array(buffer);
         const loadingTask = pdfjsLib.getDocument({ data: uint8Array });
@@ -517,25 +566,96 @@ export class DocumentService {
         return buffer.toString('utf-8');
       case 'image/png':
       case 'image/jpeg':
-      case 'image/tiff': {
+      case 'image/tiff':
+      case 'image/webp': {
         const { data } = await Tesseract.recognize(filePath, 'rus+eng');
         return data.text;
+      }
+      case 'application/vnd.ms-excel':
+      case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': {
+        const workbook = XLSX.read(buffer, { type: 'buffer' });
+        return workbook.SheetNames.map((name) =>
+          XLSX.utils.sheet_to_csv(workbook.Sheets[name]),
+        ).join('\n\n');
+      }
+      case 'application/vnd.ms-powerpoint': {
+        return this.extractTextFromPptBinary(buffer);
+      }
+      case 'application/vnd.openxmlformats-officedocument.presentationml.presentation':
+      case 'application/rtf':
+      case 'text/rtf':
+      case 'text/markdown':
+      case 'text/x-markdown': {
+        const ast = await parseOffice(filePath);
+        return ast.toText();
+      }
+      case 'text/csv':
+      case 'application/csv':
+        return buffer.toString('utf-8');
+      case 'application/vnd.oasis.opendocument.spreadsheet': {
+        const ast = await parseOffice(filePath);
+        return ast.toText();
       }
       default:
         return '';
     }
   }
 
+  private extractTextFromPptBinary(buffer: Buffer): string {
+    try {
+      const cfb = CFB.read(buffer, { type: 'buffer' });
+      const entry = CFB.find(cfb, 'PowerPoint Document');
+      if (!entry?.content) return '';
+
+      const stream = Buffer.from(entry.content as Uint8Array);
+      const texts: string[] = [];
+
+      for (let i = 0; i < stream.length - 8; ) {
+        const recType = stream.readUInt16LE(i + 2);
+        const recLen = stream.readUInt32LE(i + 4);
+
+        if (recLen > 0 && recLen < 0x100000 && i + 8 + recLen <= stream.length) {
+          if (recType === 0x0fa0) {
+            // TextCharsAtom — UTF-16LE
+            const text = stream.subarray(i + 8, i + 8 + recLen).toString('utf16le').trim();
+            if (text) texts.push(text);
+          } else if (recType === 0x0fa8) {
+            // TextBytesAtom — latin1
+            const text = stream.subarray(i + 8, i + 8 + recLen).toString('latin1').trim();
+            if (text) texts.push(text);
+          }
+        }
+
+        i += 8 + (recLen > 0 ? recLen : 1);
+      }
+
+      return texts.join('\n');
+    } catch {
+      return '';
+    }
+  }
+
   private getDocumentType(mimeType: string): string {
     const types: Record<string, string> = {
       'application/pdf': 'PDF',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
-        'DOCX',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'DOCX',
       'application/msword': 'DOC',
       'text/plain': 'TXT',
       'image/png': 'PNG',
       'image/jpeg': 'JPG',
       'image/tiff': 'TIFF',
+      'image/webp': 'WEBP',
+      'application/vnd.ms-excel': 'XLS',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'XLSX',
+      'application/vnd.ms-powerpoint': 'PPT',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'PPTX',
+      'application/rtf': 'RTF',
+      'text/rtf': 'RTF',
+      'text/markdown': 'MD',
+      'text/x-markdown': 'MD',
+      'text/csv': 'CSV',
+      'application/csv': 'CSV',
+      'application/vnd.oasis.opendocument.spreadsheet': 'ODS',
     };
     return types[mimeType] ?? 'UNKNOWN';
   }

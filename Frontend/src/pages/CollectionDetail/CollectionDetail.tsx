@@ -36,6 +36,7 @@ const CollectionDetail = () => {
   const [removeTarget, setRemoveTarget] = useState<Document | null>(null);
   const [removing, setRemoving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const id = Number(collectionId);
 
@@ -47,19 +48,30 @@ const CollectionDetail = () => {
 
     const load = async () => {
       try {
-        const [colRes, docs] = await Promise.all([
+        const [colRes, docs] = await Promise.allSettled([
           axios.get(`${BASE}/document_collection`),
           DocumentsApi.getByCollectionId(id),
         ]);
-        const found = colRes.data.find((c: Collection) => c.id === id);
+
+        if (colRes.status === "rejected") {
+          setLoadError(`Ошибка загрузки коллекций: ${colRes.reason?.response?.data?.message ?? colRes.reason?.message ?? "неизвестная ошибка"}`);
+          return;
+        }
+
+        if (docs.status === "rejected") {
+          setLoadError(`Ошибка загрузки документов: ${docs.reason?.response?.data?.message ?? docs.reason?.message ?? "неизвестная ошибка"}`);
+          return;
+        }
+
+        const found = colRes.value.data.find((c: Collection) => c.id === id);
         if (!found) {
-          navigate("/collections");
+          setLoadError(`Коллекция #${id} не найдена в базе данных`);
           return;
         }
         setCollection(found);
-        setDocuments(docs);
-      } catch (e) {
-        console.error(e);
+        setDocuments(docs.value);
+      } catch (e: any) {
+        setLoadError(e?.message ?? "Неизвестная ошибка");
       } finally {
         setLoading(false);
       }
@@ -194,6 +206,18 @@ const CollectionDetail = () => {
         >
           <i className="fa fa-spinner fa-spin fa-2x" />
           <p style={{ marginTop: 16 }}>Загрузка...</p>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <Layout>
+        <div style={{ padding: "60px 24px", textAlign: "center" }}>
+          <i className="fa fa-exclamation-triangle fa-3x" style={{ color: "#ef4444", marginBottom: 16, display: "block" }} />
+          <p style={{ color: "#ef4444", fontSize: 15, marginBottom: 8 }}>{loadError}</p>
+          <Link to="/collections" style={{ color: "#a0a0a0", fontSize: 13 }}>← Вернуться к коллекциям</Link>
         </div>
       </Layout>
     );

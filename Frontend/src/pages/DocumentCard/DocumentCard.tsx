@@ -295,7 +295,7 @@ const DocumentCard = () => {
                         MB
                       </span>
                     </div>
-                    <div className="metadata-item last-item">
+                    <div className="metadata-item">
                       <span className="metadata-label">Язык</span>
                       <span className="metadata-value">
                         {documentData?.language || "Неизвестно"}
