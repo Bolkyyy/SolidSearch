@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import LoginPage from './pages/LoginPage/LoginPage';
 import HomePage from './pages/HomePage/HomePage';
 import SearchPage from './pages/SearchPage/SearchPage';
@@ -12,23 +12,30 @@ import DocumentCard from './pages/DocumentCard/DocumentCard';
 import CollectionDetail from "./pages/CollectionDetail/CollectionDetail";
 import './App.css';
 
+function AppRoutes() {
+  const location = useLocation();
+  return (
+    <Routes>
+      <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/home" element={<HomePage />} />
+      <Route path="/search" element={<SearchPage />} />
+      <Route path="/collections" element={<CollectionPage />} />
+      <Route path="/history" element={<HistoryPage />} />
+      <Route path="/analytics" element={<AnalyticsPage />} />
+      <Route path="/indexing" element={<IndexingPage />} />
+      <Route path="/settings" element={<SettingsPage />} />
+      <Route path="/search/results" element={<SearchResults key={location.key} />} />
+      <Route path="/document/:id" element={<DocumentCard />} />
+      <Route path="/collection/:collectionId" element={<CollectionDetail />} />
+    </Routes>
+  );
+}
+
 function App() {
   return (
     <Router>
-      <Routes>
-        <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/home" element={<HomePage />} />
-        <Route path="/search" element={<SearchPage />} />
-        <Route path="/collections" element={<CollectionPage />} />
-        <Route path="/history" element={<HistoryPage />} />
-        <Route path="/analytics" element={<AnalyticsPage />} />
-        <Route path="/indexing" element={<IndexingPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
-        <Route path="/search/results" element={<SearchResults />} />
-        <Route path="/document/:id" element={<DocumentCard />} />
-        <Route path="/collection/:collectionId" element={<CollectionDetail />} />
-      </Routes>
+      <AppRoutes />
     </Router>
   );
 }

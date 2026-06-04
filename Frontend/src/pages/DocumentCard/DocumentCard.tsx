@@ -1,14 +1,39 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import Layout from "../../components/Layout/Layout";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Document, DocumentsApi } from "@/api/documentsApi";
 
+const PAGE_SIZE = 20_000;
+
+function paginateText(text: string): string[] {
+  if (text.length <= PAGE_SIZE) return [text];
+  const pages: string[] = [];
+  let start = 0;
+  while (start < text.length) {
+    let end = Math.min(start + PAGE_SIZE, text.length);
+    if (end < text.length) {
+      const lastNl = text.lastIndexOf("\n", end);
+      if (lastNl > start + PAGE_SIZE * 0.5) end = lastNl + 1;
+    }
+    pages.push(text.slice(start, end));
+    start = end;
+  }
+  return pages;
+}
+
 const DocumentCard = () => {
-  const [activeTab, setActiveTab] = useState("overview"); // overview, fragments, fulltext, metadata, history
+  const [activeTab, setActiveTab] = useState("overview");
   const [documentData, setDocumentData] = useState<Document | null>(null);
+  const [textPage, setTextPage] = useState(0);
+  const textScrollRef = useRef<HTMLDivElement>(null);
   const file = documentData?.files?.[0];
-  // const meta = documentData?.metadata?.[0];
+
+  const textPages = useMemo(
+    () => (file?.extracted_text ? paginateText(file.extracted_text) : []),
+    [file?.extracted_text],
+  );
+  const totalPages = textPages.length;
 
   const [notFound, setNotFound] = useState(false);
 
@@ -26,6 +51,7 @@ const DocumentCard = () => {
     try {
       const data = await DocumentsApi.getById(Number(documentId));
       setDocumentData(data);
+      setTextPage(0);
       setNotFound(false);
     } catch (e) {
       console.error("Error fetching document:", e);
@@ -180,7 +206,7 @@ const DocumentCard = () => {
                     <div className="overview-content">
                       {file?.normalized_text ? (
                         <div className="markdown-body">
-                          <ReactMarkdown>{file.normalized_text}</ReactMarkdown>
+                          <ReactMarkdown >{file.normalized_text}</ReactMarkdown>
                         </div>
                       ) : (
                         <>
@@ -247,10 +273,35 @@ const DocumentCard = () => {
                 <div className="fulltext-tab">
                   <div className="fulltext-content">
                     <h2>{documentData?.title}</h2>
-                    {file?.extracted_text ? (
-                      <div className="markdown-body">
-                        <ReactMarkdown>{file.extracted_text}</ReactMarkdown>
-                      </div>
+                    {textPages.length > 0 ? (
+                      <>
+                        <div className="markdown-body doc-fulltext" ref={textScrollRef}>
+                          <ReactMarkdown>
+                            {textPages[textPage]}
+                          </ReactMarkdown>
+                        </div>
+                        {totalPages > 1 && (
+                          <div className="doc-pagination">
+                            <button
+                              className="doc-page-btn"
+                              onClick={() => { setTextPage((p) => Math.max(0, p - 1)); textScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" }); }}
+                              disabled={textPage === 0}
+                            >
+                              <i className="fa fa-chevron-left" /> Назад
+                            </button>
+                            <span className="doc-page-info">
+                              Страница {textPage + 1} из {totalPages}
+                            </span>
+                            <button
+                              className="doc-page-btn"
+                              onClick={() => { setTextPage((p) => Math.min(totalPages - 1, p + 1)); textScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" }); }}
+                              disabled={textPage === totalPages - 1}
+                            >
+                              Далее <i className="fa fa-chevron-right" />
+                            </button>
+                          </div>
+                        )}
+                      </>
                     ) : (
                       <p>Текст документа недоступен</p>
                     )}

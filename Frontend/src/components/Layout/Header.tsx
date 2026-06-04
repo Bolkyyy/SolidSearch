@@ -1,4 +1,4 @@
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import UploadModal from "./UploadModel";
 
@@ -11,7 +11,9 @@ interface UserState {
 const Header = () => {
   const [userName, setUserName] = useState("");
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const state = location.state as UserState;
@@ -19,6 +21,15 @@ const Header = () => {
     const storedName = localStorage.getItem("userFullName");
     setUserName(stateUser || storedName || "Пользователь");
   }, [location.state]);
+
+  const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== "Enter" || !searchQuery.trim()) return;
+    const userId = localStorage.getItem("userId");
+    navigate("/search/results", {
+      state: { query: searchQuery.trim(), userId: Number(userId) },
+    });
+    setSearchQuery("");
+  };
 
   return (
     <>
@@ -30,6 +41,9 @@ const Header = () => {
               type="text"
               className="search-bar"
               placeholder="Быстрый поиск..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={handleSearch}
             />
           </div>
 

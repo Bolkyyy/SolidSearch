@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+﻿import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { Documents } from './documents.entity';
@@ -16,12 +16,23 @@ import { decrypt } from '../../modules/ai/Encryption/crypto';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pdfjsLib = require('pdfjs-dist/legacy/build/pdf');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { parseOffice } = require('officeparser');
+const officeparser = require('officeparser');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const CFB = require('cfb');
 
 const CHUNK_SIZE = 6000;
 const CHUNK_MAX_TOKENS = 1500;
+
+// Hard cap: store at most 300 000 chars (≈ 15 pages × 20 000)
+// Prevents multi-million-char XLSX/CSV from flooding DB and burning AI tokens
+const MAX_STORED_CHARS = 300_000;
+// AI formatting only runs on first 60 000 chars (≈ 10 chunks × 6 000)
+const MAX_AI_CHARS = 60_000;
+
+interface ExtractionResult {
+  text: string;
+  pageCount: number | null;
+}
 
 @Injectable()
 export class DocumentService {
@@ -61,37 +72,32 @@ export class DocumentService {
   private async buildAiSummary(rawText: string): Promise<string> {
     if (rawText.trim().length < 100) return rawText.trim();
 
-    try {
-      const { client, model } = await this.getAiClient();
-      const truncated = rawText.slice(0, 8000);
+    const { client, model } = await this.getAiClient();
+    const truncated = rawText.slice(0, 8000);
 
-      const response = await client.chat.completions.create({
-        model,
-        max_tokens: 400,
-        messages: [
-          {
-            role: 'system',
-            content: `Ты — аналитик архивных документов.
-                        Напиши краткое содержание документа (3-5 предложений).
-                        - Передай СУТЬ: о чём документ, ключевые факты/решения/данные
-                        - Не пересказывай структуру — передавай смысл
-                        - Не используй фразы "документ содержит", "в документе говорится"
-                        - Отвечай на том же языке что и документ`,
-          },
-          {
-            role: 'user',
-            content: `Напиши краткое содержание:\n\n${truncated}`,
-          },
-        ],
-      });
+    const response = await client.chat.completions.create({
+      model,
+      max_tokens: 400,
+      messages: [
+        {
+          role: 'system',
+          content: `Ты — аналитик архивных документов.
+                    Напиши краткое содержание документа (3-5 предложений).
+                    - Передай СУТЬ: о чём документ, ключевые факты/решения/данные
+                    - Не пересказывай структуру — передавай смысл
+                    - Не используй фразы "документ содержит", "в документе говорится"
+                    - Отвечай на том же языке что и документ`,
+        },
+        {
+          role: 'user',
+          content: `Напиши краткое содержание:\n\n${truncated}`,
+        },
+      ],
+    });
 
-      return (
-        response.choices[0].message.content?.trim() || rawText.slice(0, 500)
-      );
-    } catch (e: any) {
-      console.error('[SUMMARY ERROR]', e.message);
-      return rawText.slice(0, 500).trim() + '…';
-    }
+    return (
+      response.choices[0].message.content?.trim() || rawText.slice(0, 500)
+    );
   }
 
   private splitIntoChunks(text: string, size: number): string[] {
@@ -153,30 +159,25 @@ export class DocumentService {
   private async buildAiFormattedText(rawText: string): Promise<string> {
     if (rawText.trim().length < 50) return rawText.trim();
 
-    try {
-      const { client, model } = await this.getAiClient();
-      const chunks = this.splitIntoChunks(rawText, CHUNK_SIZE);
+    const { client, model } = await this.getAiClient();
+    const chunks = this.splitIntoChunks(rawText, CHUNK_SIZE);
 
-      console.log(`[FORMAT] Разбито на ${chunks.length} чанков`);
+    console.log(`[FORMAT] Разбито на ${chunks.length} чанков`);
 
-      const formattedChunks: string[] = [];
-      for (let i = 0; i < chunks.length; i++) {
-        const formatted = await this.formatChunk(
-          client,
-          model,
-          chunks[i],
-          i,
-          chunks.length,
-        );
-        formattedChunks.push(formatted);
-        console.log(`[FORMAT] Чанк ${i + 1}/${chunks.length} готов`);
-      }
-
-      return formattedChunks.join('\n\n---\n\n');
-    } catch (e: any) {
-      console.error('[FORMAT ERROR]', e.message);
-      return rawText;
+    const formattedChunks: string[] = [];
+    for (let i = 0; i < chunks.length; i++) {
+      const formatted = await this.formatChunk(
+        client,
+        model,
+        chunks[i],
+        i,
+        chunks.length,
+      );
+      formattedChunks.push(formatted);
+      console.log(`[FORMAT] Чанк ${i + 1}/${chunks.length} готов`);
     }
+
+    return formattedChunks.join('\n\n---\n\n');
   }
 
   private async withRetry<T>(
@@ -204,6 +205,143 @@ export class DocumentService {
     throw new Error(`[RETRY] ${label}: все попытки исчерпаны`);
   }
 
+    // ── RTF text extraction via control-word stripping ──────────────────────
+  private extractTextFromRtf(buffer: Buffer): string {
+    let rtf = buffer.toString('latin1');
+
+    // Ignore embedded objects and pictures
+    rtf = rtf.replace(/\{\\pict[^}]*\}/gs, '');
+    rtf = rtf.replace(/\{\\object[^}]*\}/gs, '');
+
+    // Paragraph / line breaks → newline
+    rtf = rtf.replace(/\\par[d]?\s?/g, '\n');
+    rtf = rtf.replace(/\\line\s?/g, '\n');
+    rtf = rtf.replace(/\\page\s?/g, '\n');
+
+    // Unicode escape: \uN? → character
+    rtf = rtf.replace(/\\u(-?\d+)\??/g, (_, n) => {
+      const code = parseInt(n);
+      return String.fromCharCode(code < 0 ? code + 65536 : code);
+    });
+
+    // Hex escape: \'XX → character
+    rtf = rtf.replace(/\\'([0-9a-fA-F]{2})/g, (_, hex) =>
+      String.fromCharCode(parseInt(hex, 16)),
+    );
+
+    // Remove all remaining control words and symbols
+    rtf = rtf.replace(/\\[a-z*]+[-\d]*\s?/gi, '');
+    rtf = rtf.replace(/[{}\\]/g, '');
+
+    // Clean up whitespace
+    rtf = rtf.replace(/[ \t]+/g, ' ');
+    rtf = rtf.replace(/\n{3,}/g, '\n\n');
+
+    return rtf.trim();
+  }
+
+  // ── Main extraction with page count ─────────────────────────────────────
+  private async extractFromFile(
+    filePath: string,
+    mimeType: string,
+  ): Promise<ExtractionResult> {
+    const buffer = fs.readFileSync(filePath);
+    const effectiveMime = this.normalizeMimeType(filePath, mimeType);
+
+    switch (effectiveMime) {
+      // ── PDF ─────────────────────────────────────────────────────────────
+      case 'application/pdf': {
+        const uint8Array = new Uint8Array(buffer);
+        const loadingTask = pdfjsLib.getDocument({ data: uint8Array });
+        const pdf = await loadingTask.promise;
+        let text = '';
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          text += content.items.map((item: any) => item.str).join(' ') + '\n';
+        }
+        return { text, pageCount: pdf.numPages };
+      }
+
+      // ── DOC (legacy Word) ────────────────────────────────────────────────
+      case 'application/msword': {
+        const extractor = new WordExtractor();
+        const extracted = await extractor.extract(filePath);
+        return { text: extracted.getBody(), pageCount: null };
+      }
+
+      // ── DOCX ─────────────────────────────────────────────────────────────
+      case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document': {
+        const result = await mammoth.extractRawText({ buffer });
+        return { text: result.value, pageCount: null };
+      }
+
+      // ── TXT ──────────────────────────────────────────────────────────────
+      case 'text/plain':
+        return { text: buffer.toString('utf-8'), pageCount: null };
+
+      // ── Markdown ─────────────────────────────────────────────────────────
+      case 'text/markdown':
+      case 'text/x-markdown':
+        return { text: buffer.toString('utf-8'), pageCount: null };
+
+      // ── Images (OCR) ─────────────────────────────────────────────────────
+      case 'image/png':
+      case 'image/jpeg':
+      case 'image/tiff':
+      case 'image/webp': {
+        const { data } = await Tesseract.recognize(filePath, 'rus+eng');
+        return { text: data.text, pageCount: 1 };
+      }
+
+      // ── XLS / XLSX ───────────────────────────────────────────────────────
+      case 'application/vnd.ms-excel':
+      case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': {
+        const workbook = XLSX.read(buffer, { type: 'buffer' });
+        const text = workbook.SheetNames.map((name) => {
+          const csv = XLSX.utils.sheet_to_csv(workbook.Sheets[name]);
+          const content = this.csvToPlainText(csv);
+          return `### ${name}\n\n${content}`;
+        }).join('\n\n');
+        return { text, pageCount: workbook.SheetNames.length };
+      }
+
+      // ── ODS ───────────────────────────────────────────────────────────────
+      case 'application/vnd.oasis.opendocument.spreadsheet': {
+        const ast = await officeparser.parseOffice(filePath);
+        return { text: ast.toText(), pageCount: null };
+      }
+
+      // ── PPTX ─────────────────────────────────────────────────────────────
+      case 'application/vnd.openxmlformats-officedocument.presentationml.presentation': {
+        const ast = await officeparser.parseOffice(filePath);
+        return { text: ast.toText(), pageCount: null };
+      }
+
+      // ── PPT (legacy) ─────────────────────────────────────────────────────
+      case 'application/vnd.ms-powerpoint': {
+        const text = this.extractTextFromPptBinary(buffer);
+        return { text, pageCount: null };
+      }
+
+      // ── RTF ───────────────────────────────────────────────────────────────
+      case 'application/rtf':
+      case 'text/rtf': {
+        const ast = await officeparser.parseOffice(filePath);
+        return { text: ast.toText(), pageCount: null };
+      }
+
+      // ── CSV ──────────────────────────────────────────────────────────────
+      case 'text/csv':
+      case 'application/csv':
+        return { text: this.csvToPlainText(buffer.toString('utf-8')), pageCount: null };
+
+      default:
+        return { text: '', pageCount: null };
+    }
+  }
+
+  // ── Two-phase processAndSave: text first, AI second ──────────────────────
   private async processAndSave(
     fileId: number,
     documentId: number,
@@ -212,12 +350,23 @@ export class DocumentService {
   ): Promise<void> {
     try {
       const fullPath = path.resolve(filePath);
-      const rawText = await this.extractTextFromFile(fullPath, mimeType);
+      console.log(`[EXTRACT] fileId=${fileId} mime=${mimeType}`);
+
+      const { text: fullText, pageCount } = await this.extractFromFile(
+        fullPath,
+        mimeType,
+      );
+
+      // Apply hard storage cap — prevents multi-million-char files from flooding DB
+      const wasTruncated = fullText.length > MAX_STORED_CHARS;
+      const rawText = wasTruncated ? fullText.slice(0, MAX_STORED_CHARS) : fullText;
 
       if (!rawText.trim()) {
+        console.log(`[EXTRACT] fileId=${fileId} — пустой текст`);
         await this.withRetry('set empty', () =>
           this.documentFilesRepository.update(fileId, {
             extraction_status: 'empty',
+            ...(pageCount != null ? { page_count: pageCount } : {}),
           }),
         );
         await this.withRetry('set processed', () =>
@@ -226,28 +375,61 @@ export class DocumentService {
         return;
       }
 
-      const [summary, formattedText] = await Promise.all([
-        this.buildAiSummary(rawText),
-        this.buildAiFormattedText(rawText),
-      ]);
-
-      const detectedLanguage = this.detectLanguage(rawText);
-
-      await this.withRetry('save extracted text', () =>
+      // ФАЗА 1: сохраняем текст немедленно — поиск уже работает
+      console.log(
+        `[EXTRACT] fileId=${fileId} — ${rawText.length} символов` +
+          (wasTruncated ? ` (обрезано с ${fullText.length})` : '') +
+          ', сохраняем',
+      );
+      await this.withRetry('save raw text', () =>
         this.documentFilesRepository.update(fileId, {
-          extracted_text: formattedText,
-          normalized_text: summary,
-          extraction_status: 'processed',
+          extracted_text: rawText,
+          normalized_text: rawText.slice(0, 1500),
+          extraction_status: 'text_extracted',
+          ...(pageCount != null ? { page_count: pageCount } : {}),
         }),
       );
-      await this.withRetry('set doc processed', () =>
-        this.documentsRepository.update(documentId, {
-          status: 'processed',
-          language: detectedLanguage,
-        }),
-      );
+
+      // ФАЗА 2: AI-форматирование только первых MAX_AI_CHARS символов
+      const aiText = rawText.slice(0, MAX_AI_CHARS);
+      try {
+        const detectedLanguage = this.detectLanguage(rawText);
+        const [summary, formattedText] = await Promise.all([
+          this.buildAiSummary(aiText),
+          this.buildAiFormattedText(aiText),
+        ]);
+
+        await this.withRetry('save ai result', () =>
+          this.documentFilesRepository.update(fileId, {
+            extracted_text: formattedText,
+            normalized_text: summary,
+            extraction_status: 'processed',
+          }),
+        );
+        await this.withRetry('set doc processed', () =>
+          this.documentsRepository.update(documentId, {
+            status: 'processed',
+            language: detectedLanguage,
+          }),
+        );
+        console.log(`[AI] fileId=${fileId} — AI-обработка завершена`);
+      } catch (aiErr: any) {
+        // AI упал — текст уже сохранён, помечаем как processed
+        console.error(`[AI] fileId=${fileId} — ошибка AI:`, aiErr.message);
+        await this.withRetry('mark processed after ai fail', () =>
+          this.documentFilesRepository.update(fileId, {
+            extraction_status: 'processed',
+          }),
+        );
+        await this.withRetry('set doc processed (no ai)', () =>
+          this.documentsRepository.update(documentId, {
+            status: 'processed',
+            language: this.detectLanguage(rawText),
+          }),
+        );
+      }
     } catch (e: any) {
-      console.error('[PROCESS ERROR]', e.message);
+      console.error(`[PROCESS ERROR] fileId=${fileId}:`, e.message);
       await this.withRetry('set failed', () =>
         this.documentFilesRepository.update(fileId, {
           extraction_status: 'extraction_failed',
@@ -382,11 +564,12 @@ export class DocumentService {
     collectionId: number | null,
   ): Promise<Documents> {
     await this.withRetry('set collection_id', () =>
-      this.documentsRepository.update(documentId, { collection_id: collectionId }),
+      this.documentsRepository.update(documentId, {
+        collection_id: collectionId,
+      }),
     );
     return await this.findbyid(documentId);
   }
-
 
   private transliterate(word: string): string | null {
     const map: Record<string, string> = {
@@ -533,72 +716,28 @@ export class DocumentService {
     return extMap[ext] ?? mimeType;
   }
 
+  // Kept for backwards compatibility (used by extractAllText / extractText)
   private async extractTextFromFile(
     filePath: string,
     mimeType: string,
   ): Promise<string> {
-    const buffer = fs.readFileSync(filePath);
-    const effectiveMime = this.normalizeMimeType(filePath, mimeType);
+    const { text } = await this.extractFromFile(filePath, mimeType);
+    return text;
+  }
 
-    switch (effectiveMime) {
-      case 'application/pdf': {
-        const uint8Array = new Uint8Array(buffer);
-        const loadingTask = pdfjsLib.getDocument({ data: uint8Array });
-        const pdf = await loadingTask.promise;
-        let text = '';
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const content = await page.getTextContent();
-          text += content.items.map((item: any) => item.str).join(' ') + '\n';
-        }
-        return text;
-      }
-      case 'application/msword': {
-        const extractor = new WordExtractor();
-        const extracted = await extractor.extract(filePath);
-        return extracted.getBody();
-      }
-      case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document': {
-        const result = await mammoth.extractRawText({ buffer });
-        return result.value;
-      }
-      case 'text/plain':
-        return buffer.toString('utf-8');
-      case 'image/png':
-      case 'image/jpeg':
-      case 'image/tiff':
-      case 'image/webp': {
-        const { data } = await Tesseract.recognize(filePath, 'rus+eng');
-        return data.text;
-      }
-      case 'application/vnd.ms-excel':
-      case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': {
-        const workbook = XLSX.read(buffer, { type: 'buffer' });
-        return workbook.SheetNames.map((name) =>
-          XLSX.utils.sheet_to_csv(workbook.Sheets[name]),
-        ).join('\n\n');
-      }
-      case 'application/vnd.ms-powerpoint': {
-        return this.extractTextFromPptBinary(buffer);
-      }
-      case 'application/vnd.openxmlformats-officedocument.presentationml.presentation':
-      case 'application/rtf':
-      case 'text/rtf':
-      case 'text/markdown':
-      case 'text/x-markdown': {
-        const ast = await parseOffice(filePath);
-        return ast.toText();
-      }
-      case 'text/csv':
-      case 'application/csv':
-        return buffer.toString('utf-8');
-      case 'application/vnd.oasis.opendocument.spreadsheet': {
-        const ast = await parseOffice(filePath);
-        return ast.toText();
-      }
-      default:
-        return '';
-    }
+  private csvToPlainText(csv: string): string {
+    return csv
+      .split('\n')
+      .map((line) => {
+        // Split by comma, strip surrounding quotes, trim each cell
+        const cells = line
+          .split(',')
+          .map((c) => c.trim().replace(/^"|"$/g, '').trim())
+          .filter((c) => c.length > 0);
+        return cells.join('  ');
+      })
+      .filter((line) => line.trim().length > 0)
+      .join('\n');
   }
 
   private extractTextFromPptBinary(buffer: Buffer): string {
@@ -616,12 +755,16 @@ export class DocumentService {
 
         if (recLen > 0 && recLen < 0x100000 && i + 8 + recLen <= stream.length) {
           if (recType === 0x0fa0) {
-            // TextCharsAtom — UTF-16LE
-            const text = stream.subarray(i + 8, i + 8 + recLen).toString('utf16le').trim();
+            const text = stream
+              .subarray(i + 8, i + 8 + recLen)
+              .toString('utf16le')
+              .trim();
             if (text) texts.push(text);
           } else if (recType === 0x0fa8) {
-            // TextBytesAtom — latin1
-            const text = stream.subarray(i + 8, i + 8 + recLen).toString('latin1').trim();
+            const text = stream
+              .subarray(i + 8, i + 8 + recLen)
+              .toString('latin1')
+              .trim();
             if (text) texts.push(text);
           }
         }

@@ -10,6 +10,33 @@
   --text-secondary: #a0a0a0;
 }
 
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  border-left: 3px solid transparent;
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-left: 3px solid transparent;
+  background-clip: padding-box;
+}
+
 body {
   margin: 0;
   padding: 0;
@@ -148,6 +175,7 @@ body {
   flex: 1;
   padding: 25px 40px;
   overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 
 .header {
@@ -547,11 +575,11 @@ body {
   width: 4px;
 }
 .um-file-list::-webkit-scrollbar-track {
-  background: #1e1e1e;
+  background: transparent;
 }
 .um-file-list::-webkit-scrollbar-thumb {
-  background: #3a3a3a;
-  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
 }
 
 .um-file-item {
@@ -770,6 +798,79 @@ body {
  
 .fulltext-markdown {
   padding: 0.5rem 0;
+}
+
+/* Overflow fix for raw text (CSV etc.) */
+.doc-fulltext {
+  overflow-x: auto;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.doc-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 32px;
+  padding: 16px 0;
+  border-top: 1px solid #333;
+}
+
+.doc-page-btn {
+  background: transparent;
+  border: 1px solid #3a3a3a;
+  color: var(--text-secondary);
+  padding: 7px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: 'Montserrat', sans-serif;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+.doc-page-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.doc-page-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.doc-page-info {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+/* Markdown tables */
+.markdown-body table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 13px;
+  margin: 1em 0;
+  display: block;
+  overflow-x: auto;
+}
+.markdown-body th,
+.markdown-body td {
+  border: 1px solid #333;
+  padding: 6px 12px;
+  text-align: left;
+  white-space: nowrap;
+}
+.markdown-body th {
+  background: #222;
+  color: #F1F3F4;
+  font-weight: 600;
+}
+.markdown-body tr:nth-child(even) td {
+  background: rgba(255,255,255,0.03);
+}
+.markdown-body tr:hover td {
+  background: rgba(255,255,255,0.06);
 }
  
 .fulltext-markdown h2 {
@@ -3089,10 +3190,10 @@ body {
   max-height: calc(100vh - 48px);
   overflow-y: auto;
 }
-.document-sidebar::-webkit-scrollbar { width: 6px; }
-.document-sidebar::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 3px; }
-.document-sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 3px; }
-.document-sidebar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.5); }
+.document-sidebar::-webkit-scrollbar { width: 4px; }
+.document-sidebar::-webkit-scrollbar-track { background: transparent; }
+.document-sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 4px; }
+.document-sidebar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.18); }
 .back-button {
   display: inline-flex;
   align-items: center;
@@ -3190,10 +3291,18 @@ body {
   padding: 28px;
   border: 1px solid rgba(255,255,255,0.1);
   transition: all 0.3s ease;
+  overflow: hidden;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 .overview-card:hover {
   border-color: rgba(255,255,255,0.2);
   background: rgba(255,255,255,0.08);
+}
+.overview-card .markdown-body {
+  overflow: hidden;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 .overview-card h2 {
   font-size: 22px;
@@ -3328,6 +3437,22 @@ body {
   border-radius: 12px;
   padding: 32px;
   border: 1px solid rgba(255,255,255,0.1);
+  display: flex;
+  flex-direction: column;
+  height: 72vh;
+}
+
+.fulltext-content .doc-fulltext {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  padding-right: 4px;
+}
+
+.fulltext-content .doc-pagination {
+  flex-shrink: 0;
+  margin-top: 0;
+  padding-top: 14px;
 }
 .fulltext-content h2 {
   font-size: 24px;
@@ -4851,11 +4976,11 @@ body {
   overflow-x: hidden;
   padding: 12px 16px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255,255,255,0.1) transparent;
+  scrollbar-color: rgba(255,255,255,0.08) transparent;
 }
-.add-doc-list::-webkit-scrollbar { width: 5px; }
+.add-doc-list::-webkit-scrollbar { width: 4px; }
 .add-doc-list::-webkit-scrollbar-track { background: transparent; }
-.add-doc-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+.add-doc-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 4px; }
 
 .add-doc-empty {
   display: flex;
