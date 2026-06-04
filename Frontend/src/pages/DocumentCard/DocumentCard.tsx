@@ -4,6 +4,7 @@ import Layout from "../../components/Layout/Layout";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Document, DocumentsApi } from "@/api/documentsApi";
 
+const API_URL = "http://localhost:3001";
 const PAGE_SIZE = 20_000;
 
 function paginateText(text: string): string[] {
@@ -183,14 +184,22 @@ const DocumentCard = () => {
             История
           </button>
 
-          {/* Новая кнопка скачивания */}
-          <button className="tab-btn download-btn-tab">
+          <a
+            href={
+              documentData
+                ? `${API_URL}/documents/${documentId}/download`
+                : undefined
+            }
+            className={`tab-btn download-btn-tab${!documentData ? " disabled" : ""}`}
+            style={{ textDecoration: "none" }}
+            onClick={(e) => !documentData && e.preventDefault()}
+          >
             <i
               className="fa fa-cloud-download btn-icon-prefix"
               aria-hidden="true"
             ></i>
             Скачать
-          </button>
+          </a>
         </div>
 
         <div className="document-layout">

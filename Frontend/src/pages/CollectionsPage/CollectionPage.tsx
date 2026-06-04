@@ -39,16 +39,11 @@ const CollectionPage = () => {
       .then(setData)
       .catch(() => {});
     loadCollections();
-    DocumentsApi.getAll()
-      .then((docs) => {
+    DocumentsApi.getCollectionSizes()
+      .then((rows) => {
         const sizes: Record<number, number> = {};
-        for (const doc of docs) {
-          if (!doc.collection_id) continue;
-          const docSize = (doc.files ?? []).reduce(
-            (s, f) => s + (f.file_size ?? 0),
-            0,
-          );
-          sizes[doc.collection_id] = (sizes[doc.collection_id] ?? 0) + docSize;
+        for (const row of rows) {
+          sizes[row.collection_id] = Number(row.total_size);
         }
         setCollectionSizes(sizes);
       })

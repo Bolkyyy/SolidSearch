@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { CreateHistoryDto } from './dto/create-history.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { MoreThan, Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { SearchQueries } from './entities/search_queries.entity';
+import { AiAnswers } from '../ai/entity/ai-answer.entity';
 
 @Injectable()
 export class HistoryService {
@@ -11,6 +12,9 @@ export class HistoryService {
   constructor(
     @InjectRepository(SearchQueries)
     private readonly searchQueriesRepository: Repository<SearchQueries>,
+
+    @InjectRepository(AiAnswers)
+    private readonly aiAnswersRepository: Repository<AiAnswers>,
   ) {}
 
   async create(dto: CreateHistoryDto) {
@@ -51,22 +55,44 @@ export class HistoryService {
   }
   
   async clearByUserId(user_id: number): Promise<{ deleted: number }> {
+    const queries = await this.searchQueriesRepository.find({
+      where: { user_id: +user_id },
+      select: ['id'],
+    });
+    const ids = queries.map((q) => q.id);
+    if (ids.length > 0) {
+      await this.aiAnswersRepository.delete({ query_id: In(ids) });
+    }
     const result = await this.searchQueriesRepository.delete({ user_id: +user_id });
     return { deleted: result.affected ?? 0 };
   }
 
   async deleteById(id: number): Promise<{ deleted: number }> {
+    await this.aiAnswersRepository.delete({ query_id: +id });
     const result = await this.searchQueriesRepository.delete({ id: +id });
     return { deleted: result.affected ?? 0 };
   }
 
   async findByQueryText(queryText: string): Promise<SearchQueries | null> {
-  return await this.searchQueriesRepository.findOne({
-    where: {
-      query_text: queryText,
-      query_type: 'ai',
-    },
-    order: { created_at: 'DESC' },
-  });
-}
+    return await this.searchQueriesRepository.findOne({
+      where: {
+        query_text: queryText,
+        query_type: 'ai',
+      },
+      order: { created_at: 'DESC' },
+    });
+  }
+
+  async findByQueryAndUser(
+    queryText: string,
+    userId: number,
+  ): Promise<SearchQueries | null> {
+    return await this.searchQueriesRepository
+      .createQueryBuilder('sq')
+      .where('LOWER(sq.query_text) = LOWER(:queryText)', { queryText: queryText.trim() })
+      .andWhere('sq.user_id = :userId', { userId: +userId })
+      .andWhere('sq.query_type = :type', { type: 'ai' })
+      .orderBy('sq.created_at', 'DESC')
+      .getOne();
+  }
 }

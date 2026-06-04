@@ -48,6 +48,11 @@ export const DocumentsApi = {
     return data;
   },
 
+  getCollectionSizes: async (): Promise<{ collection_id: number; total_size: number }[]> => {
+    const { data } = await axios.get(`${BASE}/documents/sizes`);
+    return data;
+  },
+
   addToCollection: async (
     documentId: number,
     collectionId: number,

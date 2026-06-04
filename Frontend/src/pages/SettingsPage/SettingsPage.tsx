@@ -16,7 +16,7 @@ const SettingsPage = () => {
   const [formIsActive, setFormIsActive] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
- 
+
   const [users, setUsers] = useState<User[] | null>(null);
   const [isVisibleModalCreateUser, setVisibleModalCreateUser] = useState(false);
   const [modalUserFullName, setModalUserFullName] = useState("");
@@ -29,7 +29,7 @@ const SettingsPage = () => {
   const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
   const [deleteTargetName, setDeleteTargetName] = useState("");
   const [deleteLoading, setDeleteLoading] = useState(false);
-  
+
   const [isVisibleModalEditUser, setVisibleModalEditUser] = useState(false);
   const [modalUserEditFullName, setModalUserEditFullName] = useState("");
   const [modalUserEditEmail, setModalUserEditEmail] = useState("");
@@ -40,7 +40,7 @@ const SettingsPage = () => {
 
   async function handleCreateUser() {
     try {
-      const data = await usersApi.createUser({
+      await usersApi.createUser({
         full_name: modalUserFullName,
         email: modalUserEmail,
         password: modalUserPassword,
@@ -87,7 +87,7 @@ const SettingsPage = () => {
 
   async function handleUpdateUser() {
     try {
-      const data = await usersApi.updateUser(modalUserEditId, {
+      await usersApi.updateUser(modalUserEditId, {
         full_name: modalUserEditFullName,
         email: modalUserEditEmail,
         password: modalUserEditPassword,

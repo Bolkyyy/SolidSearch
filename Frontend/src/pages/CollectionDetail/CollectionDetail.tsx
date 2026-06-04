@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import Layout from "../../components/Layout/Layout";
@@ -37,6 +37,19 @@ const CollectionDetail = () => {
   const [removing, setRemoving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [showMoreDropdown, setShowMoreDropdown] = useState(false);
+  const moreRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!showMoreDropdown) return;
+    const handler = (e: MouseEvent) => {
+      if (moreRef.current && !moreRef.current.contains(e.target as Node)) {
+        setShowMoreDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showMoreDropdown]);
 
   const id = Number(collectionId);
 
@@ -319,17 +332,49 @@ const CollectionDetail = () => {
             >
               Все
             </button>
-            {types.map((type) => (
+            {types.slice(0, 5).map((type) => (
               <button
                 key={type}
-                className={`filter-btn ${
-                  selectedType === type ? "active" : ""
-                }`}
+                className={`filter-btn ${selectedType === type ? "active" : ""}`}
                 onClick={() => setSelectedType(type)}
               >
                 {type}
               </button>
             ))}
+            {types.length > 5 && (
+              <div className="filter-more-wrap" ref={moreRef}>
+                <button
+                  className={`filter-btn filter-btn-more ${
+                    types.slice(5).includes(selectedType) ? "active" : ""
+                  }`}
+                  onClick={() => setShowMoreDropdown((v) => !v)}
+                >
+                  {types.slice(5).includes(selectedType)
+                    ? selectedType
+                    : "Другие"}
+                  <i
+                    className={`fa fa-chevron-${showMoreDropdown ? "up" : "down"}`}
+                    style={{ marginLeft: 5, fontSize: 10 }}
+                  />
+                </button>
+                {showMoreDropdown && (
+                  <div className="filter-more-dropdown">
+                    {types.slice(5).map((type) => (
+                      <button
+                        key={type}
+                        className={`filter-more-item ${selectedType === type ? "active" : ""}`}
+                        onClick={() => {
+                          setSelectedType(type);
+                          setShowMoreDropdown(false);
+                        }}
+                      >
+                        {type}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

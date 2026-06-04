@@ -5,45 +5,6 @@ import Layout from "../../components/Layout/Layout";
 import type { SearchDocument } from "../../interfaces/SearchPageInterface";
 
 const API_URL = "http://localhost:3001";
-const CACHE_KEY = "solidSearch_cache";
-const MAX_CACHE_ENTRIES = 20;
-
-interface CachedResult {
-  query: string;
-  userId: number;
-  documents: SearchDocument[];
-  answer: string;
-}
-
-type CacheMap = Record<string, CachedResult>;
-
-const buildCacheKey = (q: string, uid: number) =>
-  `${uid}:${q.toLowerCase().trim()}`;
-
-const readCache = (query: string, userId: number): CachedResult | null => {
-  try {
-    const raw = sessionStorage.getItem(CACHE_KEY);
-    if (!raw) return null;
-    const map: CacheMap = JSON.parse(raw);
-    return map[buildCacheKey(query, userId)] ?? null;
-  } catch {}
-  return null;
-};
-
-const saveCache = (data: CachedResult) => {
-  try {
-    const raw = sessionStorage.getItem(CACHE_KEY);
-    const map: CacheMap = raw ? JSON.parse(raw) : {};
-    map[buildCacheKey(data.query, data.userId)] = data;
-    const keys = Object.keys(map);
-    if (keys.length > MAX_CACHE_ENTRIES) {
-      keys
-        .slice(0, keys.length - MAX_CACHE_ENTRIES)
-        .forEach((k) => delete map[k]);
-    }
-    sessionStorage.setItem(CACHE_KEY, JSON.stringify(map));
-  } catch {}
-};
 
 const formatDate = (iso?: string) => {
   if (!iso) return "—";
@@ -135,25 +96,40 @@ const SearchResults = () => {
   const query: string = navState?.query ?? "";
   const userId: number = navState?.userId ?? 0;
 
-  const initialCache = query ? readCache(query, userId) : null;
-
-  const [documents, setDocuments] = useState<SearchDocument[]>(
-    initialCache?.documents ?? [],
-  );
-  const [answer, setAnswer] = useState<string>(initialCache?.answer ?? "");
-  const [searching, setSearching] = useState(!initialCache);
-  const [docsLoading, setDocsLoading] = useState(!initialCache);
+  const [documents, setDocuments] = useState<SearchDocument[]>([]);
+  const [answer, setAnswer] = useState<string>("");
+  const [searching, setSearching] = useState(true);
+  const [docsLoading, setDocsLoading] = useState(true);
   const [answerLoading, setAnswerLoading] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!query || initialCache) return;
+    if (!query) return;
 
     const controller = new AbortController();
     let liveDocs: SearchDocument[] = [];
     let liveAnswer = "";
 
-    const stream = async () => {
+    const run = async () => {
+      try {
+        const res = await fetch(
+          `${API_URL}/search/cached?query=${encodeURIComponent(query)}&userId=${userId}`,
+          { signal: controller.signal },
+        );
+        if (res.ok) {
+          const cached = await res.json();
+          if (cached?.answer || cached?.documents?.length) {
+            setSearching(false);
+            setDocsLoading(false);
+            setDocuments(cached.documents ?? []);
+            setAnswer(cached.answer ?? "");
+            return;
+          }
+        }
+      } catch (e) {
+        if ((e as Error).name === "AbortError") return;
+      }
+
       try {
         const response = await fetch(`${API_URL}/search/stream`, {
           method: "POST",
@@ -192,18 +168,11 @@ const SearchResults = () => {
                 setAnswer((prev) => prev + data.token);
               } else if (data.type === "done") {
                 setAnswerLoading(false);
-                
                 if (!liveAnswer && liveDocs.length > 0) {
                   const names = liveDocs.map((d) => d.title).join(", ");
                   liveAnswer = `По вашему запросу найдены документы: ${names}.`;
                   setAnswer(liveAnswer);
                 }
-                saveCache({
-                  query,
-                  userId,
-                  documents: liveDocs,
-                  answer: liveAnswer,
-                });
               } else if (data.type === "error") {
                 setError(data.message);
                 setDocsLoading(false);
@@ -219,7 +188,7 @@ const SearchResults = () => {
       }
     };
 
-    stream();
+    run();
     return () => controller.abort();
   }, [query]);
 

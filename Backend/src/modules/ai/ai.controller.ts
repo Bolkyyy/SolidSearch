@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Put, Param, Res } from '@nestjs/common';
+import { Controller, Post, Body, Get, Put, Param, Res, Query } from '@nestjs/common';
 import { Response } from 'express';
 import { AiService } from './ai.service';
 import { UpdateAiSettingsDto } from './dto/update-aiSettings.dto';
@@ -23,6 +23,15 @@ export class AiController {
     res.setHeader('X-Accel-Buffering', 'no');
     res.flushHeaders();
     await this.aiService.streamAnswer(body.query, body.userId, res);
+  }
+
+  @Get('cached')
+  async getCached(
+    @Query('query') query: string,
+    @Query('userId') userId: string,
+  ) {
+    if (!query) return null;
+    return this.aiService.getCachedResult(query, Number(userId) || 0);
   }
 
   @Get(':id/answer')

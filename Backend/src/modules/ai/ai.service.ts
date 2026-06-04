@@ -265,6 +265,7 @@ export class AiService {
               provider_code: provider,
               model_name: model,
               confidence_score: 1.0,
+              document_ids: documents.map((d) => d.id),
             }),
           );
         } catch (dbErr) {
@@ -279,6 +280,30 @@ export class AiService {
     }
 
     res.end();
+  }
+
+  async getCachedResult(
+    query: string,
+    userId: number,
+  ): Promise<{ answer: string; documents: Documents[] } | null> {
+    const historyEntry = await this.historyService.findByQueryAndUser(
+      query,
+      userId,
+    );
+    if (!historyEntry) return null;
+
+    const cached = await this.aiAnswerRepository.findOne({
+      where: { query_id: historyEntry.id },
+      order: { created_at: 'DESC' },
+    });
+
+    if (!cached?.answer_text || !cached?.document_ids?.length) return null;
+
+    const documents = await this.withRetry('findByIds cache', () =>
+      this.documentService.findByIds(cached.document_ids),
+    );
+
+    return { answer: cached.answer_text, documents };
   }
 
   async generateAnswer(

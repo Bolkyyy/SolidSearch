@@ -13,20 +13,13 @@ import WordExtractor from 'word-extractor';
 import OpenAI from 'openai';
 import { AiSettings } from '../../modules/ai/entity/ai-settings.entity';
 import { decrypt } from '../../modules/ai/Encryption/crypto';
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const pdfjsLib = require('pdfjs-dist/legacy/build/pdf');
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const officeparser = require('officeparser');
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const CFB = require('cfb');
 
 const CHUNK_SIZE = 6000;
 const CHUNK_MAX_TOKENS = 1500;
-
-// Hard cap: store at most 300 000 chars (≈ 15 pages × 20 000)
-// Prevents multi-million-char XLSX/CSV from flooding DB and burning AI tokens
 const MAX_STORED_CHARS = 300_000;
-// AI formatting only runs on first 60 000 chars (≈ 10 chunks × 6 000)
 const MAX_AI_CHARS = 60_000;
 
 interface ExtractionResult {
@@ -205,42 +198,34 @@ export class DocumentService {
     throw new Error(`[RETRY] ${label}: все попытки исчерпаны`);
   }
 
-    // ── RTF text extraction via control-word stripping ──────────────────────
   private extractTextFromRtf(buffer: Buffer): string {
     let rtf = buffer.toString('latin1');
 
-    // Ignore embedded objects and pictures
     rtf = rtf.replace(/\{\\pict[^}]*\}/gs, '');
     rtf = rtf.replace(/\{\\object[^}]*\}/gs, '');
 
-    // Paragraph / line breaks → newline
     rtf = rtf.replace(/\\par[d]?\s?/g, '\n');
     rtf = rtf.replace(/\\line\s?/g, '\n');
     rtf = rtf.replace(/\\page\s?/g, '\n');
 
-    // Unicode escape: \uN? → character
     rtf = rtf.replace(/\\u(-?\d+)\??/g, (_, n) => {
       const code = parseInt(n);
       return String.fromCharCode(code < 0 ? code + 65536 : code);
     });
 
-    // Hex escape: \'XX → character
     rtf = rtf.replace(/\\'([0-9a-fA-F]{2})/g, (_, hex) =>
       String.fromCharCode(parseInt(hex, 16)),
     );
 
-    // Remove all remaining control words and symbols
     rtf = rtf.replace(/\\[a-z*]+[-\d]*\s?/gi, '');
     rtf = rtf.replace(/[{}\\]/g, '');
 
-    // Clean up whitespace
     rtf = rtf.replace(/[ \t]+/g, ' ');
     rtf = rtf.replace(/\n{3,}/g, '\n\n');
 
     return rtf.trim();
   }
 
-  // ── Main extraction with page count ─────────────────────────────────────
   private async extractFromFile(
     filePath: string,
     mimeType: string,
@@ -249,7 +234,6 @@ export class DocumentService {
     const effectiveMime = this.normalizeMimeType(filePath, mimeType);
 
     switch (effectiveMime) {
-      // ── PDF ─────────────────────────────────────────────────────────────
       case 'application/pdf': {
         const uint8Array = new Uint8Array(buffer);
         const loadingTask = pdfjsLib.getDocument({ data: uint8Array });
@@ -263,29 +247,24 @@ export class DocumentService {
         return { text, pageCount: pdf.numPages };
       }
 
-      // ── DOC (legacy Word) ────────────────────────────────────────────────
       case 'application/msword': {
         const extractor = new WordExtractor();
         const extracted = await extractor.extract(filePath);
         return { text: extracted.getBody(), pageCount: null };
       }
 
-      // ── DOCX ─────────────────────────────────────────────────────────────
       case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document': {
         const result = await mammoth.extractRawText({ buffer });
         return { text: result.value, pageCount: null };
       }
-
-      // ── TXT ──────────────────────────────────────────────────────────────
+      
       case 'text/plain':
         return { text: buffer.toString('utf-8'), pageCount: null };
 
-      // ── Markdown ─────────────────────────────────────────────────────────
       case 'text/markdown':
       case 'text/x-markdown':
         return { text: buffer.toString('utf-8'), pageCount: null };
 
-      // ── Images (OCR) ─────────────────────────────────────────────────────
       case 'image/png':
       case 'image/jpeg':
       case 'image/tiff':
@@ -294,7 +273,6 @@ export class DocumentService {
         return { text: data.text, pageCount: 1 };
       }
 
-      // ── XLS / XLSX ───────────────────────────────────────────────────────
       case 'application/vnd.ms-excel':
       case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': {
         const workbook = XLSX.read(buffer, { type: 'buffer' });
@@ -306,32 +284,27 @@ export class DocumentService {
         return { text, pageCount: workbook.SheetNames.length };
       }
 
-      // ── ODS ───────────────────────────────────────────────────────────────
       case 'application/vnd.oasis.opendocument.spreadsheet': {
         const ast = await officeparser.parseOffice(filePath);
         return { text: ast.toText(), pageCount: null };
       }
 
-      // ── PPTX ─────────────────────────────────────────────────────────────
       case 'application/vnd.openxmlformats-officedocument.presentationml.presentation': {
         const ast = await officeparser.parseOffice(filePath);
         return { text: ast.toText(), pageCount: null };
       }
 
-      // ── PPT (legacy) ─────────────────────────────────────────────────────
       case 'application/vnd.ms-powerpoint': {
         const text = this.extractTextFromPptBinary(buffer);
         return { text, pageCount: null };
       }
 
-      // ── RTF ───────────────────────────────────────────────────────────────
       case 'application/rtf':
       case 'text/rtf': {
         const ast = await officeparser.parseOffice(filePath);
         return { text: ast.toText(), pageCount: null };
       }
 
-      // ── CSV ──────────────────────────────────────────────────────────────
       case 'text/csv':
       case 'application/csv':
         return { text: this.csvToPlainText(buffer.toString('utf-8')), pageCount: null };
@@ -341,7 +314,6 @@ export class DocumentService {
     }
   }
 
-  // ── Two-phase processAndSave: text first, AI second ──────────────────────
   private async processAndSave(
     fileId: number,
     documentId: number,
@@ -357,7 +329,6 @@ export class DocumentService {
         mimeType,
       );
 
-      // Apply hard storage cap — prevents multi-million-char files from flooding DB
       const wasTruncated = fullText.length > MAX_STORED_CHARS;
       const rawText = wasTruncated ? fullText.slice(0, MAX_STORED_CHARS) : fullText;
 
@@ -375,7 +346,6 @@ export class DocumentService {
         return;
       }
 
-      // ФАЗА 1: сохраняем текст немедленно — поиск уже работает
       console.log(
         `[EXTRACT] fileId=${fileId} — ${rawText.length} символов` +
           (wasTruncated ? ` (обрезано с ${fullText.length})` : '') +
@@ -390,7 +360,6 @@ export class DocumentService {
         }),
       );
 
-      // ФАЗА 2: AI-форматирование только первых MAX_AI_CHARS символов
       const aiText = rawText.slice(0, MAX_AI_CHARS);
       try {
         const detectedLanguage = this.detectLanguage(rawText);
@@ -414,7 +383,6 @@ export class DocumentService {
         );
         console.log(`[AI] fileId=${fileId} — AI-обработка завершена`);
       } catch (aiErr: any) {
-        // AI упал — текст уже сохранён, помечаем как processed
         console.error(`[AI] fileId=${fileId} — ошибка AI:`, aiErr.message);
         await this.withRetry('mark processed after ai fail', () =>
           this.documentFilesRepository.update(fileId, {
@@ -528,10 +496,30 @@ export class DocumentService {
   }
 
   async findall(): Promise<Documents[]> {
-    return await this.documentsRepository.find({
-      relations: ['files'],
-      order: { created_at: 'DESC' },
-    });
+    return await this.documentsRepository
+      .createQueryBuilder('doc')
+      .leftJoin('doc.files', 'f')
+      .select([
+        'doc.id', 'doc.collection_id', 'doc.title', 'doc.document_type',
+        'doc.archive_number', 'doc.document_date', 'doc.author_name',
+        'doc.status', 'doc.language', 'doc.created_at',
+        'f.id', 'f.document_id', 'f.file_name', 'f.file_type',
+        'f.file_size', 'f.page_count', 'f.normalized_text',
+        'f.extraction_status', 'f.uploaded_at',
+      ])
+      .orderBy('doc.created_at', 'DESC')
+      .getMany();
+  }
+
+  async getCollectionSizes(): Promise<{ collection_id: number; total_size: number }[]> {
+    return await this.documentsRepository
+      .createQueryBuilder('doc')
+      .innerJoin('doc.files', 'f')
+      .select('doc.collection_id', 'collection_id')
+      .addSelect('COALESCE(SUM(f.file_size), 0)', 'total_size')
+      .where('doc.collection_id IS NOT NULL')
+      .groupBy('doc.collection_id')
+      .getRawMany();
   }
 
   async findbyid(id: number): Promise<Documents> {
@@ -544,11 +532,19 @@ export class DocumentService {
   }
 
   async findByCollectionId(collectionId: number): Promise<Documents[]> {
-    return await this.documentsRepository.find({
-      where: { collection_id: collectionId },
-      relations: ['files'],
-      order: { created_at: 'DESC' },
-    });
+    return await this.documentsRepository
+      .createQueryBuilder('doc')
+      .leftJoin('doc.files', 'f')
+      .select([
+        'doc.id', 'doc.collection_id', 'doc.title', 'doc.document_type',
+        'doc.archive_number', 'doc.document_date', 'doc.author_name',
+        'doc.status', 'doc.language', 'doc.created_at',
+        'f.id', 'f.document_id', 'f.file_name', 'f.file_type',
+        'f.file_size', 'f.page_count', 'f.extraction_status', 'f.uploaded_at',
+      ])
+      .where('doc.collection_id = :collectionId', { collectionId })
+      .orderBy('doc.created_at', 'DESC')
+      .getMany();
   }
 
   async findByIds(ids: number[]): Promise<Documents[]> {
@@ -716,7 +712,6 @@ export class DocumentService {
     return extMap[ext] ?? mimeType;
   }
 
-  // Kept for backwards compatibility (used by extractAllText / extractText)
   private async extractTextFromFile(
     filePath: string,
     mimeType: string,
@@ -729,7 +724,6 @@ export class DocumentService {
     return csv
       .split('\n')
       .map((line) => {
-        // Split by comma, strip surrounding quotes, trim each cell
         const cells = line
           .split(',')
           .map((c) => c.trim().replace(/^"|"$/g, '').trim())

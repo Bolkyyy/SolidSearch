@@ -28,4 +28,7 @@ export class AiAnswers {
 
     @Column({ nullable: true })
     citation_fragment: string;
+
+    @Column({ type: 'json', nullable: true })
+    document_ids: number[];
 }

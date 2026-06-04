@@ -1,7 +1,8 @@
-import { Controller, Get, Post, Param, ParseIntPipe, UseInterceptors, UploadedFile, Body, Query } from '@nestjs/common';
+import { Controller, Get, Post, Param, ParseIntPipe, UseInterceptors, UploadedFile, Body, Query, Res, NotFoundException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { extname, resolve, basename } from 'path';
+import { Response } from 'express';
 import { DocumentService } from './documents.service';
 import { UploadDocumentDto } from './dto/upload-document.dto';
 
@@ -15,6 +16,28 @@ export class DocumentsController {
       return await this.documentsService.findByCollectionId(Number(collectionId));
     }
     return await this.documentsService.findall();
+  }
+
+  @Get('sizes')
+  async getCollectionSizes() {
+    return await this.documentsService.getCollectionSizes();
+  }
+
+  @Get(':id/download')
+  async download(
+    @Param('id', ParseIntPipe) id: number,
+    @Res() res: Response,
+  ) {
+    const doc = await this.documentsService.findbyid(id);
+    const file = doc.files?.[0];
+    if (!file?.file_path) throw new NotFoundException('Файл не найден');
+    const fullPath = resolve(file.file_path);
+    const fileName = file.file_name || basename(fullPath);
+    res.download(fullPath, fileName, (err) => {
+      if (err && !res.headersSent) {
+        res.status(500).json({ message: 'Ошибка при скачивании' });
+      }
+    });
   }
 
   @Get(':id')
