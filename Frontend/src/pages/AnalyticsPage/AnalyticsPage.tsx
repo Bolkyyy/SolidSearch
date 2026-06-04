@@ -1,22 +1,70 @@
+import React, { useState, useRef, useEffect } from 'react';
 import Layout from '../../components/Layout/Layout';
+import { 
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
+  PieChart, Pie, Cell 
+} from 'recharts';
 
-const AnalyticsPage = () => {
+const lineData = [
+  { name: '20.01', val: 70 },
+  { name: '20.01', val: 140 },
+  { name: '20.01', val: 110 },
+  { name: '20.01', val: 180 },
+  { name: '20.01', val: 250 },
+  { name: '20.01', val: 60 },
+];
+
+const pieData = [
+  { name: 'Договоры', value: 8934, color: '#00d2ff' },
+  { name: 'Акты', value: 6721, color: '#a855f7' },
+  { name: 'Сметы', value: 3456, color: '#10b981' },
+  { name: 'Накладные', value: 2341, color: '#f97316' },
+  { name: 'Другое', value: 1135, color: '#eab308' },
+];
+
+const AnalyticsPage: React.FC = () => {
+  const [timeRange, setTimeRange] = useState('Последние 7 дней');
+  const [isTimeOpen, setIsTimeOpen] = useState(false);
+  const [chartFilter, setChartFilter] = useState('Кол-во запросов');
+  const [isChartOpen, setIsChartOpen] = useState(false);
+  const [distFilter, setDistFilter] = useState('Распределение п..');
+  const [isDistOpen, setIsDistOpen] = useState(false);
+
+  const timeRef = useRef<HTMLDivElement>(null);
+  const chartRef = useRef<HTMLDivElement>(null);
+  const distRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const clickOutside = (e: MouseEvent) => {
+      if (timeRef.current && !timeRef.current.contains(e.target as Node)) setIsTimeOpen(false);
+      if (chartRef.current && !chartRef.current.contains(e.target as Node)) setIsChartOpen(false);
+      if (distRef.current && !distRef.current.contains(e.target as Node)) setIsDistOpen(false);
+    };
+    document.addEventListener('mousedown', clickOutside);
+    return () => document.removeEventListener('mousedown', clickOutside);
+  }, []);
+
   return (
     <Layout>
       <section className="welcome" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h1 style={{ fontSize: '32px', fontWeight: 'bold', margin: 0 }}>Аналитика</h1>
-          <p className="welcome-link" style={{ marginTop: '8px', color: '#888' }}>
-            Статистика использования и эффективности системы
-          </p>
+          <h1>Аналитика</h1>
+          <p className="welcome-link">Статистика использования и эффективности системы</p>
         </div>
-        
         <div style={{ display: 'flex', gap: '12px' }}>
-          <div className="analytics-select-btn">
-            Последние 7 дней <i className="fa fa-chevron-down" style={{ fontSize: '12px', marginLeft: '8px' }}></i>
+          <div className="filter-dropdown-container" ref={timeRef}>
+            <button className="filter-dropdown-btn" onClick={() => setIsTimeOpen(!isTimeOpen)}>
+              {timeRange} <i className="fa fa-chevron-down"></i>
+            </button>
+            {isTimeOpen && (
+              <div className="filter-dropdown-menu">
+                <div onClick={() => { setTimeRange('Последние 7 дней'); setIsTimeOpen(false); }}>Последние 7 дней</div>
+                <div onClick={() => { setTimeRange('Последние 30 дней'); setIsTimeOpen(false); }}>Последние 30 дней</div>
+              </div>
+            )}
           </div>
           <button className="analytics-export-btn">
-            <i className="fa fa-download" style={{ marginRight: '8px' }}></i> Экспорт
+             <i className="fa fa-download" style={{marginRight: '8px'}}></i> Экспорт
           </button>
         </div>
       </section>
@@ -24,42 +72,31 @@ const AnalyticsPage = () => {
       <div className="analytics-stats-grid">
         <div className="stat-card glow-blue">
           <div className="stat-card-header">
-            <div className="stat-icon-wrapper blue-bg">
-              <i className="fa fa-search text-blue"></i>
-            </div>
+            <div className="stat-icon-wrapper blue-bg"><i className="fa fa-search text-blue"></i></div>
             <span className="stat-trend trend-blue">+12%</span>
           </div>
           <p className="stat-label">Количество обращений</p>
           <h3 className="stat-value">1,456</h3>
         </div>
-
         <div className="stat-card glow-green">
           <div className="stat-card-header">
-            <div className="stat-icon-wrapper green-bg">
-              <i className="fa fa-chart-line text-green"></i>
-            </div>
+            <div className="stat-icon-wrapper green-bg"><i className="fa fa-chart-line text-green"></i></div>
             <span className="stat-trend trend-green">+8%</span>
           </div>
           <p className="stat-label">Средняя релевантность</p>
           <h3 className="stat-value">92%</h3>
         </div>
-
         <div className="stat-card glow-purple">
           <div className="stat-card-header">
-            <div className="stat-icon-wrapper purple-bg">
-              <i className="fa fa-clock text-purple"></i>
-            </div>
+            <div className="stat-icon-wrapper purple-bg"><i className="fa fa-clock text-purple"></i></div>
             <span className="stat-trend trend-purple">-0.2 сек</span>
           </div>
           <p className="stat-label">Среднее время ответа</p>
           <h3 className="stat-value">1.2 сек</h3>
         </div>
-
         <div className="stat-card glow-orange">
           <div className="stat-card-header">
-            <div className="stat-icon-wrapper orange-bg">
-              <i className="fa fa-users text-orange"></i>
-            </div>
+            <div className="stat-icon-wrapper orange-bg"><i className="fa fa-users text-orange"></i></div>
             <span className="stat-trend trend-orange">+5</span>
           </div>
           <p className="stat-label">Активных пользователей</p>
@@ -71,127 +108,68 @@ const AnalyticsPage = () => {
         <div className="chart-large-card">
           <div className="chart-header">
             <h3>Количество запросов</h3>
-            <div className="analytics-select-btn small">
-              Кол-во запросов <i className="fa fa-chevron-down" style={{ fontSize: '10px', marginLeft: '6px' }}></i>
+            <div className="filter-dropdown-container" ref={chartRef}>
+              <button className="filter-dropdown-btn small" onClick={() => setIsChartOpen(!isChartOpen)}>
+                {chartFilter} <i className="fa fa-chevron-down"></i>
+              </button>
+              {isChartOpen && (
+                <div className="filter-dropdown-menu">
+                  <div onClick={() => { setChartFilter('Кол-во запросов'); setIsChartOpen(false); }}>Кол-во запросов</div>
+                  <div onClick={() => { setChartFilter('Время ответа'); setIsChartOpen(false); }}>Время ответа</div>
+                </div>
+              )}
             </div>
           </div>
           
-          <div className="chart-container-svg">
-            <svg viewBox="0 0 600 240" className="svg-line-chart">
-              <line x1="50" y1="30" x2="560" y2="30" stroke="#222" strokeDasharray="5,5" />
-              <line x1="50" y1="80" x2="560" y2="80" stroke="#222" strokeDasharray="5,5" />
-              <line x1="50" y1="130" x2="560" y2="130" stroke="#222" strokeDasharray="5,5" />
-              <line x1="50" y1="180" x2="560" y2="180" stroke="#222" strokeDasharray="5,5" />
-              <line x1="50" y1="220" x2="560" y2="220" stroke="#333" />
-
-              <text x="25" y="34" fill="#666" fontSize="12">280</text>
-              <text x="25" y="84" fill="#666" fontSize="12">210</text>
-              <text x="25" y="134" fill="#666" fontSize="12">140</text>
-              <text x="32" y="184" fill="#666" fontSize="12">70</text>
-              <text x="38" y="224" fill="#666" fontSize="12">0</text>
-
-              <defs>
-                <filter id="neon-glow" x="-20%" y="-20%" width="140%" height="140%">
-                  <feGaussianBlur stdDeviation="6" result="blur" />
-                  <feMerge>
-                    <feMergeNode in="blur" />
-                    <feMergeNode in="SourceGraphic" />
-                  </feMerge>
-                </filter>
-              </defs>
-
-              <path 
-                d="M 50 180 C 100 130, 120 120, 170 140 C 220 160, 240 200, 290 170 C 340 140, 370 70, 420 50 C 470 30, 520 60, 560 190" 
-                fill="none" 
-                stroke="#10b981" 
-                strokeWidth="4" 
-                filter="url(#neon-glow)"
-              />
-
-              <circle cx="50" cy="180" r="5" fill="#10b981" />
-              <circle cx="170" cy="140" r="5" fill="#10b981" />
-              <circle cx="290" cy="170" r="5" fill="#10b981" />
-              <circle cx="420" cy="50" r="5" fill="#10b981" />
-              <circle cx="560" cy="190" r="5" fill="#10b981" />
-
-              <text x="40" y="238" fill="#666" fontSize="11">20.01</text>
-              <text x="120" y="238" fill="#666" fontSize="11">20.01</text>
-              <text x="200" y="238" fill="#666" fontSize="11">20.01</text>
-              <text x="280" y="238" fill="#666" fontSize="11">20.01</text>
-              <text x="360" y="238" fill="#666" fontSize="11">20.01</text>
-              <text x="440
-[02.06.2026 18:06] UnlimAI (GPT | Claude | MidJourney): " y="238" fill="#666" fontSize="11">20.01</text>
-              <text x="520" y="238" fill="#666" fontSize="11">20.01</text>
-            </svg>
+          <div style={{ width: '100%', height: 250 }}>
+            <ResponsiveContainer width="99%" height="100%">
+              <LineChart data={lineData}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#222" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#666', fontSize: 12}} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{fill: '#666', fontSize: 12}} dx={-10} />
+                <Tooltip contentStyle={{backgroundColor: '#1a1a1a', border: '1px solid #333', borderRadius: '8px'}} />
+                <Line type="monotone" dataKey="val" stroke="#10b981" strokeWidth={4} dot={{r: 6, fill: '#10b981', strokeWidth: 0}} activeDot={{r: 8}} />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
         <div className="chart-large-card">
           <div className="chart-header">
             <h3>Распределение по типам документов</h3>
-            <div className="analytics-select-btn small">
-              Распределение п.. <i className="fa fa-chevron-down" style={{ fontSize: '10px', marginLeft: '6px' }}></i>
+            <div className="filter-dropdown-container" ref={distRef}>
+              <button className="filter-dropdown-btn small" onClick={() => setIsDistOpen(!isDistOpen)}>
+                {distFilter} <i className="fa fa-chevron-down"></i>
+              </button>
+              {isDistOpen && (
+                <div className="filter-dropdown-menu">
+                  <div onClick={() => { setDistFilter('Распределение п..'); setIsDistOpen(false); }}>По типам</div>
+                  <div onClick={() => { setDistFilter('По размеру'); setIsDistOpen(false); }}>По размеру</div>
+                </div>
+              )}
             </div>
           </div>
 
           <div className="donut-chart-layout">
-            <div className="donut-svg-wrapper">
-              <svg width="180" height="180" viewBox="0 0 42 42" className="donut-chart-svg">
-                <circle cx="21" cy="21" r="15.91" fill="transparent" stroke="#222" strokeWidth="4"></circle>
-                
-                <circle cx="21" cy="21" r="15.91" fill="transparent" stroke="#00d2ff" strokeWidth="4.5" 
-                        strokeDasharray="35 65" strokeDashoffset="100"></circle>
-                
-                <circle cx="21" cy="21" r="15.91" fill="transparent" stroke="#a855f7" strokeWidth="4.5" 
-                        strokeDasharray="25 75" strokeDashoffset="65"></circle>
-
-                <circle cx="21" cy="21" r="15.91" fill="transparent" stroke="#10b981" strokeWidth="4.5" 
-                        strokeDasharray="15 85" strokeDashoffset="40"></circle>
-
-                <circle cx="21" cy="21" r="15.91" fill="transparent" stroke="#f97316" strokeWidth="4.5" 
-                        strokeDasharray="15 85" strokeDashoffset="25"></circle>
-
-                <circle cx="21" cy="21" r="15.91" fill="transparent" stroke="#eab308" strokeWidth="4.5" 
-                        strokeDasharray="10 90" strokeDashoffset="10"></circle>
-              </svg>
+            <div style={{ width: 180, height: 180 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={pieData} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                    {pieData.map((entry, index) => <Cell key={index} fill={entry.color} stroke="none" />)}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
             </div>
-
             <div className="donut-legend">
-              <div className="legend-item">
-                <span className="dot dot-blue"></span>
-                <div>
-                  <p className="legend-title">Договоры</p>
-                  <p className="legend-desc">8 934 документов</p>
+              {pieData.map((item, i) => (
+                <div className="legend-item" key={i}>
+                  <span className="dot" style={{backgroundColor: item.color}}></span>
+                  <div>
+                    <p className="legend-title">{item.name}</p>
+                    <p className="legend-desc">{item.value.toLocaleString()} док.</p>
+                  </div>
                 </div>
-              </div>
-              <div className="legend-item">
-                <span className="dot dot-purple"></span>
-                <div>
-                  <p className="legend-title">Акты</p>
-                  <p className="legend-desc">6 721 документов</p>
-                </div>
-              </div>
-              <div className="legend-item">
-                <span className="dot dot-green"></span>
-                <div>
-                  <p className="legend-title">Сметы</p>
-                  <p className="legend-desc">3 456 документов</p>
-                </div>
-              </div>
-              <div className="legend-item">
-                <span className="dot dot-orange"></span>
-                <div>
-                  <p className="legend-title">Накладные</p>
-                  <p className="legend-desc">2 341 документов</p>
-                </div>
-              </div>
-              <div className="legend-item">
-                <span className="dot dot-yellow"></span>
-                <div>
-                  <p className="legend-title">Другое</p>
-                  <p className="legend-desc">1 135 документов</p>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         </div>
