@@ -17,8 +17,18 @@ export class HistoryService {
     private readonly aiAnswersRepository: Repository<AiAnswers>,
   ) {}
 
+  private normalizeFilters(filters?: any): Record<string, string> | null {
+    if (!filters) return null;
+    const result: Record<string, string> = {};
+    if (filters.period && filters.period !== 'all') result.period = filters.period;
+    if (filters.format && filters.format !== 'all') result.format = filters.format;
+    if (filters.source && filters.source !== 'all') result.source = filters.source;
+    return Object.keys(result).length > 0 ? result : null;
+  }
+
   async create(dto: CreateHistoryDto) {
-    const dedupeKey = `${dto.user_id}:${dto.query_text}`;
+    const normalized = this.normalizeFilters(dto.filters_json);
+    const dedupeKey = `${dto.user_id}:${dto.query_text}:${JSON.stringify(normalized)}`;
     const now = Date.now();
     const last = this.recentKeys.get(dedupeKey);
     if (last && now - last < 10_000) {
@@ -32,7 +42,10 @@ export class HistoryService {
       }
     }
 
-    const post = this.searchQueriesRepository.create(dto);
+    const post = this.searchQueriesRepository.create({
+      ...dto,
+      filters_json: normalized,
+    });
     return this.searchQueriesRepository.save(post);
   }
 
@@ -86,13 +99,24 @@ export class HistoryService {
   async findByQueryAndUser(
     queryText: string,
     userId: number,
+    filters?: any,
   ): Promise<SearchQueries | null> {
-    return await this.searchQueriesRepository
+    const normalized = this.normalizeFilters(filters);
+
+    const qb = this.searchQueriesRepository
       .createQueryBuilder('sq')
       .where('LOWER(sq.query_text) = LOWER(:queryText)', { queryText: queryText.trim() })
       .andWhere('sq.user_id = :userId', { userId: +userId })
-      .andWhere('sq.query_type = :type', { type: 'ai' })
-      .orderBy('sq.created_at', 'DESC')
-      .getOne();
+      .andWhere('sq.query_type = :type', { type: 'ai' });
+
+    if (normalized === null) {
+      qb.andWhere('sq.filters_json IS NULL');
+    } else {
+      qb.andWhere("sq.filters_json::text = :fj", {
+        fj: JSON.stringify(normalized),
+      });
+    }
+
+    return await qb.orderBy('sq.created_at', 'DESC').getOne();
   }
 }

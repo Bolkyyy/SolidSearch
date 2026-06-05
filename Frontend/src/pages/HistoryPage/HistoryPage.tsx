@@ -1,9 +1,78 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "../../components/Layout/Layout";
 import ErrorToast from "../../components/ErrorToast/ErrorToast";
 import ConfirmModal from "../../components/ConfirmModal/ConfirmModal";
 import { HistoryItem, historyApi } from "@/api/historyApi";
+
+type FilterMap = { period?: string; source?: string; format?: string };
+
+const FILTER_LABELS: Record<string, string> = {
+  period: "Период",
+  source: "Источник",
+  format: "Формат",
+};
+
+const FILTER_COLORS: Record<string, string> = {
+  period: "filter-badge-period",
+  source: "filter-badge-source",
+  format: "filter-badge-format",
+};
+
+const FiltersBadges = ({ filters }: { filters?: FilterMap | null }) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  if (!filters) return <span className="history-no-filters">—</span>;
+
+  const active = Object.entries(filters).filter(
+    ([, v]) => v && v !== "all",
+  ) as [string, string][];
+
+  if (active.length === 0) return <span className="history-no-filters">—</span>;
+
+  const [first, ...rest] = active;
+
+  return (
+    <div className="filter-badges-wrap" ref={ref}>
+      <span className={`filter-badge ${FILTER_COLORS[first[0]]}`}>
+        {FILTER_LABELS[first[0]]}: {first[1]}
+      </span>
+
+      {rest.length > 0 && (
+        <>
+          <button
+            className="filter-badge-more"
+            onClick={() => setOpen((p) => !p)}
+          >
+            +{rest.length}
+          </button>
+          {open && (
+            <div className="filter-popup">
+              <div className="filter-popup-title">Все фильтры</div>
+              {active.map(([key, val]) => (
+                <div key={key} className="filter-popup-row">
+                  <span className={`filter-badge ${FILTER_COLORS[key]}`}>
+                    {FILTER_LABELS[key]}: {val}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+};
 
 const PAGE_SIZE = 7;
 
@@ -78,15 +147,19 @@ const HistoryPage = () => {
       minute: "2-digit",
     });
 
-  const repeatSearch = (queryText: string) => {
+  const repeatSearch = (item: HistoryItem) => {
     const userId = localStorage.getItem("userId");
     if (!userId) {
       setError("Пользователь не авторизован");
       return;
     }
-    if (!queryText?.trim()) return;
+    if (!item.query_text?.trim()) return;
     navigate("/search/results", {
-      state: { query: queryText, userId: Number(userId) },
+      state: {
+        query: item.query_text,
+        userId: Number(userId),
+        filters: item.filters_json ?? {},
+      },
     });
   };
 
@@ -174,6 +247,7 @@ const HistoryPage = () => {
             <tr>
               <th>Запрос</th>
               <th>Дата и время</th>
+              <th>Фильтры</th>
               <th>Результаты</th>
               <th>Статус</th>
               <th>Действие</th>
@@ -182,7 +256,7 @@ const HistoryPage = () => {
           <tbody>
             {paginated.length === 0 && (
               <tr>
-                <td colSpan={5} className="history-empty-cell">
+                <td colSpan={6} className="history-empty-cell">
                   {searchQuery
                     ? `По запросу «${searchQuery}» ничего не найдено`
                     : "История пуста"}
@@ -200,6 +274,9 @@ const HistoryPage = () => {
                   </span>
                 </td>
                 <td>
+                  <FiltersBadges filters={item.filters_json} />
+                </td>
+                <td>
                   <span className="history-results">
                     {item.result_count != null ? item.result_count : "—"}
                   </span>
@@ -211,7 +288,7 @@ const HistoryPage = () => {
                   <div className="history-actions-cell">
                     <button
                       className="history-action-btn"
-                      onClick={() => repeatSearch(item.query_text)}
+                      onClick={() => repeatSearch(item)}
                     >
                       <i className="fa fa-repeat" /> Повторить
                     </button>

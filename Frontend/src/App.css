@@ -1532,11 +1532,19 @@ body {
 .filter-item select {
   background: #1e1e1e;
   border: 1px solid #333;
-  color: var(--accent);
+  color: var(--text-primary);
   padding: 10px;
   border-radius: 10px;
   outline: none;
   cursor: pointer;
+}
+.filter-item select option {
+  background: #1e1e1e;
+  color: var(--text-primary);
+}
+.filter-select--active option {
+  background: #1e1e1e;
+  color: var(--text-primary);
 }
 .features-grid {
   display: grid;
@@ -4855,6 +4863,199 @@ body {
 .history-delete-btn {
   color: #e4585a;
   border-color: #e4585a33;
+}
+
+/* ── Filter badges in history table ─────────────────────── */
+.history-no-filters {
+  color: #555;
+  font-size: 13px;
+}
+
+.filter-badges-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+}
+
+.filter-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+
+.filter-badge-period  { background: #1e3a5f; color: #60a5fa; }
+.filter-badge-source  { background: #2d1b4e; color: #a78bfa; }
+.filter-badge-format  { background: #1a3d2e; color: #34d399; }
+
+.filter-badge-more {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #2a2a2a;
+  border: 1px solid #444;
+  color: #aaa;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  flex-shrink: 0;
+}
+.filter-badge-more:hover { background: #333; color: #fff; }
+
+.filter-popup {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 100;
+  background: #1c1c1c;
+  border: 1px solid #333;
+  border-radius: 10px;
+  padding: 12px 14px;
+  min-width: 180px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.filter-popup-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 2px;
+}
+
+.filter-popup-row {
+  display: flex;
+}
+
+/* ── Active filter indicator on SearchPage ───────────────── */
+.filters-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.filters-title-row .filters-title {
+  margin-bottom: 0;
+}
+
+.filters-reset-btn {
+  background: transparent;
+  border: 1px solid #444;
+  color: var(--text-secondary);
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+.filters-reset-btn:hover {
+  background: #2a2a2a;
+  border-color: #666;
+  color: var(--text-primary);
+}
+
+.filter-select--active {
+  border-color: #3a3a3a !important;
+  color: var(--text-primary) !important;
+  background: #2a2a2a !important;
+  box-shadow: inset 0 0 0 1px #555;
+}
+
+.filter-label--active {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+/* ── Active filters info icon on SearchResults ───────────── */
+.search-results-heading-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.active-filters-info {
+  position: relative;
+}
+
+.active-filters-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #F1F3F41a;
+  border: 1px solid #F1F3F433;
+  color: var(--text-primary);
+  border-radius: 20px;
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.active-filters-btn:hover { background: #F1F3F42a; }
+
+.active-filters-count {
+  font-weight: 700;
+  font-size: 11px;
+}
+
+.active-filters-popup {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 100;
+  background: #1c1c1c;
+  border: 1px solid #333;
+  border-radius: 10px;
+  padding: 12px 16px;
+  min-width: 180px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.active-filters-popup-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.active-filters-popup-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.active-filters-popup-key {
+  font-size: 12px;
+  color: #888;
+}
+
+.active-filters-popup-val {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 .history-page-dots {
   cursor: default;

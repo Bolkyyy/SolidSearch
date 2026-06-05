@@ -14,7 +14,7 @@ export class AiController {
 
   @Post('stream')
   async stream(
-    @Body() body: { query: string; userId?: number },
+    @Body() body: { query: string; userId?: number; filters?: { period?: string; source?: string; format?: string } },
     @Res() res: Response,
   ) {
     res.setHeader('Content-Type', 'text/event-stream');
@@ -22,16 +22,23 @@ export class AiController {
     res.setHeader('Connection', 'keep-alive');
     res.setHeader('X-Accel-Buffering', 'no');
     res.flushHeaders();
-    await this.aiService.streamAnswer(body.query, body.userId, res);
+    await this.aiService.streamAnswer(body.query, body.userId, res, body.filters);
   }
 
   @Get('cached')
   async getCached(
     @Query('query') query: string,
     @Query('userId') userId: string,
+    @Query('filters') filtersJson: string,
   ) {
     if (!query) return null;
-    return this.aiService.getCachedResult(query, Number(userId) || 0);
+    let filters: any;
+    try {
+      filters = filtersJson ? JSON.parse(filtersJson) : undefined;
+    } catch {
+      filters = undefined;
+    }
+    return this.aiService.getCachedResult(query, Number(userId) || 0, filters);
   }
 
   @Get(':id/answer')

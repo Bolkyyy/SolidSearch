@@ -12,6 +12,9 @@ const EXAMPLE_QUERIES = [
 const SearchPage = () => {
   const [query, setQuery] = useState("");
   const [error, setError] = useState("");
+  const [period, setPeriod] = useState("all");
+  const [source, setSource] = useState("all");
+  const [format, setFormat] = useState("all");
   const navigate = useNavigate();
 
   const runSearch = (searchQuery: string) => {
@@ -23,8 +26,9 @@ const SearchPage = () => {
       return;
     }
 
+    const filters = { period, source, format };
     navigate("/search/results", {
-      state: { query: searchQuery, userId: Number(userId) },
+      state: { query: searchQuery, userId: Number(userId), filters },
     });
   };
 
@@ -90,54 +94,63 @@ const SearchPage = () => {
         {error && <ErrorToast message={error} onClose={() => setError("")} />}
 
         <div className="quick-filters-section">
-          <h3 className="filters-title">Быстрые фильтры</h3>
+          <div className="filters-title-row">
+            <h3 className="filters-title">Быстрые фильтры</h3>
+            {(period !== "all" || source !== "all" || format !== "all") && (
+              <button
+                className="filters-reset-btn"
+                onClick={() => { setPeriod("all"); setSource("all"); setFormat("all"); }}
+              >
+                <i className="fa fa-times" /> Сбросить
+              </button>
+            )}
+          </div>
           <div className="filters-grid">
             <div className="filter-item">
-              <label>Тип документа</label>
-              <select className="filter-select">
-                <option>Все</option>
-                <option>Договор</option>
-                <option>Акт</option>
-                <option>Смета</option>
-                <option>Отчет</option>
+              <label className={period !== "all" ? "filter-label--active" : ""}>
+                Период
+              </label>
+              <select
+                className={`filter-select${period !== "all" ? " filter-select--active" : ""}`}
+                value={period}
+                onChange={(e) => setPeriod(e.target.value)}
+              >
+                <option value="all">Все время</option>
+                <option value="2026">2026</option>
+                <option value="2025">2025</option>
+                <option value="2024">2024</option>
+                <option value="2023">2023</option>
+                <option value="2022">2022</option>
               </select>
             </div>
             <div className="filter-item">
-              <label>Период</label>
-              <select className="filter-select">
-                <option>Все время</option>
-                <option>2025</option>
-                <option>2024</option>
-                <option>2023</option>
-                <option>2022</option>
+              <label className={source !== "all" ? "filter-label--active" : ""}>
+                Источник
+              </label>
+              <select
+                className={`filter-select${source !== "all" ? " filter-select--active" : ""}`}
+                value={source}
+                onChange={(e) => setSource(e.target.value)}
+              >
+                <option value="all">Все</option>
+                <option value="Архив">Архив</option>
+                <option value="Текущие">Текущие</option>
+                <option value="Импорт">Импорт</option>
               </select>
             </div>
             <div className="filter-item">
-              <label>Источник</label>
-              <select className="filter-select">
-                <option>Все</option>
-                <option>Архив</option>
-                <option>Текущие</option>
-                <option>Импорт</option>
-              </select>
-            </div>
-            <div className="filter-item">
-              <label>Подразделение</label>
-              <select className="filter-select">
-                <option>Все</option>
-                <option>ФЭС</option>
-                <option>ТЭЧ</option>
-                <option>АХО</option>
-                <option>ПТО</option>
-              </select>
-            </div>
-            <div className="filter-item">
-              <label>Формат</label>
-              <select className="filter-select">
-                <option>Все</option>
-                <option>PDF</option>
-                <option>DOCX</option>
-                <option>TXT</option>
+              <label className={format !== "all" ? "filter-label--active" : ""}>
+                Формат
+              </label>
+              <select
+                className={`filter-select${format !== "all" ? " filter-select--active" : ""}`}
+                value={format}
+                onChange={(e) => setFormat(e.target.value)}
+              >
+                <option value="all">Все</option>
+                <option value="PDF">PDF</option>
+                <option value="DOCX">DOCX</option>
+                <option value="TXT">TXT</option>
               </select>
             </div>
           </div>

@@ -612,7 +612,10 @@ export class DocumentService {
     return result;
   }
 
-  async searchDocuments(query: string): Promise<Documents[]> {
+  async searchDocuments(
+    query: string,
+    filters?: { period?: string; source?: string; format?: string },
+  ): Promise<Documents[]> {
     const stopWords = new Set([
       'найди', 'найти', 'покажи', 'документ', 'документы', 'файл', 'файлы',
       'про', 'для', 'все', 'мне', 'нужно', 'хочу', 'где', 'как', 'что', 'это',
@@ -648,7 +651,7 @@ export class DocumentService {
     const words = [...new Set(searchWords)];
     if (words.length === 0) return [];
 
-    const params: Record<string, string> = {};
+    const params: Record<string, string | number> = {};
     words.forEach((w, i) => {
       params[`w${i}`] = `%${w}%`;
     });
@@ -663,16 +666,60 @@ export class DocumentService {
       .map((_, i) => `LOWER(f.normalized_text) LIKE :w${i}`)
       .join(' OR ');
 
-    const where = `(${titleConds}) OR (${fileNameConds}) OR (${summConds})`;
+    const textWhere = `(${titleConds}) OR (${fileNameConds}) OR (${summConds})`;
 
-    return await this.documentsRepository
+    const qb = this.documentsRepository
       .createQueryBuilder('doc')
       .leftJoinAndSelect('doc.files', 'f')
-      .where(where)
-      .setParameters(params)
+      .where(textWhere)
+      .setParameters(params);
+
+    if (filters?.period && filters.period !== 'all') {
+      const year = parseInt(filters.period, 10);
+      if (!isNaN(year)) {
+        qb.andWhere(
+          'EXTRACT(YEAR FROM COALESCE(doc.document_date, doc.created_at)) = :year',
+          { year },
+        );
+      }
+    }
+
+    if (filters?.format && filters.format !== 'all') {
+      const fmt = filters.format.toLowerCase();
+      qb.andWhere('LOWER(f.file_name) LIKE :fmt', { fmt: `%.${fmt}` });
+    }
+
+    return await qb
       .orderBy('doc.created_at', 'DESC')
       .limit(20)
       .getMany();
+  }
+
+  applyFiltersToList(
+    docs: Documents[],
+    filters?: { period?: string; source?: string; format?: string },
+  ): Documents[] {
+    if (!filters) return docs;
+    let result = docs;
+
+    if (filters.period && filters.period !== 'all') {
+      const year = parseInt(filters.period, 10);
+      if (!isNaN(year)) {
+        result = result.filter((doc) => {
+          const date = doc.document_date ?? doc.created_at;
+          return date && new Date(date).getFullYear() === year;
+        });
+      }
+    }
+
+    if (filters.format && filters.format !== 'all') {
+      const fmt = filters.format.toLowerCase();
+      result = result.filter((doc) =>
+        doc.files?.some((f) => f.file_name?.toLowerCase().endsWith(`.${fmt}`)),
+      );
+    }
+
+    return result;
   }
 
   private detectLanguage(text: string): string {

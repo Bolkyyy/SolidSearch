@@ -169,6 +169,7 @@ export class AiService {
     query: string,
     userId: number | undefined,
     res: Response,
+    filters?: { period?: string; source?: string; format?: string },
   ): Promise<void> {
     const send = (data: object) => {
       res.write(`data: ${JSON.stringify(data)}\n\n`);
@@ -179,10 +180,10 @@ export class AiService {
       const { client, model, provider } = await this.getClient();
 
       send({ type: 'searching' });
-      console.log('[SEARCH] Query:', query);
+      console.log('[SEARCH] Query:', query, 'Filters:', filters);
 
       let documents = await this.withRetry('searchDocuments', () =>
-        this.documentService.searchDocuments(query),
+        this.documentService.searchDocuments(query, filters),
       );
 
       console.log('[SEARCH] DB found', documents.length, 'documents');
@@ -192,12 +193,13 @@ export class AiService {
         const allDocs = await this.withRetry('findall', () =>
           this.documentService.findall(),
         );
-        if (allDocs.length > 0) {
+        const filteredAllDocs = this.documentService.applyFiltersToList(allDocs, filters);
+        if (filteredAllDocs.length > 0) {
           const aiDocs = await this.aiSelectDocuments(
             client,
             model,
             query,
-            allDocs,
+            filteredAllDocs,
           );
           const existingIds = new Set(documents.map((d) => d.id));
           for (const doc of aiDocs) {
@@ -205,6 +207,9 @@ export class AiService {
           }
         }
       }
+
+      // Финальный пост-фильтр — гарантирует что фильтры соблюдены после всех этапов поиска
+      documents = this.documentService.applyFiltersToList(documents, filters);
 
       console.log('[SEARCH] Found', documents.length, 'documents');
       send({ type: 'documents', documents });
@@ -218,6 +223,7 @@ export class AiService {
             query_type: 'ai',
             status: documents.length > 0 ? 'success' : 'not_found',
             result_count: documents.length,
+            filters_json: filters,
           }),
         );
       } catch (dbErr) {
@@ -285,10 +291,12 @@ export class AiService {
   async getCachedResult(
     query: string,
     userId: number,
+    filters?: any,
   ): Promise<{ answer: string; documents: Documents[] } | null> {
     const historyEntry = await this.historyService.findByQueryAndUser(
       query,
       userId,
+      filters,
     );
     if (!historyEntry) return null;
 

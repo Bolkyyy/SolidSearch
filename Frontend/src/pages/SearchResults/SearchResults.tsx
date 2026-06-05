@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import Layout from "../../components/Layout/Layout";
@@ -88,13 +88,77 @@ const SourceItem = ({
   </div>
 );
 
+interface SearchFilters {
+  period?: string;
+  source?: string;
+  format?: string;
+}
+
+const FILTER_LABELS: Record<string, string> = {
+  period: "Период",
+  source: "Источник",
+  format: "Формат",
+};
+
+const ActiveFiltersInfo = ({ filters }: { filters: SearchFilters }) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  const active = Object.entries(filters).filter(
+    ([, v]) => v && v !== "all",
+  ) as [string, string][];
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node))
+        setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  if (active.length === 0) return null;
+
+  return (
+    <div className="active-filters-info" ref={ref}>
+      <button
+        className="active-filters-btn"
+        onClick={() => setOpen((p) => !p)}
+        title="Активные фильтры"
+      >
+        <i className="fa fa-filter" />
+        <span className="active-filters-count">{active.length}</span>
+      </button>
+      {open && (
+        <div className="active-filters-popup">
+          <div className="active-filters-popup-title">Активные фильтры</div>
+          {active.map(([key, val]) => (
+            <div key={key} className="active-filters-popup-row">
+              <span className="active-filters-popup-key">
+                {FILTER_LABELS[key]}
+              </span>
+              <span className="active-filters-popup-val">{val}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const SearchResults = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const navState = location.state as { query: string; userId: number } | null;
+  const navState = location.state as {
+    query: string;
+    userId: number;
+    filters?: SearchFilters;
+  } | null;
 
   const query: string = navState?.query ?? "";
   const userId: number = navState?.userId ?? 0;
+  const filters: SearchFilters = navState?.filters ?? {};
 
   const [documents, setDocuments] = useState<SearchDocument[]>([]);
   const [answer, setAnswer] = useState<string>("");
@@ -112,8 +176,9 @@ const SearchResults = () => {
 
     const run = async () => {
       try {
+        const filtersParam = encodeURIComponent(JSON.stringify(filters));
         const res = await fetch(
-          `${API_URL}/search/cached?query=${encodeURIComponent(query)}&userId=${userId}`,
+          `${API_URL}/search/cached?query=${encodeURIComponent(query)}&userId=${userId}&filters=${filtersParam}`,
           { signal: controller.signal },
         );
         if (res.ok) {
@@ -134,7 +199,7 @@ const SearchResults = () => {
         const response = await fetch(`${API_URL}/search/stream`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query, userId }),
+          body: JSON.stringify({ query, userId, filters }),
           signal: controller.signal,
         });
 
@@ -212,9 +277,12 @@ const SearchResults = () => {
         <div className="search-results-main">
           <div className="search-results-heading">
             <h2 className="search-results-title">{query}</h2>
-            <span className="search-results-count">
-              {docsLoading ? "Поиск…" : `Найдено: ${documents.length}`}
-            </span>
+            <div className="search-results-heading-right">
+              <span className="search-results-count">
+                {docsLoading ? "Поиск…" : `Найдено: ${documents.length}`}
+              </span>
+              <ActiveFiltersInfo filters={filters} />
+            </div>
           </div>
 
           {(searching || docsLoading) && (

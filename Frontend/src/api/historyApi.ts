@@ -7,6 +7,7 @@ export interface HistoryItem {
   user_id: number;
   status?: string | null;
   result_count?: number | null;
+  filters_json?: { period?: string; source?: string; format?: string } | null;
 }
 
 export const historyApi = {
