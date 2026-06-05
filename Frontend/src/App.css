@@ -4865,7 +4865,6 @@ body {
   border-color: #e4585a33;
 }
 
-/* ── Filter badges in history table ─────────────────────── */
 .history-no-filters {
   color: #555;
   font-size: 13px;
@@ -4940,7 +4939,6 @@ body {
   display: flex;
 }
 
-/* ── Active filter indicator on SearchPage ───────────────── */
 .filters-title-row {
   display: flex;
   align-items: center;
@@ -4983,7 +4981,6 @@ body {
   font-weight: 700;
 }
 
-/* ── Active filters info icon on SearchResults ───────────── */
 .search-results-heading-right {
   display: flex;
   align-items: center;

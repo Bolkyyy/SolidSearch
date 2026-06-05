@@ -208,7 +208,6 @@ export class AiService {
         }
       }
 
-      // Финальный пост-фильтр — гарантирует что фильтры соблюдены после всех этапов поиска
       documents = this.documentService.applyFiltersToList(documents, filters);
 
       console.log('[SEARCH] Found', documents.length, 'documents');
