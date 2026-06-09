@@ -96,8 +96,9 @@ const AnalyticsPage: React.FC = () => {
             <div className="stat-icon-wrapper orange-bg"><i className="fa fa-users text-orange"></i></div>
             <span className="stat-trend trend-orange">+5</span>
           </div>
+          // пользователи
           <p className="stat-label">Активных пользователей</p>
-          <h3 className="stat-value">42</h3>
+          <h3 className="stat-value">42</h3> 
         </div>
       </div>
 

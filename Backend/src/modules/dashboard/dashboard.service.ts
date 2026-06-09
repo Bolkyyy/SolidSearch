@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Documents } from '../../models/documents/documents.entity';
 import { SearchQueries } from '../history/entities/search_queries.entity';
 import { IndexJobs } from '../../models/index_jobs/index_jobs.entity';
+import { Users } from '../../models/users/users.entity';
 
 export interface DashboardData {
   totalDocuments: number;
@@ -12,6 +13,8 @@ export interface DashboardData {
   totalIndexedToday: number;
   totalSearch: number;
   totalSearchToday: number;
+  totalActiveUsers: number;
+  totalNewUsers: number;
 }
 
 @Injectable()
@@ -23,11 +26,16 @@ export class DashboardService {
     private readonly indexJobsRepository: Repository<IndexJobs>,
     @InjectRepository(SearchQueries)
     private readonly searchQuerieRepository: Repository<SearchQueries>,
-  ) {}
+    @InjectRepository(Users)
+    private readonly usersRepository: Repository<Users>,
+  ) { }
 
   async getDashboardData(): Promise<DashboardData> {
     const todayDate = new Date();
     todayDate.setHours(0, 0, 0, 0);
+    const dateNewUsers = new Date();
+    dateNewUsers.setDate(dateNewUsers.getDate() - 7);
+    dateNewUsers.setHours(0, 0, 0, 0);
 
     const [
       totalDocuments,
@@ -36,6 +44,8 @@ export class DashboardService {
       totalIndexedToday,
       totalSearch,
       totalSearchToday,
+      totalActiveUsers,
+       totalNewUsers,
     ] = await Promise.all([
       this.documentsRepository.count(),
       this.documentsRepository
@@ -57,6 +67,11 @@ export class DashboardService {
         .createQueryBuilder('query')
         .where('query.created_at >= :todayDate', { todayDate })
         .getCount(),
+      this.usersRepository.count({ where: { status: 'active' } }),
+      this.usersRepository
+        .createQueryBuilder('user')
+        .where('user.created_at >= :dateNewUsers', { dateNewUsers })
+        .getCount(),
     ]);
 
     return {
@@ -66,6 +81,8 @@ export class DashboardService {
       totalIndexedToday,
       totalSearch,
       totalSearchToday,
+      totalActiveUsers,
+      totalNewUsers,
     };
   }
 }
