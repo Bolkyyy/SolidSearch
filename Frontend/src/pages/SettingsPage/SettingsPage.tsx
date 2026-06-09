@@ -95,6 +95,7 @@ const SettingsPage = () => {
         role: modalUserEditRole,
       });
       setVisibleModalEditUser(false);
+      await fetchUsers();
     } catch (e) {
       console.error(e);
     } finally {
