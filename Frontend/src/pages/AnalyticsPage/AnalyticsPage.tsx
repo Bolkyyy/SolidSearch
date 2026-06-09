@@ -1,13 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Layout from '../../components/Layout/Layout';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell} from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { DashboardData, fetchDashboardData } from '@/api/dashboard';
+import { analyticsApi, QueryStat } from '@/api/Analytics';
 
 const lineData = [
   { name: '20.01', val: 70 },
   { name: '20.01', val: 140 },
   { name: '20.01', val: 110 },
-  { name: '20.01', val: 180 },
-  { name: '20.01', val: 250 },
+  { name: '20.01', val: 10 },
+  { name: 'егор', val: 250 },
   { name: '20.01', val: 60 },
 ];
 
@@ -19,6 +21,11 @@ const pieData = [
   { name: 'Другое', value: 1135, color: '#eab308' },
 ];
 
+interface SearchQueryData {
+  name: string;
+  val: number;
+}
+
 const AnalyticsPage: React.FC = () => {
   const [timeRange, setTimeRange] = useState('Последние 7 дней');
   const [isTimeOpen, setIsTimeOpen] = useState(false);
@@ -26,6 +33,9 @@ const AnalyticsPage: React.FC = () => {
   const [isChartOpen, setIsChartOpen] = useState(false);
   const [distFilter, setDistFilter] = useState('Распределение п..');
   const [isDistOpen, setIsDistOpen] = useState(false);
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [searchData, setSearchData] = useState<SearchQueryData[] | null>(null);
+
 
   const timeRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<HTMLDivElement>(null);
@@ -39,6 +49,37 @@ const AnalyticsPage: React.FC = () => {
     };
     document.addEventListener('mousedown', clickOutside);
     return () => document.removeEventListener('mousedown', clickOutside);
+  }, []);
+
+  async function apiGetDashboard() {
+    try {
+      const response = await fetchDashboardData();
+      setDashboardData(response);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  async function fetchSearchAnalytics() {
+    try {
+      const response = await analyticsApi.getSearchAnalytics(10);
+      const transformedData = response.map(item => {
+        const dateObj = new Date(item.date);
+        dateObj.setHours(dateObj.getHours() + 3);
+        const dateStr = dateObj.toISOString().split('T')[0];
+        return { name: dateStr, val: item.count }
+      })
+      console.log(transformedData);
+      setSearchData(transformedData);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+
+  useEffect(() => {
+    apiGetDashboard();
+    fetchSearchAnalytics();
   }, []);
 
   return (
@@ -61,7 +102,7 @@ const AnalyticsPage: React.FC = () => {
             )}
           </div>
           <button className="analytics-export-btn">
-             <i className="fa fa-download" style={{marginRight: '8px'}}></i> Экспорт
+            <i className="fa fa-download" style={{ marginRight: '8px' }}></i> Экспорт
           </button>
         </div>
       </section>
@@ -94,44 +135,43 @@ const AnalyticsPage: React.FC = () => {
         <div className="stat-card glow-orange">
           <div className="stat-card-header">
             <div className="stat-icon-wrapper orange-bg"><i className="fa fa-users text-orange"></i></div>
-            <span className="stat-trend trend-orange">+5</span>
+            <span className="stat-trend trend-orange">+{dashboardData?.totalNewUsers || 0}</span>
           </div>
-          // пользователи
           <p className="stat-label">Активных пользователей</p>
-          <h3 className="stat-value">42</h3> 
+          <h3 className="stat-value">{dashboardData?.totalActiveUsers || 0}</h3>
         </div>
       </div>
 
       <div className="analytics-charts-grid">
-        <div className="chart-large-card">
-          <div className="chart-header">
-            <h3>Количество запросов</h3>
-            <div className="filter-dropdown-container" ref={chartRef}>
-              <button className="filter-dropdown-btn small" onClick={() => setIsChartOpen(!isChartOpen)}>
-                {chartFilter} <i className="fa fa-chevron-down"></i>
-              </button>
-              {isChartOpen && (
-                <div className="filter-dropdown-menu">
-                  <div onClick={() => { setChartFilter('Кол-во запросов'); setIsChartOpen(false); }}>Кол-во запросов</div>
-                  <div onClick={() => { setChartFilter('Время ответа'); setIsChartOpen(false); }}>Время ответа</div>
-                </div>
-              )}
+        {searchData &&
+          <div className="chart-large-card">
+            <div className="chart-header">
+              <h3>Количество запросов</h3>
+              <div className="filter-dropdown-container" ref={chartRef}>
+                <button className="filter-dropdown-btn small" onClick={() => setIsChartOpen(!isChartOpen)}>
+                  {chartFilter} <i className="fa fa-chevron-down"></i>
+                </button>
+                {isChartOpen && (
+                  <div className="filter-dropdown-menu">
+                    <div onClick={() => { setChartFilter('Кол-во запросов'); setIsChartOpen(false); }}>Кол-во запросов</div>
+                    <div onClick={() => { setChartFilter('Время ответа'); setIsChartOpen(false); }}>Время ответа</div>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-          
-          <div style={{ width: '100%', height: 250 }}>
-            <ResponsiveContainer width="99%" height="100%">
-              <LineChart data={lineData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#222" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#666', fontSize: 12}} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{fill: '#666', fontSize: 12}} dx={-10} />
-                <Tooltip contentStyle={{backgroundColor: '#1a1a1a', border: '1px solid #333', borderRadius: '8px'}} />
-                <Line type="monotone" dataKey="val" stroke="#10b981" strokeWidth={4} dot={{r: 6, fill: '#10b981', strokeWidth: 0}} activeDot={{r: 8}} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
 
+            <div style={{ width: '100%', height: 250 }}>
+              <ResponsiveContainer width="99%" height="100%">
+                <LineChart data={searchData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#222" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#666', fontSize: 12 }} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#666', fontSize: 12 }} dx={-10} />
+                  <Tooltip contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333', borderRadius: '8px' }} />
+                  <Line type="monotone" dataKey="val" stroke="#10b981" strokeWidth={4} dot={{ r: 6, fill: '#10b981', strokeWidth: 0 }} activeDot={{ r: 8 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>}
         <div className="chart-large-card">
           <div className="chart-header">
             <h3>Распределение по типам документов</h3>
@@ -161,7 +201,7 @@ const AnalyticsPage: React.FC = () => {
             <div className="donut-legend">
               {pieData.map((item, i) => (
                 <div className="legend-item" key={i}>
-                  <span className="dot" style={{backgroundColor: item.color}}></span>
+                  <span className="dot" style={{ backgroundColor: item.color }}></span>
                   <div>
                     <p className="legend-title">{item.name}</p>
                     <p className="legend-desc">{item.value.toLocaleString()} док.</p>

@@ -30,6 +30,17 @@ export class DashboardService {
     private readonly usersRepository: Repository<Users>,
   ) { }
 
+  async getSearchData(countDays: number = 30): Promise<any> {
+    const results = await this.searchQuerieRepository.createQueryBuilder("entity")
+      .select("DATE(entity.created_at)", "date")
+      .addSelect("COUNT(*)", "count")
+      .where("entity.created_at >= :DaysAgo", { DaysAgo: new Date(new Date().setDate(new Date().getDate() - countDays)) })
+      .groupBy("date")
+      .orderBy("date", "ASC")
+      .getRawMany();
+    return results
+  }
+
   async getDashboardData(): Promise<DashboardData> {
     const todayDate = new Date();
     todayDate.setHours(0, 0, 0, 0);
@@ -45,7 +56,7 @@ export class DashboardService {
       totalSearch,
       totalSearchToday,
       totalActiveUsers,
-       totalNewUsers,
+      totalNewUsers,
     ] = await Promise.all([
       this.documentsRepository.count(),
       this.documentsRepository
