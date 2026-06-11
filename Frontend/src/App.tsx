@@ -10,6 +10,7 @@ import SettingsPage from './pages/SettingsPage/SettingsPage';
 import SearchResults from './pages/SearchResults/SearchResults';
 import DocumentCard from './pages/DocumentCard/DocumentCard';
 import CollectionDetail from "./pages/CollectionDetail/CollectionDetail";
+import NotificationsPage from './pages/NotificationsPage/NotificationsPage';
 
 import './App.css';
 
@@ -29,6 +30,7 @@ function App() {
         <Route path="/search/results" element={<SearchResults />} />
         <Route path="/document/:id" element={<DocumentCard />} />
         <Route path="/collection/:collectionName" element={<CollectionDetail />} />
+        <Route path="/notifications" element={<NotificationsPage />} />  {/* ДОБАВИТЬ ЭТУ СТРОКУ */}
       </Routes>
     </Router>
   );
