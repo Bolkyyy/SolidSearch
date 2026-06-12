@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Layout from '../../components/Layout/Layout';
 
 interface Notification {
   id: string;
@@ -159,28 +160,7 @@ const NotificationsPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="notifications-stats">
-        <div className="stat-card">
-          <div className="stat-value">{notifications.length}</div>
-          <div className="stat-label">Всего уведомлений</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-value">{unreadCount}</div>
-          <div className="stat-label">Непрочитанных</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-value">
-            {notifications.filter((n) => n.category === 'warning').length}
-          </div>
-          <div className="stat-label">Требуют внимания</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-value">
-            {notifications.filter((n) => n.category === 'success').length}
-          </div>
-          <div className="stat-label">Завершено успешно</div>
-        </div>
-      </div>
+      {/* СТАТИСТИКА УБРАНА */}
 
       <div className="notifications-list">
         {notifications.length === 0 ? (
