@@ -4261,7 +4261,8 @@ body {
 
 
 
-/* ========= ВЫПАДАЮЩЕЕ ОКНО УВЕДОМЛЕНИЙ ========= */
+/* УВЕДОМЛЕНИЯ */
+
 .notification-wrapper {
   position: relative;
 }
@@ -4325,6 +4326,7 @@ body {
   font-weight: 600;
   color: #ffffff;
   margin: 0;
+  font-family: 'Montserrat';
 }
 
 .dropdown-unread-badge {
@@ -4400,6 +4402,7 @@ body {
   font-weight: 600;
   color: #ffffff;
   margin-bottom: 4px;
+  font-family: 'Montserrat';
 }
 
 .dropdown-item-message {
@@ -4409,11 +4412,13 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   margin-bottom: 4px;
+  font-family: 'Montserrat';
 }
 
 .dropdown-item-time {
   font-size: 10px;
   color: #8b949e;
+  font-family: 'Montserrat';
 }
 
 .dropdown-empty {
@@ -4432,6 +4437,7 @@ body {
 .dropdown-empty p {
   font-size: 13px;
   margin: 0;
+  font-family: 'Montserrat';
 }
 
 .dropdown-footer {
@@ -4451,16 +4457,15 @@ body {
   color: white;
   cursor: pointer;
   transition: all 0.2s;
-  font-family: inherit;
+  font-family: 'Montserrat';
 }
 
 .dropdown-view-all:hover {
   background: #2563eb;
 }
 
-/* Страница уведомлений */
 .notifications-page {
-  padding: 24px 32px;
+  padding: 25px 40px;
   background: #1d1d1d;
   min-height: calc(100vh - 60px);
 }
@@ -4479,11 +4484,13 @@ body {
   font-weight: 600;
   color: #ffffff;
   margin-bottom: 4px;
+  font-family: 'Montserrat';
 }
 
 .notifications-title p {
   font-size: 14px;
   color: #a0a0a0;
+  font-family: 'Montserrat';
 }
 
 .notifications-actions {
@@ -4501,7 +4508,7 @@ body {
   color: #c9d1d9;
   cursor: pointer;
   transition: all 0.2s;
-  font-family: inherit;
+  font-family: 'Montserrat';
 }
 
 .clear-all-btn:hover {
@@ -4519,7 +4526,7 @@ body {
   color: white;
   cursor: pointer;
   transition: all 0.2s;
-  font-family: inherit;
+  font-family: 'Montserrat';
 }
 
 .mark-all-read-btn:hover {
@@ -4534,19 +4541,20 @@ body {
 
 .notification-item {
   background: #2a2a2a;
-  border-radius: 8px;
-  padding: 16px 20px;
+  border-radius: 14px;
+  padding: 22px;
   display: flex;
   gap: 14px;
-  border: 1px solid #3a3a3a;
+  border: 1px solid #222;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.25s;
   position: relative;
 }
 
 .notification-item:hover {
-  background: #333333;
-  border-color: #4a4a4a;
+  border-color: #3b82f6;
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.2);
+  transform: translateY(-4px);
 }
 
 .notification-item.unread {
@@ -4567,12 +4575,12 @@ body {
 
 .category-icon.success {
   background: #0d4429;
-  color: #3fb950;
+  color: #10b981;
 }
 
 .category-icon.warning {
-  background: #5c2d0d;
-  color: #e3b341;
+  background: #451a03;
+  color: #f59e0b;
 }
 
 .category-icon.system {
@@ -4599,15 +4607,17 @@ body {
 }
 
 .notification-title h3 {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   color: #ffffff;
   margin: 0;
+  font-family: 'Montserrat';
 }
 
 .notification-time {
   font-size: 12px;
-  color: #a0a0a0;
+  color: #888;
+  font-family: 'Montserrat';
 }
 
 .notification-message {
@@ -4615,6 +4625,7 @@ body {
   color: #c9d1d9;
   line-height: 1.4;
   margin: 0;
+  font-family: 'Montserrat';
 }
 
 .notification-link {
@@ -4625,6 +4636,7 @@ body {
   align-items: center;
   gap: 4px;
   margin-top: 8px;
+  font-family: 'Montserrat';
 }
 
 .notification-link:hover {
@@ -4653,8 +4665,8 @@ body {
   text-align: center;
   padding: 60px 32px;
   background: #2a2a2a;
-  border-radius: 16px;
-  border: 1px solid #3a3a3a;
+  border-radius: 14px;
+  border: 1px solid #222;
 }
 
 .empty-icon {
@@ -4668,44 +4680,11 @@ body {
   font-weight: 600;
   color: #ffffff;
   margin-bottom: 8px;
+  font-family: 'Montserrat';
 }
 
 .empty-notifications p {
   font-size: 14px;
   color: #a0a0a0;
+  font-family: 'Montserrat';
 }
-
-/* Адаптив для дропдауна */
-@media (max-width: 640px) {
-  .notification-dropdown {
-    position: fixed;
-    top: 50px;
-    left: 10px;
-    right: 10px;
-    width: auto;
-  }
-  
-  .notifications-page {
-    padding: 16px;
-  }
-  
-  .notifications-header {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .notifications-actions {
-    justify-content: stretch;
-  }
-  
-  .notification-item {
-    flex-wrap: wrap;
-  }
-  
-  .delete-notification-btn {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-  }
-}
-

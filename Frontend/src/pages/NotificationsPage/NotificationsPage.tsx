@@ -138,72 +138,72 @@ const NotificationsPage: React.FC = () => {
   };
 
   return (
-    <div className="notifications-page">
-      <div className="notifications-header">
-        <div className="notifications-title">
-          <h1>Уведомления</h1>
-          <p>История всех событий и оповещений системы</p>
-        </div>
-        <div className="notifications-actions">
-          {notifications.length > 0 && (
-            <>
-              <button className="clear-all-btn" onClick={clearAllNotifications}>
-                🗑️ Очистить все
-              </button>
-              {unreadCount > 0 && (
-                <button className="mark-all-read-btn" onClick={markAllAsRead}>
-                  ✓ Отметить все прочитанными
+    <Layout>
+      <div className="notifications-page">
+        <div className="notifications-header">
+          <div className="notifications-title">
+            <h1>Уведомления</h1>
+            <p>История всех событий и оповещений системы</p>
+          </div>
+          <div className="notifications-actions">
+            {notifications.length > 0 && (
+              <>
+                <button className="clear-all-btn" onClick={clearAllNotifications}>
+                  🗑️ Очистить все
                 </button>
-              )}
-            </>
+                {unreadCount > 0 && (
+                  <button className="mark-all-read-btn" onClick={markAllAsRead}>
+                    ✓ Отметить все прочитанными
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+
+        <div className="notifications-list">
+          {notifications.length === 0 ? (
+            <div className="empty-notifications">
+              <div className="empty-icon">🔔</div>
+              <h3>Нет уведомлений</h3>
+              <p>Когда появятся новые уведомления, они будут отображаться здесь</p>
+            </div>
+          ) : (
+            notifications.map((notification) => (
+              <div
+                key={notification.id}
+                className={`notification-item ${!notification.isRead ? 'unread' : ''}`}
+                onClick={() => handleNotificationClick(notification)}
+              >
+                <div className="notification-icon">
+                  <div className={`category-icon ${getCategoryClass(notification.category)}`}>
+                    {getCategoryIcon(notification.category)}
+                  </div>
+                </div>
+                <div className="notification-content">
+                  <div className="notification-title">
+                    <h3>{notification.title}</h3>
+                    <span className="notification-time">{notification.timestamp}</span>
+                  </div>
+                  <p className="notification-message">{notification.message}</p>
+                  {notification.link && (
+                    <div className="notification-link">
+                      📎 Открыть связанный документ →
+                    </div>
+                  )}
+                </div>
+                <button
+                  className="delete-notification-btn"
+                  onClick={(e) => deleteNotification(notification.id, e)}
+                >
+                  ✕
+                </button>
+              </div>
+            ))
           )}
         </div>
       </div>
-
-      {/* СТАТИСТИКА УБРАНА */}
-
-      <div className="notifications-list">
-        {notifications.length === 0 ? (
-          <div className="empty-notifications">
-            <div className="empty-icon">🔔</div>
-            <h3>Нет уведомлений</h3>
-            <p>Когда появятся новые уведомления, они будут отображаться здесь</p>
-          </div>
-        ) : (
-          notifications.map((notification) => (
-            <div
-              key={notification.id}
-              className={`notification-item ${!notification.isRead ? 'unread' : ''}`}
-              onClick={() => handleNotificationClick(notification)}
-            >
-              <div className="notification-icon">
-                <div className={`category-icon ${getCategoryClass(notification.category)}`}>
-                  {getCategoryIcon(notification.category)}
-                </div>
-              </div>
-              <div className="notification-content">
-                <div className="notification-title">
-                  <h3>{notification.title}</h3>
-                  <span className="notification-time">{notification.timestamp}</span>
-                </div>
-                <p className="notification-message">{notification.message}</p>
-                {notification.link && (
-                  <div className="notification-link">
-                    📎 Открыть связанный документ →
-                  </div>
-                )}
-              </div>
-              <button
-                className="delete-notification-btn"
-                onClick={(e) => deleteNotification(notification.id, e)}
-              >
-                ✕
-              </button>
-            </div>
-          ))
-        )}
-      </div>
-    </div>
+    </Layout>
   );
 };
 
