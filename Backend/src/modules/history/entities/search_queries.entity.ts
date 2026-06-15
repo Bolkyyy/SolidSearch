@@ -23,6 +23,9 @@ export class SearchQueries {
     @Column({ type: 'json', nullable: true })
     filters_json: any;
 
+    @Column({ type: 'float', nullable: true })
+    response_time_ms: number;
+
     @CreateDateColumn()
     created_at: Date;
 }

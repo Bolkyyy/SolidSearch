@@ -7,6 +7,9 @@ export class Documents {
     id!: number;
 
     @Column({ nullable: true })
+    user_id: number;
+
+    @Column({ nullable: true })
     collection_id: number;
 
     @Column({ nullable: true })

@@ -23,6 +23,8 @@ export class HistoryService {
     if (filters.period && filters.period !== 'all') result.period = filters.period;
     if (filters.format && filters.format !== 'all') result.format = filters.format;
     if (filters.source && filters.source !== 'all') result.source = filters.source;
+    if (filters.collection && filters.collection !== 'all') result.collection = String(filters.collection);
+    if (filters.formats) result.formats = filters.formats;
     return Object.keys(result).length > 0 ? result : null;
   }
 
@@ -84,6 +86,21 @@ export class HistoryService {
     await this.aiAnswersRepository.delete({ query_id: +id });
     const result = await this.searchQueriesRepository.delete({ id: +id });
     return { deleted: result.affected ?? 0 };
+  }
+
+  async updateResponseTime(id: number, ms: number): Promise<void> {
+    try {
+      await this.searchQueriesRepository.update(id, { response_time_ms: ms });
+    } catch (e: any) {
+      if (e.message?.includes('response_time_ms')) {
+        await this.searchQueriesRepository.manager.query(
+          `ALTER TABLE solidsearchdb.search_queries ADD COLUMN IF NOT EXISTS response_time_ms float;`,
+        );
+        await this.searchQueriesRepository.update(id, { response_time_ms: ms });
+      } else {
+        throw e;
+      }
+    }
   }
 
   async findByQueryText(queryText: string): Promise<SearchQueries | null> {

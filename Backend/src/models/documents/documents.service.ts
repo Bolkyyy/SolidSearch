@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { Documents } from './documents.entity';
 import { DocumentFiles } from './document_files.entity';
+import { IndexJobs } from '../index_jobs/index_jobs.entity';
 import { UploadDocumentDto } from './dto/upload-document.dto';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -13,6 +14,7 @@ import WordExtractor from 'word-extractor';
 import OpenAI from 'openai';
 import { AiSettings } from '../../modules/ai/entity/ai-settings.entity';
 import { decrypt } from '../../modules/ai/Encryption/crypto';
+import { NotificationsService } from '../../modules/notifications/notifications.service';
 const pdfjsLib = require('pdfjs-dist/legacy/build/pdf');
 const officeparser = require('officeparser');
 const CFB = require('cfb');
@@ -29,6 +31,11 @@ interface ExtractionResult {
 
 @Injectable()
 export class DocumentService {
+  private chunkSize = CHUNK_SIZE;
+  private chunkMaxTokens = CHUNK_MAX_TOKENS;
+  private maxStoredChars = MAX_STORED_CHARS;
+  private maxAiChars = MAX_AI_CHARS;
+
   constructor(
     @InjectRepository(Documents)
     private readonly documentsRepository: Repository<Documents>,
@@ -38,7 +45,29 @@ export class DocumentService {
 
     @InjectRepository(AiSettings)
     private readonly aiSettingsRepository: Repository<AiSettings>,
+
+    @InjectRepository(IndexJobs)
+    private readonly indexJobsRepository: Repository<IndexJobs>,
+
+    private readonly notificationsService: NotificationsService,
   ) {}
+
+  getIndexingConfig() {
+    return {
+      chunkSize: this.chunkSize,
+      chunkMaxTokens: this.chunkMaxTokens,
+      maxStoredChars: this.maxStoredChars,
+      maxAiChars: this.maxAiChars,
+    };
+  }
+
+  updateIndexingConfig(dto: { chunkSize?: number; chunkMaxTokens?: number; maxStoredChars?: number; maxAiChars?: number }) {
+    if (dto.chunkSize != null) this.chunkSize = dto.chunkSize;
+    if (dto.chunkMaxTokens != null) this.chunkMaxTokens = dto.chunkMaxTokens;
+    if (dto.maxStoredChars != null) this.maxStoredChars = dto.maxStoredChars;
+    if (dto.maxAiChars != null) this.maxAiChars = dto.maxAiChars;
+    return this.getIndexingConfig();
+  }
 
   private async getAiClient(): Promise<{ client: OpenAI; model: string }> {
     const settings = await this.aiSettingsRepository.findOne({
@@ -125,7 +154,7 @@ export class DocumentService {
 
     const response = await client.chat.completions.create({
       model,
-      max_tokens: CHUNK_MAX_TOKENS,
+      max_tokens: this.chunkMaxTokens,
       messages: [
         {
           role: 'system',
@@ -153,7 +182,7 @@ export class DocumentService {
     if (rawText.trim().length < 50) return rawText.trim();
 
     const { client, model } = await this.getAiClient();
-    const chunks = this.splitIntoChunks(rawText, CHUNK_SIZE);
+    const chunks = this.splitIntoChunks(rawText, this.chunkSize);
 
     console.log(`[FORMAT] Разбито на ${chunks.length} чанков`);
 
@@ -319,7 +348,25 @@ export class DocumentService {
     documentId: number,
     filePath: string,
     mimeType: string,
+    docTitle: string,
+    userId: number | null = null,
+    isReindex: boolean = false,
   ): Promise<void> {
+    let jobId: number | undefined;
+    try {
+      const job = await this.withRetry('create index job', () =>
+        this.indexJobsRepository.save({
+          document_id: documentId,
+          status: 'processing',
+          parser_type: mimeType,
+          started_at: new Date(),
+        }),
+      );
+      jobId = job.id;
+    } catch (e) {
+      console.error('[INDEX_JOB] create failed:', e);
+    }
+
     try {
       const fullPath = path.resolve(filePath);
       console.log(`[EXTRACT] fileId=${fileId} mime=${mimeType}`);
@@ -329,8 +376,8 @@ export class DocumentService {
         mimeType,
       );
 
-      const wasTruncated = fullText.length > MAX_STORED_CHARS;
-      const rawText = wasTruncated ? fullText.slice(0, MAX_STORED_CHARS) : fullText;
+      const wasTruncated = fullText.length > this.maxStoredChars;
+      const rawText = wasTruncated ? fullText.slice(0, this.maxStoredChars) : fullText;
 
       if (!rawText.trim()) {
         console.log(`[EXTRACT] fileId=${fileId} — пустой текст`);
@@ -343,6 +390,13 @@ export class DocumentService {
         await this.withRetry('set processed', () =>
           this.documentsRepository.update(documentId, { status: 'processed' }),
         );
+        this.notificationsService.create({
+          userId,
+          title: 'Документ пустой',
+          message: `"${docTitle}" — текст не извлечён, документ пуст или не читаем.`,
+          category: 'warning',
+          link: '/indexing',
+        }).catch(() => {});
         return;
       }
 
@@ -360,7 +414,7 @@ export class DocumentService {
         }),
       );
 
-      const aiText = rawText.slice(0, MAX_AI_CHARS);
+      const aiText = rawText.slice(0, this.maxAiChars);
       try {
         const detectedLanguage = this.detectLanguage(rawText);
         const [summary, formattedText] = await Promise.all([
@@ -382,6 +436,13 @@ export class DocumentService {
           }),
         );
         console.log(`[AI] fileId=${fileId} — AI-обработка завершена`);
+        this.notificationsService.create({
+          userId,
+          title: 'Индексация завершена',
+          message: `"${docTitle}" успешно проиндексирован и доступен для поиска.`,
+          category: 'success',
+          link: '/indexing',
+        }).catch(() => {});
       } catch (aiErr: any) {
         console.error(`[AI] fileId=${fileId} — ошибка AI:`, aiErr.message);
         await this.withRetry('mark processed after ai fail', () =>
@@ -395,19 +456,41 @@ export class DocumentService {
             language: this.detectLanguage(rawText),
           }),
         );
+        this.notificationsService.create({
+          userId,
+          title: 'Индексация без AI',
+          message: `"${docTitle}" проиндексирован, но AI-обработка завершилась с ошибкой.`,
+          category: 'warning',
+          link: '/indexing',
+        }).catch(() => {});
+      }
+      if (jobId) {
+        await this.withRetry('complete index job', () =>
+          this.indexJobsRepository.update(jobId!, {
+            status: 'completed',
+            finished_at: new Date(),
+          }),
+        ).catch((e) => console.error('[INDEX_JOB] complete failed:', e));
       }
     } catch (e: any) {
       console.error(`[PROCESS ERROR] fileId=${fileId}:`, e.message);
-      await this.withRetry('set failed', () =>
-        this.documentFilesRepository.update(fileId, {
-          extraction_status: 'extraction_failed',
-        }),
-      );
-      await this.withRetry('set doc failed', () =>
-        this.documentsRepository.update(documentId, {
-          status: 'extraction_failed',
-        }),
-      );
+      try {
+        await this.documentFilesRepository.update(fileId, { extraction_status: 'extraction_failed' });
+        await this.documentsRepository.update(documentId, { status: 'extraction_failed' });
+      } catch {}
+      if (jobId) {
+        this.indexJobsRepository.update(jobId, {
+          status: 'failed',
+          finished_at: new Date(),
+          error_message: String(e.message).slice(0, 500),
+        }).catch(() => {});
+      }
+      this.notificationsService.create({
+        userId,
+        title: 'Ошибка индексации',
+        message: `"${docTitle}" не удалось проиндексировать. Попробуйте загрузить повторно.`,
+        category: 'warning',
+      }).catch(() => {});
     }
   }
 
@@ -422,6 +505,7 @@ export class DocumentService {
 
     const document = await this.withRetry('save document', () =>
       this.documentsRepository.save({
+        user_id: dto.user_id ? Number(dto.user_id) : null,
         collection_id: dto.collection_id ?? null,
         title: dto.title ?? originalName,
         document_type: this.getDocumentType(mimeType),
@@ -444,12 +528,24 @@ export class DocumentService {
       }),
     );
 
+    const docUserId = dto.user_id ? Number(dto.user_id) : null;
+
     this.processAndSave(
       documentFile.id,
       document.id,
       file.path,
       mimeType,
+      document.title ?? originalName,
+      docUserId,
     ).catch((e) => console.error('[UPLOAD PROCESS ERROR]', e));
+
+    this.notificationsService.create({
+      userId: docUserId,
+      title: 'Документ загружен',
+      message: `"${document.title ?? originalName}" загружен и поставлен в очередь на индексацию.`,
+      category: 'info',
+      link: '/indexing',
+    }).catch(() => {});
 
     return { document, file: documentFile };
   }
@@ -457,58 +553,160 @@ export class DocumentService {
   async extractAllText(): Promise<{ message: string; total: number }> {
     const allFiles = await this.documentFilesRepository.find();
     for (const file of allFiles) {
-      await this.documentFilesRepository.update(file.id, {
-        extraction_status: 'pending',
-      });
-      this.processAndSave(
-        file.id,
-        file.document_id,
-        file.file_path,
-        file.file_type,
-      ).catch((e) => console.error('[RE-EXTRACT-ALL ERROR]', e));
+      await this.documentFilesRepository.update(file.id, { extraction_status: 'pending' });
+      const doc = await this.documentsRepository.findOne({ where: { id: file.document_id } });
+      this.processAndSave(file.id, file.document_id, file.file_path, file.file_type, doc?.title ?? file.file_name, doc?.user_id ?? null, true)
+        .catch((e) => console.error('[RE-EXTRACT-ALL ERROR]', e));
     }
-    return {
-      message: `Переизвлечение запущено для ${allFiles.length} файлов`,
-      total: allFiles.length,
-    };
+    return { message: `Переизвлечение запущено для ${allFiles.length} файлов`, total: allFiles.length };
+  }
+
+  private reindexCancelFlags = new Map<number, boolean>();
+  private reindexActiveSet = new Set<number>();
+
+  cancelCollectionReindex(collectionId: number): void {
+    this.reindexCancelFlags.set(collectionId, true);
+  }
+
+  isReindexActive(collectionId: number): boolean {
+    return this.reindexActiveSet.has(collectionId);
+  }
+
+  async extractCollectionText(collectionId: number): Promise<{ message: string; total: number }> {
+    const docs = await this.documentsRepository.find({ where: { collection_id: collectionId } });
+
+    const colRows = await this.documentsRepository.manager.query(
+      `SELECT name FROM solidsearchdb.document_collections WHERE id = $1`,
+      [collectionId],
+    );
+    const collectionName: string = colRows[0]?.name ?? `#${collectionId}`;
+    const userId: number | null = docs.find(d => d.user_id)?.user_id ?? null;
+
+    const tasks: Array<{ fileId: number; docId: number; filePath: string; fileType: string; title: string; userIdDoc: number | null }> = [];
+
+    for (const doc of docs) {
+      const files = await this.documentFilesRepository.find({ where: { document_id: doc.id } });
+      for (const file of files) {
+        await this.documentFilesRepository.update(file.id, { extraction_status: 'pending' });
+        await this.documentsRepository.update(doc.id, { status: 'processing' });
+        tasks.push({ fileId: file.id, docId: doc.id, filePath: file.file_path, fileType: file.file_type, title: doc.title ?? file.file_name, userIdDoc: doc.user_id ?? null });
+      }
+    }
+
+    const total = tasks.length;
+    this.reindexCancelFlags.set(collectionId, false);
+
+    this.notificationsService.create({
+      userId,
+      title: 'Переиндексация запущена',
+      message: `Коллекция «${collectionName}»: ${total} ${this.pluralFiles(total)} поставлено в очередь.`,
+      category: 'info',
+      link: '/indexing',
+    }).catch(() => {});
+
+    this.reindexActiveSet.add(collectionId);
+
+    (async () => {
+      let done = 0, failed = 0;
+      try {
+        for (const t of tasks) {
+          if (this.reindexCancelFlags.get(collectionId)) {
+            this.reindexCancelFlags.delete(collectionId);
+            this.notificationsService.create({
+              userId,
+              title: 'Переиндексация отменена',
+              message: `Коллекция «${collectionName}»: обработано ${done} из ${total} ${this.pluralFiles(total)}.`,
+              category: 'warning',
+              link: '/indexing',
+            }).catch(() => {});
+            return;
+          }
+          const result = await this.processAndSave(t.fileId, t.docId, t.filePath, t.fileType, t.title, t.userIdDoc, true)
+            .then(() => 'ok' as const)
+            .catch((e) => { console.error('[RE-EXTRACT-COLLECTION ERROR]', e); return 'fail' as const; });
+          if (result === 'ok') done++; else failed++;
+        }
+        this.reindexCancelFlags.delete(collectionId);
+        const msg = failed === 0
+          ? `Коллекция «${collectionName}»: успешно переиндексировано ${done} ${this.pluralFiles(done)}.`
+          : `Коллекция «${collectionName}»: ${done} из ${total} ${this.pluralFiles(total)} переиндексировано, ${failed} с ошибкой.`;
+        this.notificationsService.create({
+          userId,
+          title: failed === 0 ? 'Переиндексация завершена' : 'Переиндексация завершена с ошибками',
+          message: msg,
+          category: failed === 0 ? 'success' : 'warning',
+          link: '/indexing',
+        }).catch(() => {});
+      } finally {
+        this.reindexActiveSet.delete(collectionId);
+      }
+    })().catch(e => console.error('[REINDEX LOOP ERROR]', e));
+
+    return { message: `Переиндексация запущена для ${total} файлов`, total };
+  }
+
+  private pluralFiles(n: number): string {
+    const mod10 = n % 10;
+    const mod100 = n % 100;
+    if (mod10 === 1 && mod100 !== 11) return 'файл';
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return 'файла';
+    return 'файлов';
   }
 
   async extractText(documentId: number): Promise<{ message: string }> {
-    const files = await this.documentFilesRepository.find({
-      where: { document_id: documentId },
-    });
-
+    const files = await this.documentFilesRepository.find({ where: { document_id: documentId } });
     if (!files.length) throw new NotFoundException('Файлы не найдены');
-
+    const doc = await this.documentsRepository.findOne({ where: { id: documentId } });
     for (const file of files) {
-      await this.documentFilesRepository.update(file.id, {
-        extraction_status: 'pending',
-      });
-      this.processAndSave(
-        file.id,
-        documentId,
-        file.file_path,
-        file.file_type,
-      ).catch((e) => console.error('[RE-EXTRACT ERROR]', e));
+      await this.documentFilesRepository.update(file.id, { extraction_status: 'pending' });
+      this.processAndSave(file.id, documentId, file.file_path, file.file_type, doc?.title ?? file.file_name, doc?.user_id ?? null, true)
+        .catch((e) => console.error('[RE-EXTRACT ERROR]', e));
     }
-
     return { message: `Извлечение запущено для ${files.length} файлов` };
   }
 
-  async findall(): Promise<Documents[]> {
-    return await this.documentsRepository
+  async deleteDocument(id: number): Promise<{ message: string }> {
+    const doc = await this.documentsRepository.findOne({ where: { id }, relations: ['files'] });
+    if (!doc) throw new NotFoundException(`Document ${id} not found`);
+
+    for (const file of doc.files ?? []) {
+      if (file.file_path) {
+        try {
+          const fullPath = path.resolve(file.file_path);
+          if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
+        } catch {}
+      }
+    }
+
+    await this.documentFilesRepository.delete({ document_id: id });
+    await this.documentsRepository.delete(id);
+
+    return { message: `Document ${id} deleted` };
+  }
+
+  async findall(userId?: number, limit?: number): Promise<Documents[]> {
+    const qb = this.documentsRepository
       .createQueryBuilder('doc')
       .leftJoin('doc.files', 'f')
       .select([
-        'doc.id', 'doc.collection_id', 'doc.title', 'doc.document_type',
+        'doc.id', 'doc.user_id', 'doc.collection_id', 'doc.title', 'doc.document_type',
         'doc.archive_number', 'doc.document_date', 'doc.author_name',
         'doc.status', 'doc.language', 'doc.created_at',
         'f.id', 'f.document_id', 'f.file_name', 'f.file_type',
         'f.file_size', 'f.page_count', 'f.normalized_text',
         'f.extraction_status', 'f.uploaded_at',
       ])
-      .orderBy('doc.created_at', 'DESC')
-      .getMany();
+      .orderBy('doc.created_at', 'DESC');
+
+    if (userId) {
+      qb.where('(doc.user_id = :userId OR doc.user_id IS NULL)', { userId });
+    }
+
+    if (limit) {
+      qb.limit(limit);
+    }
+
+    return await qb.getMany();
   }
 
   async getCollectionSizes(): Promise<{ collection_id: number; total_size: number }[]> {
@@ -522,6 +720,13 @@ export class DocumentService {
       .getRawMany();
   }
 
+  async getDocumentJobs(documentId: number) {
+    return await this.indexJobsRepository.find({
+      where: { document_id: documentId },
+      order: { started_at: 'ASC' },
+    });
+  }
+
   async findbyid(id: number): Promise<Documents> {
     const document = await this.documentsRepository.findOne({
       where: { id },
@@ -531,8 +736,30 @@ export class DocumentService {
     return document;
   }
 
-  async findByCollectionId(collectionId: number): Promise<Documents[]> {
-    return await this.documentsRepository
+  async findByCollectionId(
+    collectionId: number,
+    page = 1,
+    limit = 20,
+    search?: string,
+    docType?: string,
+  ): Promise<{ data: Documents[]; total: number }> {
+    const countQb = this.documentsRepository
+      .createQueryBuilder('doc')
+      .where('doc.collection_id = :collectionId', { collectionId });
+
+    if (search?.trim()) {
+      countQb.andWhere('LOWER(doc.title) LIKE :search', {
+        search: `%${search.toLowerCase().trim()}%`,
+      });
+    }
+    if (docType && docType !== 'all') {
+      countQb.andWhere("UPPER(COALESCE(doc.document_type, '')) = :docType", {
+        docType: docType.toUpperCase(),
+      });
+    }
+    const total = await countQb.getCount();
+
+    const dataQb = this.documentsRepository
       .createQueryBuilder('doc')
       .leftJoin('doc.files', 'f')
       .select([
@@ -542,9 +769,115 @@ export class DocumentService {
         'f.id', 'f.document_id', 'f.file_name', 'f.file_type',
         'f.file_size', 'f.page_count', 'f.extraction_status', 'f.uploaded_at',
       ])
-      .where('doc.collection_id = :collectionId', { collectionId })
+      .where('doc.collection_id = :collectionId', { collectionId });
+
+    if (search?.trim()) {
+      dataQb.andWhere('LOWER(doc.title) LIKE :search', {
+        search: `%${search.toLowerCase().trim()}%`,
+      });
+    }
+    if (docType && docType !== 'all') {
+      dataQb.andWhere("UPPER(COALESCE(doc.document_type, '')) = :docType", {
+        docType: docType.toUpperCase(),
+      });
+    }
+
+    const data = await dataQb
       .orderBy('doc.created_at', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit)
       .getMany();
+
+    return { data, total };
+  }
+
+  async getCollectionStats(collectionId: number): Promise<{
+    total: number;
+    processed: number;
+    processing: number;
+    failed: number;
+    types: string[];
+  }> {
+    const rawStats = await this.documentsRepository
+      .createQueryBuilder('doc')
+      .select('doc.status', 'status')
+      .addSelect('COUNT(doc.id)', 'count')
+      .where('doc.collection_id = :collectionId', { collectionId })
+      .groupBy('doc.status')
+      .getRawMany();
+
+    let total = 0, processed = 0, processing = 0, failed = 0;
+    for (const row of rawStats) {
+      const n = Number(row.count);
+      total += n;
+      if (row.status === 'processed') processed += n;
+      else if (row.status === 'processing' || row.status === 'pending') processing += n;
+      else if (row.status === 'extraction_failed') failed += n;
+    }
+
+    const rawTypes = await this.documentsRepository
+      .createQueryBuilder('doc')
+      .select('UPPER(doc.document_type)', 'type')
+      .where(
+        "doc.collection_id = :collectionId AND doc.document_type IS NOT NULL AND doc.document_type <> ''",
+        { collectionId },
+      )
+      .distinct(true)
+      .getRawMany();
+
+    const types = rawTypes.map((r: any) => r.type as string).filter(Boolean);
+
+    return { total, processed, processing, failed, types };
+  }
+
+  async getCollectionFiles(collectionId: number): Promise<{ filePath: string; fileName: string; missing?: boolean; docTitle?: string; rawPath?: string }[]> {
+    const docs = await this.documentsRepository.find({
+      where: { collection_id: collectionId },
+      relations: ['files'],
+    });
+    const result: { filePath: string; fileName: string; missing?: boolean; docTitle?: string; rawPath?: string }[] = [];
+    const usedNames = new Set<string>();
+    const backendRoot = path.resolve(process.cwd());
+    const uploadsDir = path.join(backendRoot, 'uploads', 'documents');
+
+    const resolveFilePath = (rawPath: string): string | null => {
+      const normalized = rawPath.replace(/\\/g, '/');
+      const basename = path.basename(rawPath);
+      const candidates = [
+        path.resolve(rawPath),
+        path.join(backendRoot, normalized),
+        path.join(backendRoot, rawPath),
+        path.resolve(__dirname, '../../..', normalized),
+        path.join(uploadsDir, basename),
+      ];
+      return candidates.find(p => fs.existsSync(p)) ?? null;
+    };
+
+    for (const doc of docs) {
+      if (!doc.files?.length) {
+        result.push({ filePath: '', fileName: doc.title || `document_${doc.id}`, missing: true, docTitle: doc.title, rawPath: '' });
+        continue;
+      }
+      for (const file of doc.files) {
+        if (!file.file_path?.trim()) {
+          result.push({ filePath: '', fileName: file.file_name || `doc_${doc.id}`, missing: true, docTitle: doc.title, rawPath: '' });
+          continue;
+        }
+        const resolved = resolveFilePath(file.file_path);
+        const ext = path.extname(file.file_name || file.file_path);
+        const base = path.basename(file.file_name || file.file_path, ext);
+        let name = `${base}${ext}`;
+        if (usedNames.has(name)) name = `${base}_${doc.id}${ext}`;
+        usedNames.add(name);
+        if (resolved) {
+          result.push({ filePath: resolved, fileName: name, rawPath: file.file_path });
+        } else {
+          console.warn('[DOWNLOAD] Not found:', file.file_path);
+          result.push({ filePath: '', fileName: name, missing: true, docTitle: doc.title, rawPath: file.file_path });
+        }
+      }
+    }
+    return result;
   }
 
   async findByIds(ids: number[]): Promise<Documents[]> {
@@ -614,7 +947,7 @@ export class DocumentService {
 
   async searchDocuments(
     query: string,
-    filters?: { period?: string; source?: string; format?: string },
+    filters?: { period?: string; source?: string; format?: string; formats?: string; collection?: string },
   ): Promise<Documents[]> {
     const stopWords = new Set([
       'найди', 'найти', 'покажи', 'документ', 'документы', 'файл', 'файлы',
@@ -684,9 +1017,21 @@ export class DocumentService {
       }
     }
 
-    if (filters?.format && filters.format !== 'all') {
-      const fmt = filters.format.toLowerCase();
-      qb.andWhere('LOWER(f.file_name) LIKE :fmt', { fmt: `%.${fmt}` });
+    const activeFormats = this.resolveFormats(filters);
+    if (activeFormats.length > 0) {
+      const fmtConditions = activeFormats
+        .map((_, i) => `LOWER(f.file_name) LIKE :fmt${i}`)
+        .join(' OR ');
+      const fmtParams: Record<string, string> = {};
+      activeFormats.forEach((fmt, i) => { fmtParams[`fmt${i}`] = `%.${fmt}`; });
+      qb.andWhere(`(${fmtConditions})`, fmtParams);
+    }
+
+    if (filters?.collection && filters.collection !== 'all') {
+      const colId = parseInt(filters.collection, 10);
+      if (!isNaN(colId)) {
+        qb.andWhere('doc.collection_id = :colId', { colId });
+      }
     }
 
     return await qb
@@ -695,9 +1040,19 @@ export class DocumentService {
       .getMany();
   }
 
+  private resolveFormats(filters?: { format?: string; formats?: string }): string[] {
+    if (filters?.formats) {
+      return filters.formats.split(',').map((f) => f.trim().toLowerCase()).filter(Boolean);
+    }
+    if (filters?.format && filters.format !== 'all') {
+      return [filters.format.toLowerCase()];
+    }
+    return [];
+  }
+
   applyFiltersToList(
     docs: Documents[],
-    filters?: { period?: string; source?: string; format?: string },
+    filters?: { period?: string; source?: string; format?: string; formats?: string; collection?: string },
   ): Documents[] {
     if (!filters) return docs;
     let result = docs;
@@ -712,11 +1067,20 @@ export class DocumentService {
       }
     }
 
-    if (filters.format && filters.format !== 'all') {
-      const fmt = filters.format.toLowerCase();
+    const activeFormats = this.resolveFormats(filters);
+    if (activeFormats.length > 0) {
       result = result.filter((doc) =>
-        doc.files?.some((f) => f.file_name?.toLowerCase().endsWith(`.${fmt}`)),
+        doc.files?.some((f) =>
+          activeFormats.some((fmt) => f.file_name?.toLowerCase().endsWith(`.${fmt}`))
+        ),
       );
+    }
+
+    if (filters.collection && filters.collection !== 'all') {
+      const colId = parseInt(filters.collection, 10);
+      if (!isNaN(colId)) {
+        result = result.filter((doc) => doc.collection_id === colId);
+      }
     }
 
     return result;

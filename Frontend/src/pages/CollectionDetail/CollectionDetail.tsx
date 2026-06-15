@@ -1,21 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import axios from "axios";
 import Layout from "../../components/Layout/Layout";
-import { DocumentsApi, Document } from "@/api/documentsApi";
+import { documentsApi, Document, CollectionStats } from "@/api/documentsApi";
+import { collectionsApi, Collection } from "@/api/collectionsApi";
 import ConfirmModal from "../../components/ConfirmModal/ConfirmModal";
 import ErrorModal from "../../components/ErrorModal/ErrorModal";
-
-interface Collection {
-  id: number;
-  name: string;
-  description: string;
-  code: string;
-  is_active: boolean;
-  source_id: number;
-}
-
-const BASE = "http://localhost:3001";
+const PAGE_SIZE = 10;
 
 const CollectionDetail = () => {
   const { collectionId } = useParams<{ collectionId: string }>();
@@ -23,9 +13,16 @@ const CollectionDetail = () => {
 
   const [collection, setCollection] = useState<Collection | null>(null);
   const [documents, setDocuments] = useState<Document[]>([]);
+  const [stats, setStats] = useState<CollectionStats | null>(null);
+  const [totalCount, setTotalCount] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [docsLoading, setDocsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedType, setSelectedType] = useState("all");
+
+  const appliedSearchRef = useRef("");
+  const appliedTypeRef = useRef("all");
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [allDocuments, setAllDocuments] = useState<Document[]>([]);
@@ -33,12 +30,28 @@ const CollectionDetail = () => {
   const [adding, setAdding] = useState<number | null>(null);
   const [loadingAll, setLoadingAll] = useState(false);
 
+  const [togglingActive, setTogglingActive] = useState(false);
+  const [reindexing, setReindexing] = useState(false);
+  const [reindexDone, setReindexDone] = useState(false);
+  const [reindexActive, setReindexActive] = useState(() => {
+    try {
+      const saved = localStorage.getItem("activeReindexIds");
+      const ids: number[] = saved ? JSON.parse(saved) : [];
+      return ids.includes(Number(collectionId));
+    } catch {
+      return false;
+    }
+  });
+  const [cancelling, setCancelling] = useState(false);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [removeTarget, setRemoveTarget] = useState<Document | null>(null);
   const [removing, setRemoving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [showMoreDropdown, setShowMoreDropdown] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
+  const tableRef = useRef<HTMLDivElement>(null);
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!showMoreDropdown) return;
@@ -52,6 +65,112 @@ const CollectionDetail = () => {
   }, [showMoreDropdown]);
 
   const id = Number(collectionId);
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+
+  const setActiveReindex = (active: boolean) => {
+    try {
+      const saved = localStorage.getItem("activeReindexIds");
+      const ids: number[] = saved ? JSON.parse(saved) : [];
+      const next = active
+        ? [...new Set([...ids, id])]
+        : ids.filter((x) => x !== id);
+      localStorage.setItem("activeReindexIds", JSON.stringify(next));
+    } catch {}
+    setReindexActive(active);
+  };
+
+  useEffect(() => {
+    if (!reindexActive) {
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+      return;
+    }
+    if (pollRef.current) return;
+    pollRef.current = setInterval(async () => {
+      try {
+        const s = await documentsApi.reindexStatus(id);
+        if (!s.active) setActiveReindex(false);
+      } catch {}
+    }, 5000);
+    return () => {
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+    };
+  }, [reindexActive, id]);
+
+  const fetchDocs = async (page: number, search: string, type: string) => {
+    setDocsLoading(true);
+    try {
+      const result = await documentsApi.getByCollectionId(
+        id,
+        page,
+        PAGE_SIZE,
+        search,
+        type,
+      );
+      setDocuments(result.data);
+      setTotalCount(result.total);
+    } catch (e) {
+      console.error("Ошибка загрузки документов", e);
+    } finally {
+      setDocsLoading(false);
+    }
+  };
+
+  const fetchStats = async () => {
+    try {
+      const s = await documentsApi.getCollectionStats(id);
+      setStats(s);
+    } catch {}
+  };
+
+  const handleToggleActive = async () => {
+    if (!collection) return;
+    setTogglingActive(true);
+    try {
+      await collectionsApi.setActive(id, !collection.is_active);
+      setCollection((prev) =>
+        prev ? { ...prev, is_active: !prev.is_active } : prev,
+      );
+    } catch {
+      setErrorMessage("Не удалось изменить статус коллекции.");
+    } finally {
+      setTogglingActive(false);
+    }
+  };
+
+  const handleReindex = async () => {
+    if (!id) return;
+    setReindexing(true);
+    setReindexDone(false);
+    try {
+      await documentsApi.reindexCollection(id);
+      setReindexDone(true);
+      setActiveReindex(true);
+      setTimeout(() => setReindexDone(false), 3000);
+    } catch {
+      setErrorMessage("Не удалось запустить переиндексацию.");
+    } finally {
+      setReindexing(false);
+    }
+  };
+
+  const handleCancelReindex = async () => {
+    if (!id) return;
+    setCancelling(true);
+    try {
+      await documentsApi.cancelReindex(id);
+      setActiveReindex(false);
+    } catch {
+      setErrorMessage("Не удалось отменить переиндексацию.");
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   useEffect(() => {
     if (!id) {
@@ -61,28 +180,36 @@ const CollectionDetail = () => {
 
     const load = async () => {
       try {
-        const [colRes, docs] = await Promise.allSettled([
-          axios.get(`${BASE}/document_collection`),
-          DocumentsApi.getByCollectionId(id),
+        const [colRes, statsRes, docsRes] = await Promise.allSettled([
+          collectionsApi.getAll(),
+          documentsApi.getCollectionStats(id),
+          documentsApi.getByCollectionId(id, 1, PAGE_SIZE, "", "all"),
         ]);
 
         if (colRes.status === "rejected") {
-          setLoadError(`Ошибка загрузки коллекций: ${colRes.reason?.response?.data?.message ?? colRes.reason?.message ?? "неизвестная ошибка"}`);
+          setLoadError(
+            `Ошибка загрузки коллекций: ${colRes.reason?.message ?? "неизвестная ошибка"}`,
+          );
           return;
         }
 
-        if (docs.status === "rejected") {
-          setLoadError(`Ошибка загрузки документов: ${docs.reason?.response?.data?.message ?? docs.reason?.message ?? "неизвестная ошибка"}`);
-          return;
-        }
-
-        const found = colRes.value.data.find((c: Collection) => c.id === id);
+        const found = colRes.value.find((c: Collection) => c.id === id);
         if (!found) {
           setLoadError(`Коллекция #${id} не найдена в базе данных`);
           return;
         }
         setCollection(found);
-        setDocuments(docs.value);
+
+        if (statsRes.status === "fulfilled") setStats(statsRes.value);
+
+        if (docsRes.status === "fulfilled") {
+          setDocuments(docsRes.value.data);
+          setTotalCount(docsRes.value.total);
+        } else {
+          setLoadError(
+            `Ошибка загрузки документов: ${docsRes.reason?.response?.data?.message ?? docsRes.reason?.message ?? "неизвестная ошибка"}`,
+          );
+        }
       } catch (e: any) {
         setLoadError(e?.message ?? "Неизвестная ошибка");
       } finally {
@@ -93,13 +220,36 @@ const CollectionDetail = () => {
     load();
   }, [id, navigate]);
 
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    searchTimerRef.current = setTimeout(() => {
+      appliedSearchRef.current = value;
+      setCurrentPage(1);
+      fetchDocs(1, value, appliedTypeRef.current);
+    }, 300);
+  };
+
+  const handleTypeChange = (type: string) => {
+    setSelectedType(type);
+    setShowMoreDropdown(false);
+    appliedTypeRef.current = type;
+    setCurrentPage(1);
+    fetchDocs(1, appliedSearchRef.current, type);
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    fetchDocs(page, appliedSearchRef.current, appliedTypeRef.current);
+    tableRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   const openAddModal = async () => {
     setShowAddModal(true);
     setLoadingAll(true);
     try {
-      const all = await DocumentsApi.getAll();
-      const existingIds = new Set(documents.map((d) => d.id));
-      setAllDocuments(all.filter((d) => !existingIds.has(d.id)));
+      const all = await documentsApi.getAll();
+      setAllDocuments(all.filter((d) => !d.collection_id));
     } catch (e) {
       console.error(e);
     } finally {
@@ -110,22 +260,40 @@ const CollectionDetail = () => {
   const handleAddDocument = async (doc: Document) => {
     setAdding(doc.id);
     try {
-      const updated = await DocumentsApi.addToCollection(doc.id, id);
-      setDocuments((prev) => [updated, ...prev]);
+      await documentsApi.addToCollection(doc.id, id);
       setAllDocuments((prev) => prev.filter((d) => d.id !== doc.id));
+      await Promise.all([
+        fetchDocs(
+          currentPage,
+          appliedSearchRef.current,
+          appliedTypeRef.current,
+        ),
+        fetchStats(),
+      ]);
     } catch {
-      setErrorMessage("Не удалось добавить документ в коллекцию. Проверьте соединение с сервером и попробуйте снова.");
+      setErrorMessage(
+        "Не удалось добавить документ в коллекцию. Проверьте соединение с сервером и попробуйте снова.",
+      );
     } finally {
       setAdding(null);
     }
   };
+
   const handleConfirmRemove = async () => {
     if (!removeTarget) return;
     setRemoving(true);
     try {
-      await DocumentsApi.addToCollection(removeTarget.id, 0);
-      setDocuments((prev) => prev.filter((d) => d.id !== removeTarget.id));
+      await documentsApi.addToCollection(removeTarget.id, 0);
       setRemoveTarget(null);
+      const nextPage =
+        documents.length === 1 && currentPage > 1
+          ? currentPage - 1
+          : currentPage;
+      if (nextPage !== currentPage) setCurrentPage(nextPage);
+      await Promise.all([
+        fetchDocs(nextPage, appliedSearchRef.current, appliedTypeRef.current),
+        fetchStats(),
+      ]);
     } catch {
       console.error("Ошибка при удалении документа из коллекции");
     } finally {
@@ -186,39 +354,21 @@ const CollectionDetail = () => {
   const getDocType = (doc: Document) =>
     doc.document_type || doc.files?.[0]?.file_type || "—";
 
-  const types = Array.from(
-    new Set(
-      documents
-        .map((d) => getDocType(d).toUpperCase())
-        .filter((t) => t !== "—"),
-    ),
-  );
-
-  const filteredDocuments = documents.filter((doc) => {
-    const matchSearch = doc.title
-      ?.toLowerCase()
-      .includes(searchTerm.toLowerCase());
-    const matchType =
-      selectedType === "all" || getDocType(doc).toUpperCase() === selectedType;
-    return matchSearch && matchType;
-  });
+  const availableTypes = stats?.types ?? [];
 
   const filteredAddDocs = allDocuments.filter((doc) =>
     doc.title?.toLowerCase().includes(addSearch.toLowerCase()),
   );
 
+  const pageFrom = totalCount === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
+  const pageTo = Math.min(currentPage * PAGE_SIZE, totalCount);
+
   if (loading) {
     return (
       <Layout>
-        <div
-          style={{
-            textAlign: "center",
-            padding: "80px",
-            color: "rgba(255,255,255,0.5)",
-          }}
-        >
+        <div className="page-loading-state">
           <i className="fa fa-spinner fa-spin fa-2x" />
-          <p style={{ marginTop: 16 }}>Загрузка...</p>
+          <p>Загрузка...</p>
         </div>
       </Layout>
     );
@@ -227,10 +377,12 @@ const CollectionDetail = () => {
   if (loadError) {
     return (
       <Layout>
-        <div style={{ padding: "60px 24px", textAlign: "center" }}>
-          <i className="fa fa-exclamation-triangle fa-3x" style={{ color: "#ef4444", marginBottom: 16, display: "block" }} />
-          <p style={{ color: "#ef4444", fontSize: 15, marginBottom: 8 }}>{loadError}</p>
-          <Link to="/collections" style={{ color: "#a0a0a0", fontSize: 13 }}>← Вернуться к коллекциям</Link>
+        <div className="page-error-state">
+          <i className="fa fa-exclamation-triangle fa-3x page-error-icon" />
+          <p className="page-error-text">{loadError}</p>
+          <Link to="/collections" className="page-error-link">
+            ← Вернуться к коллекциям
+          </Link>
         </div>
       </Layout>
     );
@@ -247,40 +399,89 @@ const CollectionDetail = () => {
           <span>{collection.name}</span>
         </div>
 
+        {!collection.is_active && (
+          <div className="collection-inactive-banner">
+            <i className="fa fa-lock" />
+            <span>
+              Коллекция деактивирована — добавление документов недоступно.
+              Активируйте коллекцию чтобы продолжить работу.
+            </span>
+          </div>
+        )}
+
         <div className="collection-header-detail">
           <div className="collection-header-content">
             <div className="collection-title-section">
               <h1>
-                <i className="fa fa-folder-open" style={{ marginRight: 10 }} />
+                <i className="fa fa-folder-open heading-icon" />
                 {collection.name}
               </h1>
               <p className="collection-description">{collection.description}</p>
               <div className="collection-meta">
                 <span>
-                  <i className="fa fa-file-text-o" /> {documents.length}{" "}
+                  <i className="fa fa-file-text-o" /> {stats?.total ?? 0}{" "}
                   документов
                 </span>
-                <span>
+                <span
+                  className={`collection-status-badge ${collection.is_active ? "collection-status-badge--active" : "collection-status-badge--inactive"}`}
+                >
                   <i
-                    className="fa fa-circle"
-                    style={{
-                      color: collection.is_active ? "#10b981" : "#ef4444",
-                      marginRight: 4,
-                    }}
+                    className={`fa fa-${collection.is_active ? "check-circle" : "ban"}`}
                   />
                   {collection.is_active ? "Активна" : "Неактивна"}
                 </span>
               </div>
             </div>
             <div className="collection-actions-detail">
-              <button className="btn-upload" onClick={openAddModal}>
+              <button
+                className="btn-upload"
+                onClick={openAddModal}
+                disabled={!collection.is_active}
+                title={
+                  !collection.is_active ? "Коллекция деактивирована" : undefined
+                }
+              >
                 <i className="fa fa-plus" /> Добавить документ
               </button>
               <button
                 className="btn-reindex-detail"
-                onClick={() => alert("Переиндексация запущена")}
+                onClick={handleReindex}
+                disabled={reindexing || reindexActive}
               >
-                <i className="fa fa-refresh" /> Переиндексировать
+                <i
+                  className={`fa ${reindexing ? "fa-spinner fa-spin" : reindexDone ? "fa-check" : "fa-refresh"}`}
+                />{" "}
+                {reindexing
+                  ? "Запуск..."
+                  : reindexDone
+                    ? "Запущено!"
+                    : "Переиндексировать"}
+              </button>
+              <a
+                className="btn-reindex-detail"
+                style={{ textDecoration: "none" }}
+                href={`http://localhost:3001/documents/collection/${id}/download`}
+              >
+                <i className="fa fa-download" /> Скачать архив
+              </a>
+              <button
+                className={`btn-toggle-active${collection.is_active ? " btn-toggle-active--on" : " btn-toggle-active--off"}`}
+                onClick={handleToggleActive}
+                disabled={togglingActive}
+                title={
+                  collection.is_active
+                    ? "Деактивировать коллекцию"
+                    : "Активировать коллекцию"
+                }
+              >
+                {togglingActive ? (
+                  <i className="fa fa-spinner fa-spin" />
+                ) : (
+                  <i
+                    className={`fa fa-${collection.is_active ? "toggle-on" : "toggle-off"}`}
+                  />
+                )}{" "}
+                {collection.is_active ? "Деактивировать" : "Активировать"}
               </button>
             </div>
           </div>
@@ -288,32 +489,39 @@ const CollectionDetail = () => {
 
         <div className="stats-mini-grid">
           <div className="stat-mini-card total">
-            <div className="stat-mini-value">{documents.length}</div>
+            <div className="stat-mini-value">{stats?.total ?? 0}</div>
             <div className="stat-mini-label">Всего документов</div>
           </div>
           <div className="stat-mini-card indexed">
-            <div className="stat-mini-value">
-              {documents.filter((d) => d.status === "processed").length}
-            </div>
+            <div className="stat-mini-value">{stats?.processed ?? 0}</div>
             <div className="stat-mini-label">Проиндексировано</div>
           </div>
           <div className="stat-mini-card processing">
-            <div className="stat-mini-value">
-              {
-                documents.filter(
-                  (d) => d.status === "processing" || d.status === "pending",
-                ).length
-              }
-            </div>
+            <div className="stat-mini-value">{stats?.processing ?? 0}</div>
             <div className="stat-mini-label">В обработке</div>
           </div>
           <div className="stat-mini-card errors">
-            <div className="stat-mini-value">
-              {documents.filter((d) => d.status === "extraction_failed").length}
-            </div>
+            <div className="stat-mini-value">{stats?.failed ?? 0}</div>
             <div className="stat-mini-label">Ошибки</div>
           </div>
         </div>
+
+        {reindexActive && (
+          <div className="reindex-progress-banner">
+            <i className="fa fa-spinner fa-spin" />
+            <span>Переиндексация выполняется...</span>
+            <button
+              className="btn-cancel-reindex"
+              onClick={handleCancelReindex}
+              disabled={cancelling}
+            >
+              <i
+                className={`fa ${cancelling ? "fa-spinner fa-spin" : "fa-times"}`}
+              />
+              {cancelling ? "Отмена..." : "Отменить переиндексацию"}
+            </button>
+          </div>
+        )}
 
         <div className="documents-controls">
           <div className="search-box">
@@ -322,51 +530,49 @@ const CollectionDetail = () => {
               type="text"
               placeholder="Поиск по документам..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
             />
           </div>
           <div className="filter-buttons-group">
             <button
               className={`filter-btn ${selectedType === "all" ? "active" : ""}`}
-              onClick={() => setSelectedType("all")}
+              onClick={() => handleTypeChange("all")}
             >
               Все
             </button>
-            {types.slice(0, 5).map((type) => (
+            {availableTypes.slice(0, 5).map((type) => (
               <button
                 key={type}
                 className={`filter-btn ${selectedType === type ? "active" : ""}`}
-                onClick={() => setSelectedType(type)}
+                onClick={() => handleTypeChange(type)}
               >
                 {type}
               </button>
             ))}
-            {types.length > 5 && (
+            {availableTypes.length > 5 && (
               <div className="filter-more-wrap" ref={moreRef}>
                 <button
                   className={`filter-btn filter-btn-more ${
-                    types.slice(5).includes(selectedType) ? "active" : ""
+                    availableTypes.slice(5).includes(selectedType)
+                      ? "active"
+                      : ""
                   }`}
                   onClick={() => setShowMoreDropdown((v) => !v)}
                 >
-                  {types.slice(5).includes(selectedType)
+                  {availableTypes.slice(5).includes(selectedType)
                     ? selectedType
                     : "Другие"}
                   <i
-                    className={`fa fa-chevron-${showMoreDropdown ? "up" : "down"}`}
-                    style={{ marginLeft: 5, fontSize: 10 }}
+                    className={`fa fa-chevron-${showMoreDropdown ? "up" : "down"} filter-chevron`}
                   />
                 </button>
                 {showMoreDropdown && (
                   <div className="filter-more-dropdown">
-                    {types.slice(5).map((type) => (
+                    {availableTypes.slice(5).map((type) => (
                       <button
                         key={type}
                         className={`filter-more-item ${selectedType === type ? "active" : ""}`}
-                        onClick={() => {
-                          setSelectedType(type);
-                          setShowMoreDropdown(false);
-                        }}
+                        onClick={() => handleTypeChange(type)}
                       >
                         {type}
                       </button>
@@ -378,8 +584,15 @@ const CollectionDetail = () => {
           </div>
         </div>
 
-        <div className="documents-table-wrapper">
-          <table className="documents-table">
+        <div className="documents-table-wrapper" ref={tableRef}>
+          {docsLoading && (
+            <div className="docs-page-loading">
+              <i className="fa fa-spinner fa-spin" /> Загрузка...
+            </div>
+          )}
+          <table
+            className={`documents-table${docsLoading ? " docs-table--faded" : ""}`}
+          >
             <thead>
               <tr>
                 <th>Название</th>
@@ -392,7 +605,7 @@ const CollectionDetail = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredDocuments.length === 0 ? (
+              {documents.length === 0 && !docsLoading ? (
                 <tr>
                   <td colSpan={7} className="empty-state">
                     <i className="fa fa-inbox" />
@@ -400,11 +613,11 @@ const CollectionDetail = () => {
                   </td>
                 </tr>
               ) : (
-                filteredDocuments.map((doc) => (
+                documents.map((doc) => (
                   <tr
                     key={doc.id}
                     onClick={() => navigate(`/document/${doc.id}`)}
-                    style={{ cursor: "pointer" }}
+                    className="tr-clickable"
                     title="Открыть документ"
                   >
                     <td>
@@ -418,9 +631,7 @@ const CollectionDetail = () => {
                         {getDocType(doc).toUpperCase()}
                       </span>
                     </td>
-                    <td style={{ textAlign: "center" }}>
-                      {doc.files?.length ?? 0}
-                    </td>
+                    <td className="td-center">{doc.files?.length ?? 0}</td>
                     <td>{getTotalSize(doc.files)}</td>
                     <td>
                       {doc.document_date
@@ -450,6 +661,67 @@ const CollectionDetail = () => {
             </tbody>
           </table>
         </div>
+
+        {totalPages > 1 && (
+          <div className="collection-pagination">
+            <span className="pagination-info">
+              {pageFrom}–{pageTo} из {totalCount} документов
+            </span>
+            <div className="history-pagination-controls">
+              <button
+                className="history-page-btn history-page-arrow"
+                disabled={currentPage === 1}
+                onClick={() => handlePageChange(1)}
+                title="В начало"
+              >
+                <i className="fa fa-angle-double-left" />
+              </button>
+              <button
+                className="history-page-btn history-page-arrow"
+                disabled={currentPage === 1}
+                onClick={() => handlePageChange(currentPage - 1)}
+                title="Предыдущая"
+              >
+                <i className="fa fa-chevron-left" />
+              </button>
+              {(() => {
+                const pages =
+                  totalPages <= 3
+                    ? Array.from({ length: totalPages }, (_, i) => i + 1)
+                    : [
+                        Math.min(Math.max(currentPage, 2), totalPages - 1) - 1,
+                        Math.min(Math.max(currentPage, 2), totalPages - 1),
+                        Math.min(Math.max(currentPage, 2), totalPages - 1) + 1,
+                      ];
+                return pages.map((p) => (
+                  <button
+                    key={p}
+                    className={`history-page-btn${currentPage === p ? " active" : ""}`}
+                    onClick={() => handlePageChange(p)}
+                  >
+                    {p}
+                  </button>
+                ));
+              })()}
+              <button
+                className="history-page-btn history-page-arrow"
+                disabled={currentPage === totalPages}
+                onClick={() => handlePageChange(currentPage + 1)}
+                title="Следующая"
+              >
+                <i className="fa fa-chevron-right" />
+              </button>
+              <button
+                className="history-page-btn history-page-arrow"
+                disabled={currentPage === totalPages}
+                onClick={() => handlePageChange(totalPages)}
+                title="В конец"
+              >
+                <i className="fa fa-angle-double-right" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {showAddModal && (
@@ -457,7 +729,7 @@ const CollectionDetail = () => {
           <div className="add-doc-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>
-                <i className="fa fa-plus-circle" style={{ marginRight: 8 }} />
+                <i className="fa fa-plus-circle heading-icon" />
                 Добавить документ
               </h2>
               <button
@@ -498,7 +770,7 @@ const CollectionDetail = () => {
                   <i className="fa fa-inbox fa-2x" />
                   <p>
                     {allDocuments.length === 0
-                      ? "Все документы уже в этой коллекции"
+                      ? "Все свободные документы уже добавлены в коллекции"
                       : "Ничего не найдено"}
                   </p>
                 </div>

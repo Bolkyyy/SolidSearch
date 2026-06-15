@@ -21,4 +21,8 @@ export class CreateHistoryDto {
 
     @IsOptional()
     filters_json?: any;
+
+    @IsOptional()
+    @IsNumber()
+    response_time_ms?: number;
 }

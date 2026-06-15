@@ -169,13 +169,14 @@ export class AiService {
     query: string,
     userId: number | undefined,
     res: Response,
-    filters?: { period?: string; source?: string; format?: string },
+    filters?: { period?: string; source?: string; format?: string; formats?: string; collection?: string },
   ): Promise<void> {
     const send = (data: object) => {
       res.write(`data: ${JSON.stringify(data)}\n\n`);
       if (typeof (res as any).flush === 'function') (res as any).flush();
     };
 
+    const startTime = Date.now();
     try {
       const { client, model, provider } = await this.getClient();
 
@@ -230,6 +231,11 @@ export class AiService {
       }
 
       if (documents.length === 0) {
+        if (savedQuery?.id) {
+          this.historyService
+            .updateResponseTime(savedQuery.id, Date.now() - startTime)
+            .catch((e) => console.error('[RESPONSE TIME] update failed:', e.message));
+        }
         send({ type: 'done' });
         res.end();
         return;
@@ -276,6 +282,12 @@ export class AiService {
         } catch (dbErr) {
           console.error('[ANSWER SAVE ERROR]', dbErr);
         }
+      }
+
+      if (savedQuery?.id) {
+        this.historyService
+          .updateResponseTime(savedQuery.id, Date.now() - startTime)
+          .catch((e) => console.error('[RESPONSE TIME] update failed:', e.message));
       }
 
       send({ type: 'done' });

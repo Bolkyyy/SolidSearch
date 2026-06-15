@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Delete, Body, Param, ParseIntPipe,} from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, ParseIntPipe,} from '@nestjs/common';
 import { DocumentCollectionService } from './document_collection.service';
 
 export class CreateCollectionDto {
@@ -23,6 +23,11 @@ export class DocumentCollectionController {
   @Post()
   async create(@Body() dto: CreateCollectionDto) {
     return await this.documentCollectionService.create(dto);
+  }
+
+  @Patch(':id')
+  async update(@Param('id', ParseIntPipe) id: number, @Body() dto: Partial<CreateCollectionDto>) {
+    return await this.documentCollectionService.update(id, dto);
   }
 
   @Delete(':id')

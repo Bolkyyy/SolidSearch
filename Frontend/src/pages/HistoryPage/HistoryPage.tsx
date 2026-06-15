@@ -1,75 +1,76 @@
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "../../components/Layout/Layout";
 import ErrorToast from "../../components/ErrorToast/ErrorToast";
 import ConfirmModal from "../../components/ConfirmModal/ConfirmModal";
 import { HistoryItem, historyApi } from "@/api/historyApi";
+import { session } from "@/utils/session";
 
-type FilterMap = { period?: string; source?: string; format?: string };
-
-const FILTER_LABELS: Record<string, string> = {
-  period: "Период",
-  source: "Источник",
-  format: "Формат",
+type FilterMap = {
+  period?: string;
+  source?: string;
+  format?: string;
+  formats?: string;
+  collection?: string;
 };
 
-const FILTER_COLORS: Record<string, string> = {
-  period: "filter-badge-period",
-  source: "filter-badge-source",
-  format: "filter-badge-format",
+const FILTER_META: Record<string, { label: string; icon: string; cls: string }> = {
+  period:     { label: "Период",     icon: "fa-calendar-alt", cls: "filter-badge-period" },
+  source:     { label: "Источник",   icon: "fa-database",     cls: "filter-badge-source" },
+  format:     { label: "Формат",     icon: "fa-file-alt",     cls: "filter-badge-format" },
+  formats:    { label: "Форматы",    icon: "fa-file-alt",     cls: "filter-badge-format" },
+  collection: { label: "Коллекция", icon: "fa-folder",       cls: "filter-badge-collection" },
 };
 
 const FiltersBadges = ({ filters }: { filters?: FilterMap | null }) => {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [open]);
-
-  if (!filters) return <span className="history-no-filters">—</span>;
+  if (!filters) return <span className="history-no-filters">Без фильтров</span>;
 
   const active = Object.entries(filters).filter(
     ([, v]) => v && v !== "all",
   ) as [string, string][];
 
-  if (active.length === 0) return <span className="history-no-filters">—</span>;
-
-  const [first, ...rest] = active;
+  if (active.length === 0) return <span className="history-no-filters">Без фильтров</span>;
 
   return (
-    <div className="filter-badges-wrap" ref={ref}>
-      <span className={`filter-badge ${FILTER_COLORS[first[0]]}`}>
-        {FILTER_LABELS[first[0]]}: {first[1]}
-      </span>
-
-      {rest.length > 0 && (
-        <>
-          <button
-            className="filter-badge-more"
-            onClick={() => setOpen((p) => !p)}
-          >
-            +{rest.length}
-          </button>
-          {open && (
-            <div className="filter-popup">
-              <div className="filter-popup-title">Все фильтры</div>
-              {active.map(([key, val]) => (
-                <div key={key} className="filter-popup-row">
-                  <span className={`filter-badge ${FILTER_COLORS[key]}`}>
-                    {FILTER_LABELS[key]}: {val}
-                  </span>
-                </div>
+    <div className="filter-badges-wrap">
+      {active.map(([key, val]) => {
+        if (key === "formats") {
+          const all = val.split(",").map((f) => f.trim()).filter(Boolean);
+          const shown = all.slice(0, 2);
+          const rest = all.slice(2);
+          return (
+            <span key={key} className="filter-formats-group">
+              {shown.map((fmt) => (
+                <span key={fmt} className="filter-badge filter-badge-format">
+                  <i className="fas fa-file-alt filter-badge-icon" />
+                  <span className="filter-badge-val">{fmt}</span>
+                </span>
               ))}
-            </div>
-          )}
-        </>
-      )}
+              {rest.length > 0 && (
+                <span className="filter-more-wrap">
+                  <span className="filter-more-circle">+{rest.length}</span>
+                  <span className="filter-more-tooltip">
+                    <span className="filter-more-title">Ещё форматы</span>
+                    {rest.map((fmt) => (
+                      <span key={fmt} className="filter-more-fmt">{fmt}</span>
+                    ))}
+                  </span>
+                </span>
+              )}
+            </span>
+          );
+        }
+
+        const meta = FILTER_META[key] ?? { label: key, icon: "fa-tag", cls: "filter-badge-default" };
+        return (
+          <span key={key} className={`filter-badge ${meta.cls}`}>
+            <i className={`fas ${meta.icon} filter-badge-icon`} />
+            <span className="filter-badge-label">{meta.label}</span>
+            <span className="filter-badge-sep">·</span>
+            <span className="filter-badge-val">{val}</span>
+          </span>
+        );
+      })}
     </div>
   );
 };
@@ -98,7 +99,7 @@ const HistoryPage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const userId = localStorage.getItem("userId");
+    const userId = session.getUserId();
     if (!userId) return;
     historyApi
       .getByUserId(Number(userId))
@@ -123,32 +124,27 @@ const HistoryPage = () => {
   );
 
   const pageNumbers = useMemo(() => {
-    if (totalPages <= 7)
-      return Array.from({ length: totalPages }, (_, i) => i + 1);
-    const pages: (number | "...")[] = [1];
-    if (currentPage > 3) pages.push("...");
-    for (
-      let i = Math.max(2, currentPage - 1);
-      i <= Math.min(totalPages - 1, currentPage + 1);
-      i++
-    )
-      pages.push(i);
-    if (currentPage < totalPages - 2) pages.push("...");
-    pages.push(totalPages);
-    return pages;
+    if (totalPages <= 3) return Array.from({ length: totalPages }, (_, i) => i + 1);
+    const mid = Math.min(Math.max(currentPage, 2), totalPages - 1);
+    return [mid - 1, mid, mid + 1];
   }, [totalPages, currentPage]);
 
-  const formatDate = (iso: string) =>
-    new Date(iso).toLocaleString("ru-RU", {
+  const formatDate = (iso: string) => {
+    const raw = iso.trim().replace(" ", "T").replace(/(\.\d{3})\d+/, "$1");
+    const normalized = /[Zz]$|[+-]\d{2}:?\d{2}$/.test(raw) ? raw : raw + "Z";
+    const d = new Date(new Date(normalized).getTime() + 6 * 60 * 60 * 1000);
+    return d.toLocaleString("ru-RU", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
+      timeZone: "UTC",
     });
+  };
 
   const repeatSearch = (item: HistoryItem) => {
-    const userId = localStorage.getItem("userId");
+    const userId = session.getUserId();
     if (!userId) {
       setError("Пользователь не авторизован");
       return;
@@ -167,7 +163,7 @@ const HistoryPage = () => {
     if (!confirm) return;
 
     if (confirm.type === "clear") {
-      const userId = localStorage.getItem("userId");
+      const userId = session.getUserId();
       if (!userId) return;
       setClearing(true);
       try {
@@ -319,38 +315,47 @@ const HistoryPage = () => {
           </span>
           <div className="history-pagination-controls">
             <button
-              className="history-page-btn"
+              className="history-page-btn history-page-arrow"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(1)}
+              title="В начало"
+            >
+              <i className="fa fa-angle-double-left" />
+            </button>
+            <button
+              className="history-page-btn history-page-arrow"
               disabled={currentPage === 1}
               onClick={() => setCurrentPage((p) => p - 1)}
+              title="Предыдущая"
             >
               <i className="fa fa-chevron-left" />
             </button>
 
-            {pageNumbers.map((p, i) =>
-              p === "..." ? (
-                <span
-                  key={`dots-${i}`}
-                  className="history-page-btn history-page-dots"
-                >
-                  …
-                </span>
-              ) : (
-                <button
-                  key={p}
-                  className={`history-page-btn${currentPage === p ? " active" : ""}`}
-                  onClick={() => setCurrentPage(p)}
-                >
-                  {p}
-                </button>
-              ),
-            )}
+            {pageNumbers.map((p) => (
+              <button
+                key={p}
+                className={`history-page-btn${currentPage === p ? " active" : ""}`}
+                onClick={() => setCurrentPage(p as number)}
+              >
+                {p}
+              </button>
+            ))}
 
             <button
-              className="history-page-btn"
+              className="history-page-btn history-page-arrow"
               disabled={currentPage === totalPages}
               onClick={() => setCurrentPage((p) => p + 1)}
+              title="Следующая"
             >
               <i className="fa fa-chevron-right" />
+            </button>
+            <button
+              className="history-page-btn history-page-arrow"
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(totalPages)}
+              title="В конец"
+            >
+              <i className="fa fa-angle-double-right" />
             </button>
           </div>
         </div>

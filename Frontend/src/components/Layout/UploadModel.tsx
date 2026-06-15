@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from "react";
-import axios from "axios";
+import { documentsApi } from "@/api/documentsApi";
+import { session } from "@/utils/session";
 
 interface UploadModalProps {
   isOpen: boolean;
@@ -51,24 +52,8 @@ const UploadModal = ({ isOpen, onClose }: UploadModalProps) => {
       );
 
       try {
-        const formData = new FormData();
-        formData.append("file", files[i].file);
-
-        const uploadRes = await axios.post(
-          "http://localhost:3001/documents/upload",
-          formData,
-          {
-            headers: { "Content-Type": "multipart/form-data" },
-          },
-        );
-
-        const documentId = uploadRes.data?.document?.id;
-
-        if (documentId) {
-          await axios.post(
-            `http://localhost:3001/documents/${documentId}/extract-text`,
-          );
-        }
+        const uid = session.getUserId();
+        await documentsApi.upload(files[i].file, uid ? Number(uid) : undefined);
 
         setFiles((prev) =>
           prev.map((f, idx) => (idx === i ? { ...f, status: "success" } : f)),

@@ -72,8 +72,7 @@ const ConfirmModal = ({
             {loading ? (
               <>
                 <i
-                  className="fa fa-spinner fa-spin"
-                  style={{ marginRight: "6px" }}
+                  className="fa fa-spinner fa-spin icon-mr"
                 />
                 Выполняется...
               </>

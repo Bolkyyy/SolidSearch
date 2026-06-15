@@ -30,16 +30,54 @@ export interface Document {
   files: DocumentFile[];
 }
 
-export const DocumentsApi = {
-  getAll: async (): Promise<Document[]> => {
-    const { data } = await axios.get(`${BASE}/documents`);
+export interface PaginatedDocuments {
+  data: Document[];
+  total: number;
+}
+
+export interface CollectionStats {
+  total: number;
+  processed: number;
+  processing: number;
+  failed: number;
+  types: string[];
+}
+
+export interface IndexingConfig {
+  chunkSize: number;
+  chunkMaxTokens: number;
+  maxStoredChars: number;
+  maxAiChars: number;
+}
+
+export const documentsApi = {
+  getAll: async (userId?: number): Promise<Document[]> => {
+    const params = userId ? `?user_id=${userId}` : '';
+    const { data } = await axios.get(`${BASE}/documents${params}`);
     return data;
   },
 
-  getByCollectionId: async (collectionId: number): Promise<Document[]> => {
-    const { data } = await axios.get(
-      `${BASE}/documents?collection_id=${collectionId}`,
-    );
+  getRecent: async (limit: number): Promise<Document[]> => {
+    const { data } = await axios.get(`${BASE}/documents?limit=${limit}`);
+    return data;
+  },
+
+  getByCollectionId: async (
+    collectionId: number,
+    page = 1,
+    limit = 20,
+    search?: string,
+    docType?: string,
+  ): Promise<PaginatedDocuments> => {
+    const params = new URLSearchParams({ collection_id: String(collectionId), page: String(page), limit: String(limit) });
+    if (search?.trim()) params.set('search', search.trim());
+    if (docType && docType !== 'all') params.set('type', docType);
+    const { data } = await axios.get(`${BASE}/documents?${params}`);
+    return data;
+  },
+
+  getCollectionStats: async (collectionId: number): Promise<CollectionStats> => {
+    const { data } = await axios.get(`${BASE}/documents/stats?collection_id=${collectionId}`);
     return data;
   },
 
@@ -48,19 +86,55 @@ export const DocumentsApi = {
     return data;
   },
 
-  getCollectionSizes: async (): Promise<{ collection_id: number; total_size: number }[]> => {
+  getJobs: async (id: number): Promise<any[]> => {
+    const { data } = await axios.get(`${BASE}/documents/${id}/jobs`);
+    return data;
+  },
+
+  collectionSizes: async (): Promise<{ collection_id: number; total_size: number }[]> => {
     const { data } = await axios.get(`${BASE}/documents/sizes`);
     return data;
   },
 
-  addToCollection: async (
-    documentId: number,
-    collectionId: number,
-  ): Promise<Document> => {
-    const { data } = await axios.post(
-      `${BASE}/documents/${documentId}/add-to-collection`,
-      { collection_id: collectionId },
-    );
+  addToCollection: async (documentId: number, collectionId: number): Promise<Document> => {
+    const { data } = await axios.post(`${BASE}/documents/${documentId}/add-to-collection`, { collection_id: collectionId });
+    return data;
+  },
+
+  upload: async (file: File, userId?: number, signal?: AbortSignal): Promise<void> => {
+    const fd = new FormData();
+    fd.append("file", file);
+    if (userId) fd.append("user_id", String(userId));
+    await axios.post(`${BASE}/documents/upload`, fd, {
+      headers: { "Content-Type": "multipart/form-data" },
+      signal,
+    });
+  },
+
+  delete: async (id: number): Promise<void> => {
+    await axios.delete(`${BASE}/documents/${id}`);
+  },
+
+  reindexCollection: async (collectionId: number): Promise<void> => {
+    await axios.post(`${BASE}/documents/extract-collection/${collectionId}`);
+  },
+
+  cancelReindex: async (collectionId: number): Promise<void> => {
+    await axios.post(`${BASE}/documents/extract-collection/${collectionId}/cancel`);
+  },
+
+  reindexStatus: async (collectionId: number): Promise<{ active: boolean }> => {
+    const { data } = await axios.get(`${BASE}/documents/extract-collection/${collectionId}/status`);
+    return data;
+  },
+
+  getIndexingConfig: async (): Promise<IndexingConfig> => {
+    const { data } = await axios.get(`${BASE}/documents/indexing-config`);
+    return data;
+  },
+
+  updateIndexingConfig: async (config: Partial<IndexingConfig>): Promise<IndexingConfig> => {
+    const { data } = await axios.put(`${BASE}/documents/indexing-config`, config);
     return data;
   },
 };

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import logo from "../../assets/images/BlackLogo.svg";
 import { authApi, LoginCredentials } from "../../api/auth";
+import { session } from "../../utils/session";
 
 interface Errors {
   email?: string;
@@ -12,7 +13,9 @@ interface Errors {
 const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [errors, setErrors] = useState<Errors>({});
+  const [showForgot, setShowForgot] = useState(false);
   const navigate = useNavigate();
 
   const validate = (): boolean => {
@@ -38,22 +41,11 @@ const LoginPage = () => {
     try {
       const credentials: LoginCredentials = { email, password };
       const userData = await authApi.login(credentials);
-
-      if (userData?.full_name) {
-        localStorage.setItem("userFullName", userData.full_name);
-      }
-
-      localStorage.setItem("userId", String(userData.id));
-
-      console.log("userId сохранён:", userData.id);
-
+      session.save(userData.id, userData.full_name ?? "", rememberMe);
       navigate("/home", { state: { user: userData } });
     } catch (error: any) {
-      console.error("Ошибка при логине:", error);
       setErrors({
-        server:
-          error.response?.data?.message ||
-          "Ошибка авторизации. Проверьте данные.",
+        server: error.response?.data?.message || "Ошибка авторизации. Проверьте данные.",
       });
     }
   };
@@ -86,9 +78,7 @@ const LoginPage = () => {
                 if (errors.email) setErrors({ ...errors, email: "" });
               }}
             />
-            {errors.email && (
-              <span className="error-message">{errors.email}</span>
-            )}
+            {errors.email && <span className="error-message">{errors.email}</span>}
           </div>
 
           <div className="input-group">
@@ -103,20 +93,27 @@ const LoginPage = () => {
                 if (errors.password) setErrors({ ...errors, password: "" });
               }}
             />
-            {errors.password && (
-              <span className="error-message">{errors.password}</span>
-            )}
+            {errors.password && <span className="error-message">{errors.password}</span>}
           </div>
 
           {errors.server && <div className="server-error">{errors.server}</div>}
 
           <div className="options">
             <label className="checkbox-label">
-              <input type="checkbox" /> Запомнить меня
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+              />
+              Запомнить меня
             </label>
-            <a href="#" className="forgot-link">
+            <button
+              type="button"
+              className="forgot-link"
+              onClick={() => setShowForgot(true)}
+            >
               Забыли пароль?
-            </a>
+            </button>
           </div>
 
           <button type="submit" className="login-btn">
@@ -137,6 +134,31 @@ const LoginPage = () => {
         <hr className="divider" />
         <p className="footer">© 2026 SolidSearch. Все права защищены.</p>
       </div>
+
+      {showForgot && (
+        <div className="modal-overlay" onClick={() => setShowForgot(false)}>
+          <div className="modal-container" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Сброс пароля</h2>
+              <button className="modal-close" onClick={() => setShowForgot(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <p style={{ color: "#aaa", fontSize: 14, lineHeight: 1.6 }}>
+                Самостоятельный сброс пароля недоступен.
+              </p>
+              <p style={{ color: "#aaa", fontSize: 14, lineHeight: 1.6, marginTop: 8 }}>
+                Обратитесь к администратору системы — он сможет сбросить пароль через раздел
+                <strong style={{ color: "#e0e0e0" }}> Настройки → Пользователи</strong>.
+              </p>
+            </div>
+            <div className="modal-footer">
+              <button className="btn-create" onClick={() => setShowForgot(false)}>
+                Понятно
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

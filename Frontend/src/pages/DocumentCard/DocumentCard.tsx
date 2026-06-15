@@ -2,7 +2,16 @@ import { useEffect, useState, useMemo, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import Layout from "../../components/Layout/Layout";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { Document, DocumentsApi } from "@/api/documentsApi";
+import { Document, documentsApi } from "@/api/documentsApi";
+
+interface IndexJob {
+  id: number;
+  status: string;
+  parser_type: string;
+  started_at: string;
+  finished_at: string | null;
+  error_message: string | null;
+}
 
 const API_URL = "http://localhost:3001";
 const PAGE_SIZE = 20_000;
@@ -36,6 +45,7 @@ const DocumentCard = () => {
   );
   const totalPages = textPages.length;
 
+  const [jobs, setJobs] = useState<IndexJob[]>([]);
   const [notFound, setNotFound] = useState(false);
 
   const navigate = useNavigate();
@@ -43,6 +53,8 @@ const DocumentCard = () => {
   const docNavState = location.state as {
     returnQuery?: string;
     returnUserId?: number;
+    returnFilters?: Record<string, string>;
+    returnDocsPage?: number;
   } | null;
 
   const params = useParams();
@@ -50,8 +62,12 @@ const DocumentCard = () => {
 
   async function getDocument() {
     try {
-      const data = await DocumentsApi.getById(Number(documentId));
+      const [data, jobsRes] = await Promise.all([
+        documentsApi.getById(Number(documentId)),
+        documentsApi.getJobs(Number(documentId)),
+      ]);
       setDocumentData(data);
+      setJobs(jobsRes);
       setTextPage(0);
       setNotFound(false);
     } catch (e) {
@@ -71,7 +87,7 @@ const DocumentCard = () => {
   };
 
   const formatDate = (iso: string) => {
-    const date = new Date(iso);
+    const date = new Date(new Date(iso).getTime() + 3 * 60 * 60 * 1000);
     return date.toLocaleString("ru-RU", {
       day: "2-digit",
       month: "2-digit",
@@ -80,6 +96,7 @@ const DocumentCard = () => {
       minute: "2-digit",
     });
   };
+
 
   useEffect(() => {
     if (!documentId) {
@@ -101,6 +118,8 @@ const DocumentCard = () => {
                   state: {
                     query: docNavState.returnQuery,
                     userId: docNavState.returnUserId ?? 0,
+                    filters: docNavState.returnFilters ?? {},
+                    docsPage: docNavState.returnDocsPage ?? 1,
                   },
                 });
               } else {
@@ -131,6 +150,7 @@ const DocumentCard = () => {
                 state: {
                   query: docNavState.returnQuery,
                   userId: docNavState.returnUserId ?? 0,
+                  filters: docNavState.returnFilters ?? {},
                 },
               });
             } else {
@@ -191,7 +211,6 @@ const DocumentCard = () => {
                 : undefined
             }
             className={`tab-btn download-btn-tab${!documentData ? " disabled" : ""}`}
-            style={{ textDecoration: "none" }}
             onClick={(e) => !documentData && e.preventDefault()}
           >
             <i
@@ -335,15 +354,15 @@ const DocumentCard = () => {
                       </span>
                     </div>
                     <div className="metadata-item">
-                      <span className="metadata-label">Создан</span>
+                      <span className="metadata-label">Загружен</span>
                       <span className="metadata-value">
-                        {formatDate(documentData?.created_at || "Неизвестно")}
+                        {documentData?.created_at ? formatDate(documentData.created_at) : "—"}
                       </span>
                     </div>
                     <div className="metadata-item">
                       <span className="metadata-label">Проиндексирован</span>
                       <span className="metadata-value">
-                        21.03.2019 02:45 - мок
+                        {file?.uploaded_at ? formatDate(file.uploaded_at) : "—"}
                       </span>
                     </div>
                     <div className="metadata-item">
@@ -384,39 +403,52 @@ const DocumentCard = () => {
                 <div className="history-tab">
                   <div className="timeline">
                     <div className="timeline-item">
-                      <div className="timeline-dot"></div>
+                      <div className="timeline-dot timeline-dot--upload"></div>
                       <div className="timeline-content">
-                        <div className="timeline-title">Документ создан</div>
-                        <div className="timeline-date">15.03.2019 14:30</div>
-                      </div>
-                    </div>
-                    <div className="timeline-item">
-                      <div className="timeline-dot"></div>
-                      <div className="timeline-content">
-                        <div className="timeline-title">Добавлен в архив</div>
+                        <div className="timeline-title">Документ загружен</div>
                         <div className="timeline-date">
-                          Петрова М.А. 20.03.2019 10:15
+                          {documentData?.created_at ? formatDate(documentData.created_at) : "—"}
                         </div>
                       </div>
                     </div>
-                    <div className="timeline-item">
-                      <div className="timeline-dot"></div>
-                      <div className="timeline-content">
-                        <div className="timeline-title">Проиндексирован</div>
-                        <div className="timeline-date">
-                          Система: 21.03.2019 02:45
+                    {jobs.map((job, i) => (
+                      <div key={job.id}>
+                        <div className="timeline-item">
+                          <div className="timeline-dot timeline-dot--start"></div>
+                          <div className="timeline-content">
+                            <div className="timeline-title">
+                              {i === 0 ? "Индексация начата" : `Переиндексация #${i + 1}`}
+                            </div>
+                            <div className="timeline-date">{formatDate(job.started_at)}</div>
+                            {job.parser_type && (
+                              <div className="timeline-meta">{job.parser_type}</div>
+                            )}
+                          </div>
+                        </div>
+                        {job.finished_at && (
+                          <div className="timeline-item">
+                            <div className={`timeline-dot timeline-dot--${job.status === 'completed' ? 'done' : 'error'}`}></div>
+                            <div className="timeline-content">
+                              <div className="timeline-title">
+                                {job.status === 'completed' ? 'Индексация завершена' : 'Ошибка индексации'}
+                              </div>
+                              <div className="timeline-date">{formatDate(job.finished_at)}</div>
+                              {job.error_message && (
+                                <div className="timeline-meta timeline-meta--error">{job.error_message}</div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    {jobs.length === 0 && (
+                      <div className="timeline-item">
+                        <div className="timeline-dot"></div>
+                        <div className="timeline-content">
+                          <div className="timeline-title">История индексации недоступна</div>
                         </div>
                       </div>
-                    </div>
-                    <div className="timeline-item">
-                      <div className="timeline-dot"></div>
-                      <div className="timeline-content">
-                        <div className="timeline-title">Просмотр</div>
-                        <div className="timeline-date">
-                          Иванов П.С. 26.03.2020 15:22
-                        </div>
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </div>
               )}

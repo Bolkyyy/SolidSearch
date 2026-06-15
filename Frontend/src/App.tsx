@@ -10,13 +10,17 @@ import SettingsPage from './pages/SettingsPage/SettingsPage';
 import SearchResults from './pages/SearchResults/SearchResults';
 import DocumentCard from './pages/DocumentCard/DocumentCard';
 import CollectionDetail from "./pages/CollectionDetail/CollectionDetail";
+import NotificationsPage from './pages/NotificationsPage/NotificationsPage';
+import { NotificationsProvider } from './context/NotificationsContext';
+import { session } from './utils/session';
 import './App.css';
 
 function AppRoutes() {
   const location = useLocation();
+  const isLoggedIn = !!session.getUserId();
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route path="/" element={<Navigate to={isLoggedIn ? "/home" : "/login"} replace />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/home" element={<HomePage />} />
       <Route path="/search" element={<SearchPage />} />
@@ -28,6 +32,7 @@ function AppRoutes() {
       <Route path="/search/results" element={<SearchResults key={location.key} />} />
       <Route path="/document/:id" element={<DocumentCard />} />
       <Route path="/collection/:collectionId" element={<CollectionDetail />} />
+      <Route path="/notifications" element={<NotificationsPage />} />
     </Routes>
   );
 }
@@ -35,7 +40,9 @@ function AppRoutes() {
 function App() {
   return (
     <Router>
-      <AppRoutes />
+      <NotificationsProvider>
+        <AppRoutes />
+      </NotificationsProvider>
     </Router>
   );
 }

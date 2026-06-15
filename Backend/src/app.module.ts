@@ -11,6 +11,8 @@ import { HistoryModule } from './modules/history/history.module';
 import { SearchQueriesModule } from './models/search_queries/search-queries.module';
 import { UsersModule } from './models/users/users.module';
 import { DocumentCollectionModule } from './models/document_collection/document_collection.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
+import { DocumentSourcesModule } from './models/document_sources/document_sources.module';
 
 @Module({
   imports: [
@@ -55,6 +57,8 @@ import { DocumentCollectionModule } from './models/document_collection/document_
     SearchQueriesModule,
     UsersModule,
     DocumentCollectionModule,
+    NotificationsModule,
+    DocumentSourcesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

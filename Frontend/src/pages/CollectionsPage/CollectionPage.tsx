@@ -1,21 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import axios from "axios";
 import Layout from "../../components/Layout/Layout";
 import { fetchDashboardData, DashboardData } from "@/api/dashboard";
 import ConfirmModal from "../../components/ConfirmModal/ConfirmModal";
-import { DocumentsApi } from "@/api/documentsApi";
-
-interface Collection {
-  id: number;
-  name: string;
-  description: string;
-  code: string;
-  is_active: boolean;
-  source_id: number;
-}
-
-const BASE = "http://localhost:3001";
+import { documentsApi } from "@/api/documentsApi";
+import { collectionsApi, Collection } from "@/api/collectionsApi";
 
 const CollectionPage = () => {
   const [data, setData] = useState<DashboardData | null>(null);
@@ -30,16 +19,54 @@ const CollectionPage = () => {
   const [deleteTarget, setDeleteTarget] = useState<Collection | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  const [reindexingId, setReindexingId] = useState<number | null>(null);
+  const [activeReindexIds, setActiveReindexIds] = useState<Set<number>>(() => {
+    try {
+      const saved = localStorage.getItem('activeReindexIds');
+      return saved ? new Set(JSON.parse(saved)) : new Set();
+    } catch { return new Set(); }
+  });
+  const [cancellingId, setCancellingId] = useState<number | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const [collectionSizes, setCollectionSizes] = useState<
     Record<number, number>
   >({});
+
+  useEffect(() => {
+    if (activeReindexIds.size === 0) {
+      if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+      return;
+    }
+    if (pollRef.current) return;
+    pollRef.current = setInterval(async () => {
+      const ids = [...activeReindexIds];
+      const results = await Promise.all(
+        ids.map(id =>
+          documentsApi.reindexStatus(id)
+            .then(s => ({ id, active: s.active }))
+            .catch(() => ({ id, active: true }))
+        )
+      );
+      const done = results.filter(r => !r.active).map(r => r.id);
+      if (done.length > 0) {
+        setActiveReindexIds(prev => {
+          const next = new Set(prev);
+          done.forEach(id => next.delete(id));
+          localStorage.setItem('activeReindexIds', JSON.stringify([...next]));
+          return next;
+        });
+      }
+    }, 5000);
+    return () => { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } };
+  }, [activeReindexIds]);
 
   useEffect(() => {
     fetchDashboardData()
       .then(setData)
       .catch(() => {});
     loadCollections();
-    DocumentsApi.getCollectionSizes()
+    documentsApi.collectionSizes()
       .then((rows) => {
         const sizes: Record<number, number> = {};
         for (const row of rows) {
@@ -52,15 +79,15 @@ const CollectionPage = () => {
 
   const loadCollections = () => {
     setLoadingCols(true);
-    axios
-      .get(`${BASE}/document_collection`)
-      .then((res) => setCollections(res.data))
+    collectionsApi.getAll()
+      .then(setCollections)
       .catch(() => {})
       .finally(() => setLoadingCols(false));
   };
 
   const totalDocuments = data?.totalDocuments ?? 0;
   const totalIndexed = data?.totalIndexed ?? 0;
+  const emptyCollections = collections.filter(c => (collectionSizes[c.id] ?? 0) === 0).length;
 
   const formatSize = (bytes: number) => {
     if (bytes === 0) return "0 МБ";
@@ -74,7 +101,7 @@ const CollectionPage = () => {
     if (!deleteTarget) return;
     setDeleting(true);
     try {
-      await axios.delete(`${BASE}/document_collection/${deleteTarget.id}`);
+      await collectionsApi.delete(deleteTarget.id);
       setCollections((prev) => prev.filter((c) => c.id !== deleteTarget.id));
       setDeleteTarget(null);
     } catch (err) {
@@ -84,23 +111,45 @@ const CollectionPage = () => {
     }
   };
 
+  const setActive = (id: number, active: boolean) => {
+    setActiveReindexIds(prev => {
+      const next = new Set(prev);
+      active ? next.add(id) : next.delete(id);
+      localStorage.setItem('activeReindexIds', JSON.stringify([...next]));
+      return next;
+    });
+  };
+
+  const handleReindex = async (collectionId: number) => {
+    setReindexingId(collectionId);
+    try {
+      await documentsApi.reindexCollection(collectionId);
+      setActive(collectionId, true);
+    } catch (err) {
+      console.error("Ошибка переиндексации:", err);
+    } finally {
+      setReindexingId(null);
+    }
+  };
+
+  const handleCancelReindex = async (collectionId: number) => {
+    setCancellingId(collectionId);
+    try {
+      await documentsApi.cancelReindex(collectionId);
+      setActive(collectionId, false);
+    } catch (err) {
+      console.error("Ошибка отмены:", err);
+    } finally {
+      setCancellingId(null);
+    }
+  };
+
   const handleCreateCollection = async () => {
     if (!newName.trim()) return;
     setCreating(true);
     try {
-      const baseCode = newName
-        .toLowerCase()
-        .replace(/\s+/g, "_")
-        .replace(/[^a-z0-9_]/g, "");
-      const code = (baseCode || "collection") + "_" + Date.now();
-      const res = await axios.post(`${BASE}/document_collection`, {
-        name: newName,
-        description: newDescription,
-        code,
-        is_active: true,
-        source_id: 1,
-      });
-      setCollections((prev) => [...prev, res.data]);
+      const col = await collectionsApi.create(newName, newDescription);
+      setCollections((prev) => [...prev, col]);
       setNewName("");
       setNewDescription("");
       setShowModal(false);
@@ -145,41 +194,30 @@ const CollectionPage = () => {
           <h2>{totalIndexed}</h2>
         </div>
         <div className="stat-card-archive">
-          <i className="fa fa-history card-icon orange"></i>
-          <p>Требуют внимания</p>
-          <h2>1</h2>
+          <i className="fa fa-exclamation-triangle card-icon orange"></i>
+          <p>Пустые коллекции</p>
+          <h2>{emptyCollections}</h2>
         </div>
       </div>
 
       {loadingCols ? (
-        <div
-          style={{
-            textAlign: "center",
-            padding: 40,
-            color: "rgba(255,255,255,0.5)",
-          }}
-        >
+        <div className="page-loading-state">
           <i className="fa fa-spinner fa-spin fa-2x" />
-          <p style={{ marginTop: 12 }}>Загрузка коллекций...</p>
+          <p>Загрузка коллекций...</p>
         </div>
       ) : collections.length === 0 ? (
-        <div
-          style={{
-            textAlign: "center",
-            padding: 60,
-            color: "rgba(255,255,255,0.4)",
-          }}
-        >
-          <i
-            className="fa fa-folder-open fa-3x"
-            style={{ marginBottom: 16, display: "block" }}
-          />
+        <div className="page-empty-state">
+          <i className="fa fa-folder-open fa-3x page-empty-icon" />
           <p>Коллекций пока нет. Создайте первую!</p>
         </div>
       ) : (
         <div className="archives-grid">
           {collections.map((col) => (
-            <div className="archive-item" key={col.id}>
+            <div className={`archive-item${!col.is_active ? ' archive-item--inactive' : ''}`} key={col.id}>
+              <span className={`collection-status-badge collection-status-badge--card ${col.is_active ? 'collection-status-badge--active' : 'collection-status-badge--inactive'}`}>
+                <i className={`fa fa-${col.is_active ? 'check-circle' : 'ban'}`} />
+                {col.is_active ? 'Активна' : 'Неактивна'}
+              </span>
               <div className="archive-item-header">
                 <i className="fa fa-folder-open collection-folder-icon" />
                 <h3 className="inline-block">{col.name}</h3>
@@ -195,9 +233,24 @@ const CollectionPage = () => {
                 <Link to={`/collection/${col.id}`} className="btn-open">
                   <i className="fa fa-folder-open"></i> Открыть
                 </Link>
-                <Link to="/indexing" className="btn-reindex">
-                  <i className="fa fa-refresh"></i> Переиндексировать
-                </Link>
+                <button
+                  className="btn-reindex"
+                  onClick={() => handleReindex(col.id)}
+                  disabled={reindexingId === col.id || activeReindexIds.has(col.id)}
+                >
+                  <i className={`fa ${reindexingId === col.id ? "fa-spinner fa-spin" : activeReindexIds.has(col.id) ? "fa-clock-o" : "fa-refresh"}`} />
+                  {reindexingId === col.id ? " Запуск..." : activeReindexIds.has(col.id) ? " Идёт..." : " Переиндексировать"}
+                </button>
+                {activeReindexIds.has(col.id) && (
+                  <button
+                    className="btn-reindex btn-reindex--cancel"
+                    onClick={() => handleCancelReindex(col.id)}
+                    disabled={cancellingId === col.id}
+                  >
+                    <i className={`fa ${cancellingId === col.id ? "fa-spinner fa-spin" : "fa-times"}`} />
+                    {cancellingId === col.id ? " Отмена..." : " Отменить"}
+                  </button>
+                )}
                 <button
                   className="btn-delete-collection"
                   onClick={() => setDeleteTarget(col)}
@@ -216,7 +269,7 @@ const CollectionPage = () => {
           <div className="modal-container" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>
-                <i className="fa fa-folder-o" />
+                <i className="fa fa-folder" />
                 Новая коллекция
               </h2>
               <button

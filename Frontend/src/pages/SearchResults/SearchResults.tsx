@@ -3,8 +3,7 @@ import { useLocation, useNavigate, Link } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import Layout from "../../components/Layout/Layout";
 import type { SearchDocument } from "../../interfaces/SearchPageInterface";
-
-const API_URL = "http://localhost:3001";
+import { searchApi } from "@/api/searchApi";
 
 const formatDate = (iso?: string) => {
   if (!iso) return "—";
@@ -26,10 +25,14 @@ const DocCard = ({
   doc,
   query,
   userId,
+  filters,
+  docsPage,
 }: {
   doc: SearchDocument;
   query: string;
   userId: number;
+  filters: SearchFilters;
+  docsPage: number;
 }) => (
   <div className="doc-card">
     <div className="doc-card-header">
@@ -43,7 +46,7 @@ const DocCard = ({
     <div className="doc-card-actions">
       <Link
         to={`/document/${doc.id}`}
-        state={{ returnQuery: query, returnUserId: userId }}
+        state={{ returnQuery: query, returnUserId: userId, returnFilters: filters, returnDocsPage: docsPage }}
         className="router-link"
       >
         <button className="btn-open">
@@ -59,11 +62,15 @@ const SourceItem = ({
   isLast,
   query,
   userId,
+  filters,
+  docsPage,
 }: {
   doc: SearchDocument;
   isLast: boolean;
   query: string;
   userId: number;
+  filters: SearchFilters;
+  docsPage: number;
 }) => (
   <div className={`source-item${isLast ? " source-item-last" : ""}`}>
     <div className="source-item-header">
@@ -77,7 +84,7 @@ const SourceItem = ({
     </p>
     <Link
       to={`/document/${doc.id}`}
-      state={{ returnQuery: query, returnUserId: userId }}
+      state={{ returnQuery: query, returnUserId: userId, returnFilters: filters, returnDocsPage: docsPage }}
       className="router-link"
     >
       <span className="source-item-link">
@@ -92,12 +99,16 @@ interface SearchFilters {
   period?: string;
   source?: string;
   format?: string;
+  formats?: string;
+  collection?: string;
 }
 
 const FILTER_LABELS: Record<string, string> = {
   period: "Период",
   source: "Источник",
   format: "Формат",
+  formats: "Форматы",
+  collection: "Коллекция",
 };
 
 const ActiveFiltersInfo = ({ filters }: { filters: SearchFilters }) => {
@@ -147,6 +158,19 @@ const ActiveFiltersInfo = ({ filters }: { filters: SearchFilters }) => {
   );
 };
 
+const DOCS_PER_PAGE = 5;
+
+function getPageNums(current: number, total: number): (number | "...")[] {
+  if (total <= 1) return [1];
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const items: (number | "...")[] = [1];
+  if (current > 3) items.push("...");
+  for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) items.push(i);
+  if (current < total - 2) items.push("...");
+  items.push(total);
+  return items;
+}
+
 const SearchResults = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -154,11 +178,13 @@ const SearchResults = () => {
     query: string;
     userId: number;
     filters?: SearchFilters;
+    docsPage?: number;
   } | null;
 
   const query: string = navState?.query ?? "";
   const userId: number = navState?.userId ?? 0;
   const filters: SearchFilters = navState?.filters ?? {};
+  const cacheKey = `sr_${query}_${JSON.stringify(filters)}`;
 
   const [documents, setDocuments] = useState<SearchDocument[]>([]);
   const [answer, setAnswer] = useState<string>("");
@@ -166,6 +192,24 @@ const SearchResults = () => {
   const [docsLoading, setDocsLoading] = useState(true);
   const [answerLoading, setAnswerLoading] = useState(false);
   const [error, setError] = useState("");
+  const [docsPage, setDocsPage] = useState(() => {
+    if (navState?.docsPage) return navState.docsPage;
+    try {
+      const raw = sessionStorage.getItem(cacheKey);
+      if (raw) return JSON.parse(raw)?.docsPage ?? 1;
+    } catch {}
+    return 1;
+  });
+  const docsListRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(cacheKey);
+      if (!raw) return;
+      const cached = JSON.parse(raw);
+      sessionStorage.setItem(cacheKey, JSON.stringify({ ...cached, docsPage }));
+    } catch {}
+  }, [docsPage]);
 
   useEffect(() => {
     if (!query) return;
@@ -175,35 +219,36 @@ const SearchResults = () => {
     let liveAnswer = "";
 
     const run = async () => {
-      try {
-        const filtersParam = encodeURIComponent(JSON.stringify(filters));
-        const res = await fetch(
-          `${API_URL}/search/cached?query=${encodeURIComponent(query)}&userId=${userId}&filters=${filtersParam}`,
-          { signal: controller.signal },
-        );
-        if (res.ok) {
-          const cached = await res.json();
-          if (cached?.answer || cached?.documents?.length) {
+      const localRaw = sessionStorage.getItem(cacheKey);
+      if (localRaw) {
+        try {
+          const local = JSON.parse(localRaw);
+          if (local?.documents?.length || local?.answer) {
+            setDocuments(local.documents ?? []);
+            setAnswer(local.answer ?? "");
             setSearching(false);
             setDocsLoading(false);
-            setDocuments(cached.documents ?? []);
-            setAnswer(cached.answer ?? "");
             return;
           }
+        } catch {}
+      }
+
+      try {
+        const cached = await searchApi.getCached(query, userId, filters, controller.signal);
+        if (cached) {
+          setSearching(false);
+          setDocsLoading(false);
+          setDocuments(cached.documents ?? []);
+          setAnswer(cached.answer ?? "");
+          sessionStorage.setItem(cacheKey, JSON.stringify({ documents: cached.documents ?? [], answer: cached.answer ?? "" }));
+          return;
         }
       } catch (e) {
         if ((e as Error).name === "AbortError") return;
       }
 
       try {
-        const response = await fetch(`${API_URL}/search/stream`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query, userId, filters }),
-          signal: controller.signal,
-        });
-
-        const reader = response.body!.getReader();
+        const reader = await searchApi.stream(query, userId, filters, controller.signal);
         const decoder = new TextDecoder();
         let buffer = "";
 
@@ -225,6 +270,7 @@ const SearchResults = () => {
               } else if (data.type === "documents") {
                 setSearching(false);
                 setDocsLoading(false);
+                setDocsPage(1);
                 liveDocs = data.documents;
                 setDocuments(data.documents);
                 if (data.documents.length > 0) setAnswerLoading(true);
@@ -238,6 +284,7 @@ const SearchResults = () => {
                   liveAnswer = `По вашему запросу найдены документы: ${names}.`;
                   setAnswer(liveAnswer);
                 }
+                sessionStorage.setItem(cacheKey, JSON.stringify({ documents: liveDocs, answer: liveAnswer }));
               } else if (data.type === "error") {
                 setError(data.message);
                 setDocsLoading(false);
@@ -255,7 +302,7 @@ const SearchResults = () => {
 
     run();
     return () => controller.abort();
-  }, [query]);
+  }, [query, JSON.stringify(filters)]);
 
   if (!query) {
     return (
@@ -351,21 +398,95 @@ const SearchResults = () => {
             </div>
           )}
 
-          {documents.map((doc) => (
-            <DocCard key={doc.id} doc={doc} query={query} userId={userId} />
-          ))}
+          {!docsLoading && documents.length > 0 && (() => {
+            const totalDocPages = Math.ceil(documents.length / DOCS_PER_PAGE);
+            const pagedDocs = documents.slice(
+              (docsPage - 1) * DOCS_PER_PAGE,
+              docsPage * DOCS_PER_PAGE,
+            );
+            return (
+              <>
+                <div ref={docsListRef}>
+                  {pagedDocs.map((doc) => (
+                    <DocCard key={doc.id} doc={doc} query={query} userId={userId} filters={filters} docsPage={docsPage} />
+                  ))}
+                </div>
+                {totalDocPages > 1 && (
+                  <div className="history-pagination">
+                    <span className="history-pagination-info">
+                      {(docsPage - 1) * DOCS_PER_PAGE + 1}–{Math.min(docsPage * DOCS_PER_PAGE, documents.length)} из {documents.length} документов
+                    </span>
+                    <div className="history-pagination-controls">
+                      <button
+                        className="history-page-btn history-page-arrow"
+                        disabled={docsPage === 1}
+                        onClick={() => { setDocsPage(1); docsListRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }}
+                        title="В начало"
+                      >
+                        <i className="fa fa-angle-double-left" />
+                      </button>
+                      <button
+                        className="history-page-btn history-page-arrow"
+                        disabled={docsPage === 1}
+                        onClick={() => { setDocsPage(docsPage - 1); docsListRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }}
+                        title="Предыдущая"
+                      >
+                        <i className="fa fa-chevron-left" />
+                      </button>
+                      {getPageNums(docsPage, totalDocPages).map((item, idx) =>
+                        item === "..." ? (
+                          <span key={`e${idx}`} className="history-page-btn" style={{ cursor: "default", opacity: 0.4 }}>…</span>
+                        ) : (
+                          <button
+                            key={item}
+                            className={`history-page-btn${docsPage === item ? " active" : ""}`}
+                            onClick={() => { setDocsPage(item as number); docsListRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }}
+                          >
+                            {item}
+                          </button>
+                        ),
+                      )}
+                      <button
+                        className="history-page-btn history-page-arrow"
+                        disabled={docsPage === totalDocPages}
+                        onClick={() => { setDocsPage(docsPage + 1); docsListRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }}
+                        title="Следующая"
+                      >
+                        <i className="fa fa-chevron-right" />
+                      </button>
+                      <button
+                        className="history-page-btn history-page-arrow"
+                        disabled={docsPage === totalDocPages}
+                        onClick={() => { setDocsPage(totalDocPages); docsListRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }}
+                        title="В конец"
+                      >
+                        <i className="fa fa-angle-double-right" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </div>
 
-        {documents.length > 0 && (
+        {documents.length > 0 && (() => {
+          const pagedDocs = documents.slice(
+            (docsPage - 1) * DOCS_PER_PAGE,
+            docsPage * DOCS_PER_PAGE,
+          );
+          return (
           <div className="search-results-sidebar">
             <h4 className="sources-title">Источники</h4>
-            {documents.map((doc, i) => (
+            {pagedDocs.map((doc, i) => (
               <SourceItem
                 key={doc.id}
                 doc={doc}
-                isLast={i === documents.length - 1}
+                isLast={i === pagedDocs.length - 1}
                 query={query}
                 userId={userId}
+                filters={filters}
+                docsPage={docsPage}
               />
             ))}
             <div className="sources-tip">
@@ -373,7 +494,8 @@ const SearchResults = () => {
               Кликните на источник, чтобы увидеть полный контекст.
             </div>
           </div>
-        )}
+          );
+        })()}
       </div>
     </Layout>
   );

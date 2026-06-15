@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import Layout from "../../components/Layout/Layout";
 import { aiApi, type AiSettings } from "../../api/AI_api";
 import { User, usersApi } from "@/api/Users";
+import { documentsApi } from "@/api/documentsApi";
 import ConfirmModal from "../../components/ConfirmModal/ConfirmModal";
 
 const SettingsPage = () => {
@@ -16,6 +17,15 @@ const SettingsPage = () => {
   const [formIsActive, setFormIsActive] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+
+  const [indexingConfig, setIndexingConfig] = useState({
+    chunkSize: 6000,
+    chunkMaxTokens: 1500,
+    maxStoredChars: 300000,
+    maxAiChars: 60000,
+  });
+  const [indexingSaving, setIndexingSaving] = useState(false);
+  const [indexingSaveOk, setIndexingSaveOk] = useState(false);
 
   const [users, setUsers] = useState<User[] | null>(null);
   const [isVisibleModalCreateUser, setVisibleModalCreateUser] = useState(false);
@@ -48,11 +58,7 @@ const SettingsPage = () => {
         role: modalUserRole,
       });
       setVisibleModalCreateUser(false);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      // setLoadingSettings(false);
-    }
+    } catch {}
   }
 
   function handleDeleteUser(userId: number, userName: string) {
@@ -95,27 +101,43 @@ const SettingsPage = () => {
         role: modalUserEditRole,
       });
       setVisibleModalEditUser(false);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      // setLoadingSettings(false);
-    }
+      await fetchUsers();
+    } catch {}
   }
 
   useEffect(() => {
     if (activeTab === "integrations") fetchSettings();
     if (activeTab === "users") fetchUsers();
+    if (activeTab === "rules") fetchIndexingConfig();
   }, [activeTab]);
 
+  async function fetchIndexingConfig() {
+    try {
+      const config = await documentsApi.getIndexingConfig();
+      setIndexingConfig(config);
+    } catch {}
+  }
+
+  async function saveIndexingConfig() {
+    setIndexingSaving(true);
+    setIndexingSaveOk(false);
+    try {
+      const saved = await documentsApi.updateIndexingConfig(indexingConfig);
+      setIndexingConfig(saved);
+      setIndexingSaveOk(true);
+      setTimeout(() => setIndexingSaveOk(false), 2500);
+    } catch {
+    } finally {
+      setIndexingSaving(false);
+    }
+  }
+
   async function fetchUsers() {
-    // setLoadingSettings(true);
     try {
       const data = await usersApi.getUsers();
       setUsers(data);
     } catch (e) {
       console.error(e);
-    } finally {
-      // setLoadingSettings(false);
     }
   }
 
@@ -315,37 +337,140 @@ const SettingsPage = () => {
             {activeTab === "rules" && (
               <div className="settings-view-fade">
                 <h2>Правила индексации</h2>
+
                 <div className="indexing-block">
-                  <label className="block-title">Размер чанка (токены)</label>
+                  <label className="block-title">Размер чанка (символы)</label>
                   <div className="input-group-custom">
                     <input
-                      type="text"
+                      type="number"
                       className="dark-field-input"
-                      placeholder="512"
+                      value={indexingConfig.chunkSize}
+                      min={500}
+                      onChange={(e) =>
+                        setIndexingConfig((c) => ({
+                          ...c,
+                          chunkSize: Number(e.target.value),
+                        }))
+                      }
                     />
                     <p className="field-hint">
-                      Оптимальный размер: 512-1024 токенов
+                      Текст документа нарезается на части этого размера.{" "}
+                      <span
+                        style={{ fontSize: 10, color: "#555", marginLeft: 4 }}
+                      >
+                        по умолчанию: 6000
+                      </span>
                     </p>
                   </div>
                 </div>
+
                 <div className="indexing-block">
                   <label className="block-title">
-                    Overlap между чанками (токены)
+                    Макс. токенов ответа GPT на чанк
                   </label>
                   <div className="input-group-custom">
                     <input
-                      type="text"
+                      type="number"
                       className="dark-field-input"
-                      placeholder="128"
+                      value={indexingConfig.chunkMaxTokens}
+                      min={100}
+                      onChange={(e) =>
+                        setIndexingConfig((c) => ({
+                          ...c,
+                          chunkMaxTokens: Number(e.target.value),
+                        }))
+                      }
                     />
                     <p className="field-hint">
-                      Рекомендуется: 10-20% от размера чанка
+                      Лимит токенов при форматировании каждого чанка.{" "}
+                      <span
+                        style={{ fontSize: 10, color: "#555", marginLeft: 4 }}
+                      >
+                        по умолчанию: 1500
+                      </span>
                     </p>
                   </div>
                 </div>
-                <button className="create-collection-btn">
-                  <i className="fa fa-save"></i> Сохранить настройки
-                </button>
+
+                <div className="indexing-block">
+                  <label className="block-title">
+                    Макс. символов хранения текста
+                  </label>
+                  <div className="input-group-custom">
+                    <input
+                      type="number"
+                      className="dark-field-input"
+                      value={indexingConfig.maxStoredChars}
+                      min={10000}
+                      onChange={(e) =>
+                        setIndexingConfig((c) => ({
+                          ...c,
+                          maxStoredChars: Number(e.target.value),
+                        }))
+                      }
+                    />
+                    <p className="field-hint">
+                      Максимальный объём сохраняемого текста документа.{" "}
+                      <span
+                        style={{ fontSize: 10, color: "#555", marginLeft: 4 }}
+                      >
+                        по умолчанию: 300 000
+                      </span>
+                    </p>
+                  </div>
+                </div>
+
+                <div className="indexing-block">
+                  <label className="block-title">
+                    Макс. символов для AI-обработки
+                  </label>
+                  <div className="input-group-custom">
+                    <input
+                      type="number"
+                      className="dark-field-input"
+                      value={indexingConfig.maxAiChars}
+                      min={5000}
+                      onChange={(e) =>
+                        setIndexingConfig((c) => ({
+                          ...c,
+                          maxAiChars: Number(e.target.value),
+                        }))
+                      }
+                    />
+                    <p className="field-hint">
+                      Объём текста, передаваемого в AI для нормализации.{" "}
+                      <span
+                        style={{ fontSize: 10, color: "#555", marginLeft: 4 }}
+                      >
+                        по умолчанию: 60 000
+                      </span>
+                    </p>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    marginTop: 8,
+                  }}
+                >
+                  <button
+                    className="create-collection-btn"
+                    onClick={saveIndexingConfig}
+                    disabled={indexingSaving}
+                  >
+                    <i className="fa fa-save"></i>{" "}
+                    {indexingSaving ? "Сохранение..." : "Сохранить настройки"}
+                  </button>
+                  {indexingSaveOk && (
+                    <span style={{ color: "#10b981", fontSize: 13 }}>
+                      <i className="fa fa-check" style={{ marginRight: 4 }} />
+                      Сохранено
+                    </span>
+                  )}
+                </div>
               </div>
             )}
 
@@ -525,7 +650,7 @@ const SettingsPage = () => {
                   <input
                     type="text"
                     className="dark-field-input"
-                    placeholder="Deepseek"
+                    placeholder="Name"
                     value={modalUserFullName}
                     onChange={(e) => setModalUserFullName(e.target.value)}
                   />
