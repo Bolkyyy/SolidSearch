@@ -394,7 +394,7 @@ const CollectionDetail = () => {
     <Layout>
       <div className="collection-detail-container">
         <div className="breadcrumbs">
-          <Link to="/collections">Архив документов</Link>
+          <Link to="/collections">Коллекции</Link>
           <i className="fa fa-chevron-right" />
           <span>{collection.name}</span>
         </div>

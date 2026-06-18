@@ -27,6 +27,7 @@ const MAX_AI_CHARS = 60_000;
 interface ExtractionResult {
   text: string;
   pageCount: number | null;
+  description?: string;
 }
 
 @Injectable()
@@ -122,6 +123,66 @@ export class DocumentService {
     );
   }
 
+  private async extractImageText(filePath: string, mimeType: string): Promise<string> {
+    const { client, model } = await this.getAiClient();
+    const visionModel = process.env.AI_VISION_MODEL || model;
+    const base64 = fs.readFileSync(filePath).toString('base64');
+
+    const response = await client.chat.completions.create({
+      model: visionModel,
+      max_tokens: 4000,
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: `Выпиши весь текст с изображения.
+                     - Передай содержимое полностью, ничего не пропуская
+                     - Сохрани структуру: заголовки, абзацы, списки, таблицы
+                     - Не описывай картинку и не добавляй ничего от себя
+                     - Если текста нет — верни пустую строку`,
+            },
+            {
+              type: 'image_url',
+              image_url: { url: `data:${mimeType};base64,${base64}` },
+            },
+          ],
+        },
+      ],
+    });
+
+    return response.choices[0].message.content?.trim() ?? '';
+  }
+
+  private async describeImage(filePath: string, mimeType: string): Promise<string> {
+    const { client, model } = await this.getAiClient();
+    const visionModel = process.env.AI_VISION_MODEL || model;
+    const base64 = fs.readFileSync(filePath).toString('base64');
+
+    const response = await client.chat.completions.create({
+      model: visionModel,
+      max_tokens: 300,
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: `Опиши кратко (2-3 предложения), что изображено на фото: что за объекты, сцена, что происходит. Без вступлений вроде «на фото».`,
+            },
+            {
+              type: 'image_url',
+              image_url: { url: `data:${mimeType};base64,${base64}` },
+            },
+          ],
+        },
+      ],
+    });
+
+    return response.choices[0].message.content?.trim() ?? '';
+  }
+
   private splitIntoChunks(text: string, size: number): string[] {
     const chunks: string[] = [];
     let i = 0;
@@ -164,6 +225,7 @@ export class DocumentService {
                     - Убери технический мусор (артефакты PDF, лишние пробелы, дубли строк)
                     - Сохрани ВСЕ данные и факты — ничего не удаляй и не придумывай
                     - Используй Markdown: ## для заголовков, **жирный** для ключевых терминов, - для списков
+                    - Табличные данные оформляй Markdown-таблицами (| Колонка | Колонка | со строкой-разделителем |---|---|)
                     - НЕ добавляй вводных фраз типа "Вот отформатированный текст:"
                     - Просто выдай готовый текст
                     - Отвечай на том же языке что и документ`,
@@ -298,24 +360,46 @@ export class DocumentService {
       case 'image/jpeg':
       case 'image/tiff':
       case 'image/webp': {
-        const { data } = await Tesseract.recognize(filePath, 'rus+eng');
-        return { text: data.text, pageCount: 1 };
+        let text = '';
+        try {
+          text = await this.extractImageText(filePath, effectiveMime);
+          if (text.trim()) console.log('[EXTRACT] изображение распознано через ИИ');
+        } catch (err: any) {
+          console.error(
+            '[EXTRACT] ИИ не справился с изображением, откат на OCR:',
+            err?.status,
+            err?.message,
+            JSON.stringify(err?.response?.data ?? err?.error ?? ''),
+          );
+        }
+        if (!text.trim()) {
+          const { data } = await Tesseract.recognize(filePath, 'rus+eng');
+          text = data.text;
+        }
+        if (text.trim().length < 100) {
+          try {
+            const note = await this.describeImage(filePath, effectiveMime);
+            if (note.trim()) return { text, pageCount: 1, description: note };
+          } catch (err: any) {
+            console.error('[EXTRACT] не удалось описать изображение:', err?.message);
+          }
+        }
+        return { text, pageCount: 1 };
       }
 
       case 'application/vnd.ms-excel':
-      case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': {
+      case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
+      case 'application/vnd.oasis.opendocument.spreadsheet': {
         const workbook = XLSX.read(buffer, { type: 'buffer' });
         const text = workbook.SheetNames.map((name) => {
-          const csv = XLSX.utils.sheet_to_csv(workbook.Sheets[name]);
-          const content = this.csvToPlainText(csv);
-          return `### ${name}\n\n${content}`;
-        }).join('\n\n');
-        return { text, pageCount: workbook.SheetNames.length };
-      }
-
-      case 'application/vnd.oasis.opendocument.spreadsheet': {
-        const ast = await officeparser.parseOffice(filePath);
-        return { text: ast.toText(), pageCount: null };
+          const table = this.sheetToMarkdown(workbook.Sheets[name]);
+          return table ? `## ${name}\n\n${table}` : '';
+        }).filter(Boolean).join('\n\n');
+        return {
+          text,
+          pageCount: workbook.SheetNames.length,
+          description: this.describeWorkbook(workbook),
+        };
       }
 
       case 'application/vnd.openxmlformats-officedocument.presentationml.presentation': {
@@ -371,15 +455,38 @@ export class DocumentService {
       const fullPath = path.resolve(filePath);
       console.log(`[EXTRACT] fileId=${fileId} mime=${mimeType}`);
 
-      const { text: fullText, pageCount } = await this.extractFromFile(
+      const { text: fullText, pageCount, description } = await this.extractFromFile(
         fullPath,
         mimeType,
       );
 
       const wasTruncated = fullText.length > this.maxStoredChars;
       const rawText = wasTruncated ? fullText.slice(0, this.maxStoredChars) : fullText;
+      const overviewFallback = description ?? rawText.slice(0, 1500);
 
       if (!rawText.trim()) {
+        if (description?.trim()) {
+          console.log(`[EXTRACT] fileId=${fileId} — текста нет, сохраняем описание фото`);
+          await this.withRetry('save image description', () =>
+            this.documentFilesRepository.update(fileId, {
+              extracted_text: description,
+              normalized_text: description,
+              extraction_status: 'processed',
+              ...(pageCount != null ? { page_count: pageCount } : {}),
+            }),
+          );
+          await this.withRetry('set processed', () =>
+            this.documentsRepository.update(documentId, { status: 'processed' }),
+          );
+          this.notificationsService.create({
+            userId,
+            title: 'Индексация завершена',
+            message: `"${docTitle}" — текста мало, добавлено описание изображения.`,
+            category: 'success',
+            link: '/indexing',
+          }).catch(() => {});
+          return;
+        }
         console.log(`[EXTRACT] fileId=${fileId} — пустой текст`);
         await this.withRetry('set empty', () =>
           this.documentFilesRepository.update(fileId, {
@@ -408,7 +515,7 @@ export class DocumentService {
       await this.withRetry('save raw text', () =>
         this.documentFilesRepository.update(fileId, {
           extracted_text: rawText,
-          normalized_text: rawText.slice(0, 1500),
+          normalized_text: overviewFallback,
           extraction_status: 'text_extracted',
           ...(pageCount != null ? { page_count: pageCount } : {}),
         }),
@@ -422,10 +529,15 @@ export class DocumentService {
           this.buildAiFormattedText(aiText),
         ]);
 
+        const overview =
+          summary && summary.trim().length >= 40
+            ? summary
+            : description ?? summary;
+
         await this.withRetry('save ai result', () =>
           this.documentFilesRepository.update(fileId, {
             extracted_text: formattedText,
-            normalized_text: summary,
+            normalized_text: overview,
             extraction_status: 'processed',
           }),
         );
@@ -736,6 +848,48 @@ export class DocumentService {
     return document;
   }
 
+  async getImagePreview(id: number): Promise<{ buffer: Buffer; contentType: string }> {
+    const doc = await this.findbyid(id);
+    const file = doc.files?.[0];
+    if (!file?.file_path) throw new NotFoundException('Файл не найден');
+
+    const fullPath = path.resolve(file.file_path);
+    if (!fs.existsSync(fullPath)) throw new NotFoundException('Файл не найден');
+
+    const ext = path.extname(fullPath).toLowerCase();
+    const buffer = fs.readFileSync(fullPath);
+
+    if (ext === '.tif' || ext === '.tiff') {
+      const UTIF = require('utif');
+      const ifds = UTIF.decode(buffer);
+      UTIF.decodeImage(buffer, ifds[0]);
+      const rgba = UTIF.toRGBA8(ifds[0]);
+      const { width, height } = ifds[0];
+
+      const { createCanvas } = require('canvas');
+      const canvas = createCanvas(width, height);
+      const ctx = canvas.getContext('2d');
+      const imageData = ctx.createImageData(width, height);
+      imageData.data.set(rgba);
+      ctx.putImageData(imageData, 0, 0);
+
+      return { buffer: canvas.toBuffer('image/png'), contentType: 'image/png' };
+    }
+
+    const mimeByExt: Record<string, string> = {
+      '.png': 'image/png',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.webp': 'image/webp',
+      '.gif': 'image/gif',
+      '.bmp': 'image/bmp',
+    };
+    return {
+      buffer,
+      contentType: mimeByExt[ext] || file.file_type || 'application/octet-stream',
+    };
+  }
+
   async findByCollectionId(
     collectionId: number,
     page = 1,
@@ -791,20 +945,90 @@ export class DocumentService {
     return { data, total };
   }
 
-  async getCollectionStats(collectionId: number): Promise<{
+  async findAllPaginated(
+    page = 1,
+    limit = 20,
+    search?: string,
+    userId?: number,
+    sort?: string,
+    dir?: string,
+    docType?: string,
+    date?: string,
+  ): Promise<{ data: Documents[]; total: number }> {
+    const applyFilters = (qb: ReturnType<Repository<Documents>['createQueryBuilder']>) => {
+      if (userId) {
+        qb.andWhere('(doc.user_id = :userId OR doc.user_id IS NULL)', { userId });
+      }
+      if (search?.trim()) {
+        qb.andWhere('LOWER(doc.title) LIKE :search', {
+          search: `%${search.toLowerCase().trim()}%`,
+        });
+      }
+      if (docType && docType !== 'all') {
+        qb.andWhere("UPPER(COALESCE(doc.document_type, '')) = :docType", {
+          docType: docType.toUpperCase(),
+        });
+      }
+      if (date?.trim()) {
+        qb.andWhere(
+          'DATE(COALESCE(doc.document_date, doc.created_at)) = :date',
+          { date: date.trim() },
+        );
+      }
+      return qb;
+    };
+
+    const sortColumns: Record<string, string> = {
+      title: 'doc.title',
+      type: 'doc.document_type',
+      date: 'doc.document_date',
+      status: 'doc.status',
+      created: 'doc.created_at',
+    };
+    const orderColumn = sortColumns[sort ?? ''] ?? 'doc.created_at';
+    const orderDir: 'ASC' | 'DESC' = dir === 'asc' ? 'ASC' : 'DESC';
+
+    const total = await applyFilters(
+      this.documentsRepository.createQueryBuilder('doc'),
+    ).getCount();
+
+    const data = await applyFilters(
+      this.documentsRepository
+        .createQueryBuilder('doc')
+        .leftJoin('doc.files', 'f')
+        .select([
+          'doc.id', 'doc.collection_id', 'doc.title', 'doc.document_type',
+          'doc.archive_number', 'doc.document_date', 'doc.author_name',
+          'doc.status', 'doc.language', 'doc.created_at',
+          'f.id', 'f.document_id', 'f.file_name', 'f.file_type',
+          'f.file_size', 'f.page_count', 'f.extraction_status', 'f.uploaded_at',
+        ]),
+    )
+      .orderBy(orderColumn, orderDir)
+      .addOrderBy('doc.id', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getMany();
+
+    return { data, total };
+  }
+
+  async getCollectionStats(collectionId?: number): Promise<{
     total: number;
     processed: number;
     processing: number;
     failed: number;
     types: string[];
   }> {
-    const rawStats = await this.documentsRepository
+    const statsQb = this.documentsRepository
       .createQueryBuilder('doc')
       .select('doc.status', 'status')
       .addSelect('COUNT(doc.id)', 'count')
-      .where('doc.collection_id = :collectionId', { collectionId })
-      .groupBy('doc.status')
-      .getRawMany();
+      .groupBy('doc.status');
+    if (collectionId !== undefined) {
+      statsQb.where('doc.collection_id = :collectionId', { collectionId });
+    }
+    const rawStats = await statsQb.getRawMany();
 
     let total = 0, processed = 0, processing = 0, failed = 0;
     for (const row of rawStats) {
@@ -815,15 +1039,15 @@ export class DocumentService {
       else if (row.status === 'extraction_failed') failed += n;
     }
 
-    const rawTypes = await this.documentsRepository
+    const typesQb = this.documentsRepository
       .createQueryBuilder('doc')
       .select('UPPER(doc.document_type)', 'type')
-      .where(
-        "doc.collection_id = :collectionId AND doc.document_type IS NOT NULL AND doc.document_type <> ''",
-        { collectionId },
-      )
-      .distinct(true)
-      .getRawMany();
+      .where("doc.document_type IS NOT NULL AND doc.document_type <> ''")
+      .distinct(true);
+    if (collectionId !== undefined) {
+      typesQb.andWhere('doc.collection_id = :collectionId', { collectionId });
+    }
+    const rawTypes = await typesQb.getRawMany();
 
     const types = rawTypes.map((r: any) => r.type as string).filter(Boolean);
 
@@ -1129,6 +1353,54 @@ export class DocumentService {
   ): Promise<string> {
     const { text } = await this.extractFromFile(filePath, mimeType);
     return text;
+  }
+
+  private describeWorkbook(workbook: XLSX.WorkBook): string {
+    const lines = workbook.SheetNames.map((name) => {
+      const rows: any[][] = XLSX.utils.sheet_to_json(workbook.Sheets[name], {
+        header: 1,
+        blankrows: false,
+        defval: '',
+      });
+      if (!rows.length) return `Лист «${name}» — пустой.`;
+      const colCount = Math.max(...rows.map((row) => row.length));
+      const dataRows = Math.max(rows.length - 1, 0);
+      const headers = (rows[0] ?? [])
+        .map((cell: any) => String(cell ?? '').trim())
+        .filter(Boolean);
+      const cols = headers.length ? ` Колонки: ${headers.join(', ')}.` : '';
+      return `Лист «${name}»: ${dataRows} строк данных, ${colCount} колонок.${cols}`;
+    });
+    return `Табличный документ, листов: ${workbook.SheetNames.length}.\n\n${lines.join('\n')}`;
+  }
+
+  private sheetToMarkdown(sheet: XLSX.WorkSheet): string {
+    const rows: any[][] = XLSX.utils.sheet_to_json(sheet, {
+      header: 1,
+      blankrows: false,
+      defval: '',
+    });
+    if (!rows.length) return '';
+
+    const cleanCell = (value: any): string =>
+      String(value ?? '')
+        .replace(/\r?\n/g, ' ')
+        .replace(/\|/g, '\\|')
+        .trim();
+
+    const colCount = Math.max(...rows.map((row) => row.length));
+    const toRow = (row: any[]): string[] => {
+      const cells = row.map(cleanCell);
+      while (cells.length < colCount) cells.push('');
+      return cells;
+    };
+
+    const line = (cells: string[]): string => `| ${cells.join(' | ')} |`;
+    const header = toRow(rows[0]);
+    const separator = header.map(() => '---');
+    const body = rows.slice(1).map((row) => line(toRow(row)));
+
+    return [line(header), line(separator), ...body].join('\n');
   }
 
   private csvToPlainText(csv: string): string {

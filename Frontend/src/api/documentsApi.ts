@@ -62,6 +62,30 @@ export const documentsApi = {
     return data;
   },
 
+  getAllPaginated: async (
+    page = 1,
+    limit = 10,
+    search?: string,
+    sort?: string,
+    dir?: string,
+    docType?: string,
+    date?: string,
+  ): Promise<PaginatedDocuments> => {
+    const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+    if (search?.trim()) params.set('search', search.trim());
+    if (sort) params.set('sort', sort);
+    if (dir) params.set('dir', dir);
+    if (docType && docType !== 'all') params.set('type', docType);
+    if (date?.trim()) params.set('date', date.trim());
+    const { data } = await axios.get(`${BASE}/documents?${params}`);
+    return data;
+  },
+
+  getAllStats: async (): Promise<CollectionStats> => {
+    const { data } = await axios.get(`${BASE}/documents/stats`);
+    return data;
+  },
+
   getByCollectionId: async (
     collectionId: number,
     page = 1,
@@ -113,6 +137,10 @@ export const documentsApi = {
 
   delete: async (id: number): Promise<void> => {
     await axios.delete(`${BASE}/documents/${id}`);
+  },
+
+  reindexDocument: async (id: number): Promise<void> => {
+    await axios.post(`${BASE}/documents/${id}/extract-text`);
   },
 
   reindexCollection: async (collectionId: number): Promise<void> => {

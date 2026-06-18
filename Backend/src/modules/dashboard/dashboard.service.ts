@@ -15,7 +15,7 @@ export interface DashboardData {
   totalSearchToday: number;
   totalSearchYesterday: number;
   avgResponseTimeSec: number | null;
-  avgResponseTimeSecYesterday: number | null;
+  avgResponseTimeSecPrev: number | null;
   totalActiveUsers: number;
   totalNewUsers: number;
 }
@@ -253,21 +253,21 @@ export class DashboardService {
     ]);
 
     let avgMs: number | null = null;
-    let avgMsYesterday: number | null = null;
+    let avgMsPrev: number | null = null;
     try {
-      const [todayAvgRaw, yesterdayAvgRaw] = await Promise.all([
+      const [allAvgRaw, prevAvgRaw] = await Promise.all([
         this.searchQuerieRepository.manager.query(
           `SELECT AVG(response_time_ms) as avg FROM solidsearchdb.search_queries WHERE response_time_ms IS NOT NULL`,
         ),
         this.searchQuerieRepository.manager.query(
-          `SELECT AVG(response_time_ms) as avg FROM solidsearchdb.search_queries WHERE response_time_ms IS NOT NULL AND created_at >= $1 AND created_at < $2`,
-          [yesterdayStart, yesterdayEnd],
+          `SELECT AVG(response_time_ms) as avg FROM solidsearchdb.search_queries WHERE response_time_ms IS NOT NULL AND created_at < $1`,
+          [todayDate],
         ),
       ]);
-      const val = todayAvgRaw?.[0]?.avg;
-      const valY = yesterdayAvgRaw?.[0]?.avg;
+      const val = allAvgRaw?.[0]?.avg;
+      const valPrev = prevAvgRaw?.[0]?.avg;
       avgMs = val != null ? parseFloat(val) : null;
-      avgMsYesterday = valY != null ? parseFloat(valY) : null;
+      avgMsPrev = valPrev != null ? parseFloat(valPrev) : null;
     } catch {}
 
     return {
@@ -280,7 +280,7 @@ export class DashboardService {
       totalSearchToday,
       totalSearchYesterday,
       avgResponseTimeSec: avgMs != null ? Math.round(avgMs) / 1000 : null,
-      avgResponseTimeSecYesterday: avgMsYesterday != null ? Math.round(avgMsYesterday) / 1000 : null,
+      avgResponseTimeSecPrev: avgMsPrev != null ? Math.round(avgMsPrev) / 1000 : null,
       totalActiveUsers,
       totalNewUsers,
     };

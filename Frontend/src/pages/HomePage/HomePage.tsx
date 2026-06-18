@@ -115,10 +115,10 @@ const HomePage = () => {
         ? Infinity
         : null;
   const avgResponseTimeSec = data?.avgResponseTimeSec ?? null;
-  const avgResponseTimeSecYesterday = data?.avgResponseTimeSecYesterday ?? null;
+  const avgResponseTimeSecPrev = data?.avgResponseTimeSecPrev ?? null;
   const avgTimeDelta =
-    avgResponseTimeSec != null && avgResponseTimeSecYesterday != null
-      ? +(avgResponseTimeSec - avgResponseTimeSecYesterday).toFixed(1)
+    avgResponseTimeSec != null && avgResponseTimeSecPrev != null
+      ? +(avgResponseTimeSec - avgResponseTimeSecPrev).toFixed(1)
       : null;
 
   const previewCollections = collections.slice(0, 4);
@@ -150,7 +150,7 @@ const HomePage = () => {
           {searchTrend !== null && (
             <span className="trend-up-request">
               {searchTrend === Infinity
-                ? `+${totalSearchToday} за сегодня`
+                ? `+${totalSearchToday}`
                 : `${searchTrend >= 0 ? "+" : ""}${searchTrend}%`}
             </span>
           )}
@@ -165,6 +165,9 @@ const HomePage = () => {
           </h2>
           {avgTimeDelta !== null && (
             <span className="trend-down">
+              <i
+                className={`fa fa-arrow-${avgTimeDelta > 0 ? "up" : "down"}`}
+              />{" "}
               {avgTimeDelta > 0 ? `+${avgTimeDelta}` : avgTimeDelta} сек
             </span>
           )}

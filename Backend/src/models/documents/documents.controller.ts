@@ -17,6 +17,9 @@ export class DocumentsController {
     @Query('limit') limit?: string,
     @Query('search') search?: string,
     @Query('type') type?: string,
+    @Query('sort') sort?: string,
+    @Query('dir') dir?: string,
+    @Query('date') date?: string,
     @Query('user_id') userId?: string,
   ) {
     if (collectionId !== undefined) {
@@ -26,6 +29,18 @@ export class DocumentsController {
         Number(limit) || 20,
         search,
         type,
+      );
+    }
+    if (page !== undefined) {
+      return await this.documentsService.findAllPaginated(
+        Number(page) || 1,
+        Number(limit) || 20,
+        search,
+        userId ? Number(userId) : undefined,
+        sort,
+        dir,
+        type,
+        date,
       );
     }
     return await this.documentsService.findall(userId ? Number(userId) : undefined, limit ? Number(limit) : undefined);
@@ -47,8 +62,10 @@ export class DocumentsController {
   }
 
   @Get('stats')
-  async getCollectionStats(@Query('collection_id') collectionId: string) {
-    return await this.documentsService.getCollectionStats(Number(collectionId));
+  async getCollectionStats(@Query('collection_id') collectionId?: string) {
+    return await this.documentsService.getCollectionStats(
+      collectionId !== undefined ? Number(collectionId) : undefined,
+    );
   }
 
   @Get(':id/jobs')
@@ -71,6 +88,17 @@ export class DocumentsController {
         res.status(500).json({ message: 'Ошибка при скачивании' });
       }
     });
+  }
+
+  @Get(':id/preview')
+  async preview(
+    @Param('id', ParseIntPipe) id: number,
+    @Res() res: Response,
+  ) {
+    const { buffer, contentType } = await this.documentsService.getImagePreview(id);
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Cache-Control', 'private, max-age=3600');
+    res.end(buffer);
   }
 
   @Get(':id')

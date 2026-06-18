@@ -208,10 +208,10 @@ const AnalyticsPage: React.FC = () => {
       : "—";
 
   const avgAllTime = dashboardData?.avgResponseTimeSec ?? null;
-  const avgYesterday = dashboardData?.avgResponseTimeSecYesterday ?? null;
+  const avgPrev = dashboardData?.avgResponseTimeSecPrev ?? null;
   const timeDiff =
-    avgAllTime != null && avgYesterday != null
-      ? +(avgYesterday - avgAllTime).toFixed(2)
+    avgAllTime != null && avgPrev != null
+      ? +(avgPrev - avgAllTime).toFixed(2)
       : null;
   const timeTrendText =
     timeDiff != null && timeDiff !== 0

@@ -29,8 +29,8 @@ const Sidebar = () => {
         </div>
       </Link>
       <Link
-        to="/collections"
-        className={`nav-link ${path === "/collections" ? "active" : ""}`}
+        to="/archive"
+        className={`nav-link ${path === "/archive" ? "active" : ""}`}
       >
         <div>
           <i className="fa fa-folder-open" /> Архив документов

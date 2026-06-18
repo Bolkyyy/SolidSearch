@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import Layout from "../../components/Layout/Layout";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Document, documentsApi } from "@/api/documentsApi";
@@ -36,14 +37,35 @@ const DocumentCard = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [documentData, setDocumentData] = useState<Document | null>(null);
   const [textPage, setTextPage] = useState(0);
+  const [imageModalOpen, setImageModalOpen] = useState(false);
   const textScrollRef = useRef<HTMLDivElement>(null);
   const file = documentData?.files?.[0];
+
+  const IMAGE_EXTS = ["png", "jpg", "jpeg", "tiff", "tif", "webp", "bmp", "gif"];
+  const fileExt = (file?.file_name || "").split(".").pop()?.toLowerCase() || "";
+  const isImage =
+    !!file &&
+    (file.file_type?.startsWith("image/") ||
+      IMAGE_EXTS.includes((documentData?.document_type || "").toLowerCase()) ||
+      IMAGE_EXTS.includes(fileExt));
+  const fileUrl = documentData
+    ? `http://localhost:3001/documents/${documentData.id}/preview`
+    : "";
 
   const textPages = useMemo(
     () => (file?.extracted_text ? paginateText(file.extracted_text) : []),
     [file?.extracted_text],
   );
   const totalPages = textPages.length;
+
+  useEffect(() => {
+    if (!imageModalOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setImageModalOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [imageModalOpen]);
 
   const [jobs, setJobs] = useState<IndexJob[]>([]);
   const [notFound, setNotFound] = useState(false);
@@ -234,7 +256,9 @@ const DocumentCard = () => {
                     <div className="overview-content">
                       {file?.normalized_text ? (
                         <div className="markdown-body">
-                          <ReactMarkdown >{file.normalized_text}</ReactMarkdown>
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            {file.normalized_text}
+                          </ReactMarkdown>
                         </div>
                       ) : (
                         <>
@@ -301,10 +325,26 @@ const DocumentCard = () => {
                 <div className="fulltext-tab">
                   <div className="fulltext-content">
                     <h2>{documentData?.title}</h2>
-                    {textPages.length > 0 ? (
+                    {isImage ? (
+                      <>
+                        <button
+                          className="doc-image-zoom-btn"
+                          onClick={() => setImageModalOpen(true)}
+                        >
+                          <i className="fa fa-expand" /> Открыть картинку
+                        </button>
+                        <div className="doc-image-preview">
+                          <img
+                            src={fileUrl}
+                            alt={documentData?.title}
+                            onClick={() => setImageModalOpen(true)}
+                          />
+                        </div>
+                      </>
+                    ) : textPages.length > 0 ? (
                       <>
                         <div className="markdown-body doc-fulltext" ref={textScrollRef}>
-                          <ReactMarkdown>
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
                             {textPages[textPage]}
                           </ReactMarkdown>
                         </div>
@@ -535,6 +575,27 @@ const DocumentCard = () => {
           </div>
         </div>
       </div>
+
+      {isImage && imageModalOpen && (
+        <div
+          className="image-modal-overlay"
+          onClick={() => setImageModalOpen(false)}
+        >
+          <button
+            className="image-modal-close"
+            onClick={() => setImageModalOpen(false)}
+            title="Закрыть"
+          >
+            <i className="fa fa-times" />
+          </button>
+          <img
+            className="image-modal-img"
+            src={fileUrl}
+            alt={documentData?.title}
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </Layout>
   );
 };

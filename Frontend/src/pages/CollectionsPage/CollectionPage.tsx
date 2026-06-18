@@ -1,337 +1,503 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import Layout from "../../components/Layout/Layout";
-import { fetchDashboardData, DashboardData } from "@/api/dashboard";
 import ConfirmModal from "../../components/ConfirmModal/ConfirmModal";
-import { documentsApi } from "@/api/documentsApi";
-import { collectionsApi, Collection } from "@/api/collectionsApi";
+import { documentsApi, Document, CollectionStats } from "@/api/documentsApi";
+
+const PAGE_SIZE = 10;
+
+type SortField = "title" | "type" | "date" | "status";
+type SortDir = "asc" | "desc";
 
 const CollectionPage = () => {
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [collections, setCollections] = useState<Collection[]>([]);
-  const [loadingCols, setLoadingCols] = useState(true);
+  const navigate = useNavigate();
 
-  const [showModal, setShowModal] = useState(false);
-  const [newName, setNewName] = useState("");
-  const [newDescription, setNewDescription] = useState("");
-  const [creating, setCreating] = useState(false);
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [stats, setStats] = useState<CollectionStats | null>(null);
+  const [totalCount, setTotalCount] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [docsLoading, setDocsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedType, setSelectedType] = useState("all");
+  const [selectedDate, setSelectedDate] = useState("");
+  const [sortField, setSortField] = useState<SortField>("date");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
 
-  const [deleteTarget, setDeleteTarget] = useState<Collection | null>(null);
+  const appliedSearchRef = useRef("");
+  const appliedTypeRef = useRef("all");
+  const appliedDateRef = useRef("");
+  const sortFieldRef = useRef<SortField>("date");
+  const sortDirRef = useRef<SortDir>("desc");
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tableRef = useRef<HTMLDivElement>(null);
+  const formatRef = useRef<HTMLDivElement>(null);
+  const currentPageRef = useRef(1);
+  const [formatOpen, setFormatOpen] = useState(false);
+
+  const [deleteTarget, setDeleteTarget] = useState<Document | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  const [reindexingId, setReindexingId] = useState<number | null>(null);
-  const [activeReindexIds, setActiveReindexIds] = useState<Set<number>>(() => {
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+
+  const fetchDocs = async (page: number, silent = false) => {
+    currentPageRef.current = page;
+    if (!silent) setDocsLoading(true);
     try {
-      const saved = localStorage.getItem('activeReindexIds');
-      return saved ? new Set(JSON.parse(saved)) : new Set();
-    } catch { return new Set(); }
-  });
-  const [cancellingId, setCancellingId] = useState<number | null>(null);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const [collectionSizes, setCollectionSizes] = useState<
-    Record<number, number>
-  >({});
-
-  useEffect(() => {
-    if (activeReindexIds.size === 0) {
-      if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
-      return;
-    }
-    if (pollRef.current) return;
-    pollRef.current = setInterval(async () => {
-      const ids = [...activeReindexIds];
-      const results = await Promise.all(
-        ids.map(id =>
-          documentsApi.reindexStatus(id)
-            .then(s => ({ id, active: s.active }))
-            .catch(() => ({ id, active: true }))
-        )
+      const result = await documentsApi.getAllPaginated(
+        page,
+        PAGE_SIZE,
+        appliedSearchRef.current,
+        sortFieldRef.current,
+        sortDirRef.current,
+        appliedTypeRef.current,
+        appliedDateRef.current,
       );
-      const done = results.filter(r => !r.active).map(r => r.id);
-      if (done.length > 0) {
-        setActiveReindexIds(prev => {
-          const next = new Set(prev);
-          done.forEach(id => next.delete(id));
-          localStorage.setItem('activeReindexIds', JSON.stringify([...next]));
-          return next;
-        });
-      }
-    }, 5000);
-    return () => { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } };
-  }, [activeReindexIds]);
-
-  useEffect(() => {
-    fetchDashboardData()
-      .then(setData)
-      .catch(() => {});
-    loadCollections();
-    documentsApi.collectionSizes()
-      .then((rows) => {
-        const sizes: Record<number, number> = {};
-        for (const row of rows) {
-          sizes[row.collection_id] = Number(row.total_size);
-        }
-        setCollectionSizes(sizes);
-      })
-      .catch(() => {});
-  }, []);
-
-  const loadCollections = () => {
-    setLoadingCols(true);
-    collectionsApi.getAll()
-      .then(setCollections)
-      .catch(() => {})
-      .finally(() => setLoadingCols(false));
+      setDocuments(result.data);
+      setTotalCount(result.total);
+    } catch (e) {
+      console.error("Ошибка загрузки документов", e);
+    } finally {
+      if (!silent) setDocsLoading(false);
+    }
   };
 
-  const totalDocuments = data?.totalDocuments ?? 0;
-  const totalIndexed = data?.totalIndexed ?? 0;
-  const emptyCollections = collections.filter(c => (collectionSizes[c.id] ?? 0) === 0).length;
+  const fetchStats = () => {
+    documentsApi.getAllStats().then(setStats).catch(() => {});
+  };
 
-  const formatSize = (bytes: number) => {
-    if (bytes === 0) return "0 МБ";
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} КБ`;
-    if (bytes < 1024 * 1024 * 1024)
-      return `${(bytes / 1024 / 1024).toFixed(2)} МБ`;
-    return `${(bytes / 1024 / 1024 / 1024).toFixed(2)} ГБ`;
+  useEffect(() => {
+    fetchDocs(1);
+    fetchStats();
+    const interval = setInterval(() => {
+      fetchDocs(currentPageRef.current, true);
+      fetchStats();
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (!formatOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (formatRef.current && !formatRef.current.contains(e.target as Node)) {
+        setFormatOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [formatOpen]);
+
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    searchTimerRef.current = setTimeout(() => {
+      appliedSearchRef.current = value;
+      setCurrentPage(1);
+      fetchDocs(1);
+    }, 300);
+  };
+
+  const handleTypeChange = (type: string) => {
+    setSelectedType(type);
+    appliedTypeRef.current = type;
+    setFormatOpen(false);
+    setCurrentPage(1);
+    fetchDocs(1);
+  };
+
+  const handleDateChange = (value: string) => {
+    setSelectedDate(value);
+    appliedDateRef.current = value;
+    setCurrentPage(1);
+    fetchDocs(1);
+  };
+
+  const handleSort = (field: SortField) => {
+    let dir: SortDir;
+    if (sortFieldRef.current === field) {
+      dir = sortDirRef.current === "asc" ? "desc" : "asc";
+    } else {
+      dir = "asc";
+    }
+    sortFieldRef.current = field;
+    sortDirRef.current = dir;
+    setSortField(field);
+    setSortDir(dir);
+    setCurrentPage(1);
+    fetchDocs(1);
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    fetchDocs(page);
+    tableRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   const handleConfirmDelete = async () => {
     if (!deleteTarget) return;
     setDeleting(true);
     try {
-      await collectionsApi.delete(deleteTarget.id);
-      setCollections((prev) => prev.filter((c) => c.id !== deleteTarget.id));
+      await documentsApi.delete(deleteTarget.id);
       setDeleteTarget(null);
-    } catch (err) {
-      console.error("Ошибка при удалении коллекции:", err);
+      const nextPage =
+        documents.length === 1 && currentPage > 1 ? currentPage - 1 : currentPage;
+      if (nextPage !== currentPage) setCurrentPage(nextPage);
+      await fetchDocs(nextPage);
+      fetchStats();
+    } catch {
+      console.error("Ошибка при удалении документа");
     } finally {
       setDeleting(false);
     }
   };
 
-  const setActive = (id: number, active: boolean) => {
-    setActiveReindexIds(prev => {
-      const next = new Set(prev);
-      active ? next.add(id) : next.delete(id);
-      localStorage.setItem('activeReindexIds', JSON.stringify([...next]));
-      return next;
-    });
+  const getFileIcon = (type: string) => {
+    const icons: Record<string, string> = {
+      PDF: "fa-file-pdf-o",
+      DOCX: "fa-file-word-o",
+      DOC: "fa-file-word-o",
+      TXT: "fa-file-text-o",
+      XLSX: "fa-file-excel-o",
+      PPTX: "fa-file-powerpoint-o",
+    };
+    return icons[type?.toUpperCase()] || "fa-file-o";
   };
 
-  const handleReindex = async (collectionId: number) => {
-    setReindexingId(collectionId);
-    try {
-      await documentsApi.reindexCollection(collectionId);
-      setActive(collectionId, true);
-    } catch (err) {
-      console.error("Ошибка переиндексации:", err);
-    } finally {
-      setReindexingId(null);
+  const getFormatClass = (type: string) => {
+    const map: Record<string, string> = {
+      PDF: "fmt-pdf",
+      DOC: "fmt-word",
+      DOCX: "fmt-word",
+      RTF: "fmt-word",
+      TXT: "fmt-text",
+      MD: "fmt-text",
+      XLS: "fmt-excel",
+      XLSX: "fmt-excel",
+      ODS: "fmt-excel",
+      CSV: "fmt-excel",
+      PPT: "fmt-ppt",
+      PPTX: "fmt-ppt",
+      PNG: "fmt-image",
+      JPG: "fmt-image",
+      JPEG: "fmt-image",
+      TIFF: "fmt-image",
+      WEBP: "fmt-image",
+    };
+    return map[type?.toUpperCase()] || "fmt-other";
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "processed":
+        return (
+          <span className="status-success">
+            <i className="fa fa-check-circle" /> Индексирован
+          </span>
+        );
+      case "processing":
+        return (
+          <span className="status-warning">
+            <i className="fa fa-spinner fa-spin" /> Обработка
+          </span>
+        );
+      case "extraction_failed":
+        return (
+          <span className="status-error">
+            <i className="fa fa-exclamation-circle" /> Ошибка
+          </span>
+        );
+      default:
+        return (
+          <span className="status-warning">
+            <i className="fa fa-clock-o" /> Ожидание
+          </span>
+        );
     }
   };
 
-  const handleCancelReindex = async (collectionId: number) => {
-    setCancellingId(collectionId);
-    try {
-      await documentsApi.cancelReindex(collectionId);
-      setActive(collectionId, false);
-    } catch (err) {
-      console.error("Ошибка отмены:", err);
-    } finally {
-      setCancellingId(null);
-    }
+  const getTotalSize = (files: Document["files"]) => {
+    if (!files?.length) return "—";
+    const total = files.reduce((sum, f) => sum + (f.file_size || 0), 0);
+    if (total === 0) return "—";
+    if (total < 1024) return `${total} Б`;
+    if (total < 1024 * 1024) return `${(total / 1024).toFixed(1)} КБ`;
+    return `${(total / 1024 / 1024).toFixed(1)} МБ`;
   };
 
-  const handleCreateCollection = async () => {
-    if (!newName.trim()) return;
-    setCreating(true);
-    try {
-      const col = await collectionsApi.create(newName, newDescription);
-      setCollections((prev) => [...prev, col]);
-      setNewName("");
-      setNewDescription("");
-      setShowModal(false);
-    } catch (err) {
-      console.error("Ошибка при создании коллекции:", err);
-    } finally {
-      setCreating(false);
-    }
+  const getDocType = (doc: Document) =>
+    doc.document_type || doc.files?.[0]?.file_type || "—";
+
+  const pageFrom = totalCount === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
+  const pageTo = Math.min(currentPage * PAGE_SIZE, totalCount);
+
+  const sortIcon = (field: SortField) => {
+    if (sortField !== field) return <i className="fa fa-sort sort-icon" />;
+    return (
+      <i className={`fa fa-sort-${sortDir === "asc" ? "asc" : "desc"} sort-icon sort-icon--active`} />
+    );
   };
 
   return (
     <Layout>
-      <section className="welcome flex-row">
+      <section className="welcome">
         <div>
           <h1>Архив документов</h1>
-          <p className="welcome-link">
-            Управление коллекциями и архивами документов
-          </p>
+          <p className="welcome-link">Все загруженные документы</p>
         </div>
-        <button
-          className="create-collection-btn"
-          onClick={() => setShowModal(true)}
-        >
-          <i className="fa fa-plus"></i> Создать коллекцию
-        </button>
       </section>
 
       <div className="stats-cards">
         <div className="stat-card-archive">
-          <i className="fa fa-folder card-icon blue"></i>
-          <p>Всего коллекций</p>
-          <h2>{collections.length}</h2>
-        </div>
-        <div className="stat-card-archive">
           <i className="fa fa-file-text card-icon green"></i>
           <p>Всего документов</p>
-          <h2>{totalDocuments}</h2>
+          <h2>{stats?.total ?? 0}</h2>
         </div>
         <div className="stat-card-archive">
           <i className="fa fa-bolt card-icon purple"></i>
           <p>Проиндексировано</p>
-          <h2>{totalIndexed}</h2>
+          <h2>{stats?.processed ?? 0}</h2>
+        </div>
+        <div className="stat-card-archive">
+          <i className="fa fa-spinner card-icon blue"></i>
+          <p>В обработке</p>
+          <h2>{stats?.processing ?? 0}</h2>
         </div>
         <div className="stat-card-archive">
           <i className="fa fa-exclamation-triangle card-icon orange"></i>
-          <p>Пустые коллекции</p>
-          <h2>{emptyCollections}</h2>
+          <p>Ошибки</p>
+          <h2>{stats?.failed ?? 0}</h2>
         </div>
       </div>
 
-      {loadingCols ? (
-        <div className="page-loading-state">
-          <i className="fa fa-spinner fa-spin fa-2x" />
-          <p>Загрузка коллекций...</p>
+      <div className="documents-controls">
+        <div className="search-box">
+          <i className="fa fa-search" />
+          <input
+            type="text"
+            placeholder="Поиск по документам..."
+            value={searchTerm}
+            onChange={(e) => handleSearchChange(e.target.value)}
+          />
         </div>
-      ) : collections.length === 0 ? (
-        <div className="page-empty-state">
-          <i className="fa fa-folder-open fa-3x page-empty-icon" />
-          <p>Коллекций пока нет. Создайте первую!</p>
+        <div className="table-filters">
+        <div className={`date-filter${selectedDate ? " date-filter--active" : ""}`}>
+          <i className="fa fa-calendar date-filter-icon" />
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => handleDateChange(e.target.value)}
+            title="Фильтр по дате документа"
+          />
+          {selectedDate && (
+            <button
+              type="button"
+              className="date-filter-clear"
+              onClick={() => handleDateChange("")}
+              title="Сбросить дату"
+            >
+              <i className="fa fa-times" />
+            </button>
+          )}
         </div>
-      ) : (
-        <div className="archives-grid">
-          {collections.map((col) => (
-            <div className={`archive-item${!col.is_active ? ' archive-item--inactive' : ''}`} key={col.id}>
-              <span className={`collection-status-badge collection-status-badge--card ${col.is_active ? 'collection-status-badge--active' : 'collection-status-badge--inactive'}`}>
-                <i className={`fa fa-${col.is_active ? 'check-circle' : 'ban'}`} />
-                {col.is_active ? 'Активна' : 'Неактивна'}
-              </span>
-              <div className="archive-item-header">
-                <i className="fa fa-folder-open collection-folder-icon" />
-                <h3 className="inline-block">{col.name}</h3>
-              </div>
-              <div className="archive-info">
-                <span>{col.description || "Нет описания"}</span>
-                <span className="collection-size">
-                  <i className="fa fa-database" />
-                  {formatSize(collectionSizes[col.id] ?? 0)}
-                </span>
-              </div>
-              <div className="archive-buttons">
-                <Link to={`/collection/${col.id}`} className="btn-open">
-                  <i className="fa fa-folder-open"></i> Открыть
-                </Link>
-                <button
-                  className="btn-reindex"
-                  onClick={() => handleReindex(col.id)}
-                  disabled={reindexingId === col.id || activeReindexIds.has(col.id)}
-                >
-                  <i className={`fa ${reindexingId === col.id ? "fa-spinner fa-spin" : activeReindexIds.has(col.id) ? "fa-clock-o" : "fa-refresh"}`} />
-                  {reindexingId === col.id ? " Запуск..." : activeReindexIds.has(col.id) ? " Идёт..." : " Переиндексировать"}
-                </button>
-                {activeReindexIds.has(col.id) && (
-                  <button
-                    className="btn-reindex btn-reindex--cancel"
-                    onClick={() => handleCancelReindex(col.id)}
-                    disabled={cancellingId === col.id}
-                  >
-                    <i className={`fa ${cancellingId === col.id ? "fa-spinner fa-spin" : "fa-times"}`} />
-                    {cancellingId === col.id ? " Отмена..." : " Отменить"}
-                  </button>
-                )}
-                <button
-                  className="btn-delete-collection"
-                  onClick={() => setDeleteTarget(col)}
-                  title="Удалить коллекцию"
-                >
-                  <i className="fa fa-trash" />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
 
-      {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal-container" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>
-                <i className="fa fa-folder" />
-                Новая коллекция
-              </h2>
+        <div className="fmt-filter" ref={formatRef}>
+          <button
+            type="button"
+            className={`fmt-filter-btn${selectedType !== "all" ? " fmt-filter-btn--active" : ""}`}
+            onClick={() => setFormatOpen((v) => !v)}
+            title="Фильтр по формату"
+          >
+            <i className="fa fa-filter fmt-filter-icon" />
+            {selectedType === "all" ? (
+              <span className="fmt-filter-label">Все форматы</span>
+            ) : (
+              <span className={`doc-type-badge ${getFormatClass(selectedType)}`}>
+                {selectedType.toUpperCase()}
+              </span>
+            )}
+            <i
+              className={`fa fa-chevron-${formatOpen ? "up" : "down"} fmt-filter-caret`}
+            />
+          </button>
+          {formatOpen && (
+            <div className="fmt-filter-panel">
               <button
-                className="modal-close"
-                onClick={() => setShowModal(false)}
+                type="button"
+                className={`fmt-filter-item${selectedType === "all" ? " active" : ""}`}
+                onClick={() => handleTypeChange("all")}
               >
-                ×
+                <span className="fmt-filter-all">Все форматы</span>
+                {selectedType === "all" && <i className="fa fa-check" />}
               </button>
+              {(stats?.types ?? []).map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  className={`fmt-filter-item${selectedType === type ? " active" : ""}`}
+                  onClick={() => handleTypeChange(type)}
+                >
+                  <span className={`doc-type-badge ${getFormatClass(type)}`}>
+                    {type.toUpperCase()}
+                  </span>
+                  {selectedType === type && <i className="fa fa-check" />}
+                </button>
+              ))}
             </div>
-            <div className="modal-body">
-              <div className="form-group">
-                <label>Название *</label>
-                <input
-                  type="text"
-                  placeholder="Например: Договоры 2024"
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  autoFocus
-                  onKeyDown={(e) =>
-                    e.key === "Enter" && handleCreateCollection()
-                  }
-                />
-              </div>
-              <div className="form-group">
-                <label>Описание</label>
-                <input
-                  type="text"
-                  placeholder="Краткое описание (необязательно)"
-                  value={newDescription}
-                  onChange={(e) => setNewDescription(e.target.value)}
-                />
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button
-                className="btn-cancel"
-                onClick={() => setShowModal(false)}
-              >
-                Отмена
-              </button>
-              <button
-                className="btn-create"
-                onClick={handleCreateCollection}
-                disabled={creating}
-              >
-                {creating ? (
-                  <>
-                    <i className="fa fa-spinner fa-spin" /> Создание...
-                  </>
-                ) : (
-                  "Создать"
-                )}
-              </button>
-            </div>
+          )}
+        </div>
+        </div>
+      </div>
+
+      <div className="documents-table-wrapper" ref={tableRef}>
+        {docsLoading && (
+          <div className="docs-page-loading">
+            <i className="fa fa-spinner fa-spin" /> Загрузка...
+          </div>
+        )}
+        <table
+          className={`documents-table${docsLoading ? " docs-table--faded" : ""}`}
+        >
+          <thead>
+            <tr>
+              <th className="th-sortable" onClick={() => handleSort("title")}>
+                Название {sortIcon("title")}
+              </th>
+              <th className="th-sortable" onClick={() => handleSort("type")}>
+                Формат {sortIcon("type")}
+              </th>
+              <th>Файлов</th>
+              <th>Размер</th>
+              <th className="th-sortable" onClick={() => handleSort("date")}>
+                Дата документа {sortIcon("date")}
+              </th>
+              <th className="th-sortable" onClick={() => handleSort("status")}>
+                Статус {sortIcon("status")}
+              </th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {documents.length === 0 && !docsLoading ? (
+              <tr>
+                <td colSpan={7} className="empty-state">
+                  <i className="fa fa-inbox" />
+                  <p>Документы не найдены</p>
+                </td>
+              </tr>
+            ) : (
+              documents.map((doc) => (
+                <tr
+                  key={doc.id}
+                  onClick={() => navigate(`/document/${doc.id}`)}
+                  className="tr-clickable"
+                  title="Открыть документ"
+                >
+                  <td>
+                    <div className="doc-name-cell">
+                      <i className={`fa ${getFileIcon(getDocType(doc))}`} />
+                      <span>{doc.title}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span
+                      className={`doc-type-badge ${getFormatClass(getDocType(doc))}`}
+                    >
+                      {getDocType(doc).toUpperCase()}
+                    </span>
+                  </td>
+                  <td className="td-center">{doc.files?.length ?? 0}</td>
+                  <td>{getTotalSize(doc.files)}</td>
+                  <td>
+                    {doc.document_date
+                      ? new Date(doc.document_date).toLocaleDateString("ru-RU")
+                      : doc.created_at
+                        ? new Date(doc.created_at).toLocaleDateString("ru-RU")
+                        : "—"}
+                  </td>
+                  <td>{getStatusBadge(doc.status)}</td>
+                  <td>
+                    <button
+                      className="delete-doc-btn"
+                      title="Удалить документ"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleteTarget(doc);
+                      }}
+                    >
+                      <i className="fa fa-trash" />
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {totalPages > 1 && (
+        <div className="collection-pagination">
+          <span className="pagination-info">
+            {pageFrom}–{pageTo} из {totalCount} документов
+          </span>
+          <div className="history-pagination-controls">
+            <button
+              className="history-page-btn history-page-arrow"
+              disabled={currentPage === 1}
+              onClick={() => handlePageChange(1)}
+              title="В начало"
+            >
+              <i className="fa fa-angle-double-left" />
+            </button>
+            <button
+              className="history-page-btn history-page-arrow"
+              disabled={currentPage === 1}
+              onClick={() => handlePageChange(currentPage - 1)}
+              title="Предыдущая"
+            >
+              <i className="fa fa-chevron-left" />
+            </button>
+            {(() => {
+              const pages =
+                totalPages <= 3
+                  ? Array.from({ length: totalPages }, (_, i) => i + 1)
+                  : [
+                      Math.min(Math.max(currentPage, 2), totalPages - 1) - 1,
+                      Math.min(Math.max(currentPage, 2), totalPages - 1),
+                      Math.min(Math.max(currentPage, 2), totalPages - 1) + 1,
+                    ];
+              return pages.map((p) => (
+                <button
+                  key={p}
+                  className={`history-page-btn${currentPage === p ? " active" : ""}`}
+                  onClick={() => handlePageChange(p)}
+                >
+                  {p}
+                </button>
+              ));
+            })()}
+            <button
+              className="history-page-btn history-page-arrow"
+              disabled={currentPage === totalPages}
+              onClick={() => handlePageChange(currentPage + 1)}
+              title="Следующая"
+            >
+              <i className="fa fa-chevron-right" />
+            </button>
+            <button
+              className="history-page-btn history-page-arrow"
+              disabled={currentPage === totalPages}
+              onClick={() => handlePageChange(totalPages)}
+              title="В конец"
+            >
+              <i className="fa fa-angle-double-right" />
+            </button>
           </div>
         </div>
       )}
 
       <ConfirmModal
         isOpen={deleteTarget !== null}
-        title="Удалить коллекцию?"
-        message={`Коллекция «${deleteTarget?.name}» будет удалена безвозвратно. Это действие нельзя отменить.`}
+        title="Удалить документ?"
+        message={`Документ «${deleteTarget?.title}» будет удалён безвозвратно вместе с файлами. Это действие нельзя отменить.`}
         confirmText="Удалить"
         cancelText="Отмена"
         variant="danger"

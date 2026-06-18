@@ -10,7 +10,7 @@ export interface DashboardData {
   totalSearchToday: number;
   totalSearchYesterday: number;
   avgResponseTimeSec: number | null;
-  avgResponseTimeSecYesterday: number | null;
+  avgResponseTimeSecPrev: number | null;
   totalActiveUsers: number;
   totalNewUsers: number;
 }

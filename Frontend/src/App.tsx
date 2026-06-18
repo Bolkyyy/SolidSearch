@@ -3,6 +3,7 @@ import LoginPage from './pages/LoginPage/LoginPage';
 import HomePage from './pages/HomePage/HomePage';
 import SearchPage from './pages/SearchPage/SearchPage';
 import CollectionPage from './pages/CollectionsPage/CollectionPage';
+import CollectionsListPage from './pages/CollectionsListPage/CollectionsListPage';
 import HistoryPage from './pages/HistoryPage/HistoryPage';
 import AnalyticsPage from './pages/AnalyticsPage/AnalyticsPage';
 import IndexingPage from './pages/IndexingPage/IndexingPage';
@@ -24,7 +25,8 @@ function AppRoutes() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/home" element={<HomePage />} />
       <Route path="/search" element={<SearchPage />} />
-      <Route path="/collections" element={<CollectionPage />} />
+      <Route path="/archive" element={<CollectionPage />} />
+      <Route path="/collections" element={<CollectionsListPage />} />
       <Route path="/history" element={<HistoryPage />} />
       <Route path="/analytics" element={<AnalyticsPage />} />
       <Route path="/indexing" element={<IndexingPage />} />

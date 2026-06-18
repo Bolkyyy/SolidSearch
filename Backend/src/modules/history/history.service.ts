@@ -44,6 +44,39 @@ export class HistoryService {
       }
     }
 
+    const existingQb = this.searchQueriesRepository
+      .createQueryBuilder('sq')
+      .where('LOWER(sq.query_text) = LOWER(:q)', { q: (dto.query_text ?? '').trim() });
+
+    if (dto.user_id == null) {
+      existingQb.andWhere('sq.user_id IS NULL');
+    } else {
+      existingQb.andWhere('sq.user_id = :uid', { uid: dto.user_id });
+    }
+
+    if (dto.query_type == null) {
+      existingQb.andWhere('sq.query_type IS NULL');
+    } else {
+      existingQb.andWhere('sq.query_type = :type', { type: dto.query_type });
+    }
+
+    if (normalized === null) {
+      existingQb.andWhere('sq.filters_json IS NULL');
+    } else {
+      existingQb.andWhere('sq.filters_json::text = :fj', { fj: JSON.stringify(normalized) });
+    }
+
+    const existing = await existingQb.orderBy('sq.created_at', 'DESC').getOne();
+
+    if (existing) {
+      await this.searchQueriesRepository.update(existing.id, {
+        created_at: new Date(),
+        status: dto.status ?? existing.status,
+        result_count: dto.result_count ?? existing.result_count,
+      });
+      return { ...existing, created_at: new Date() };
+    }
+
     const post = this.searchQueriesRepository.create({
       ...dto,
       filters_json: normalized,

@@ -119,6 +119,7 @@ const IndexingPage = () => {
   );
   const [hiddenIds, setHiddenIds] = useState<Set<number>>(loadHiddenIds);
   const [deletingIds, setDeletingIds] = useState<Set<number>>(new Set());
+  const [reindexingIds, setReindexingIds] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(true);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -225,6 +226,24 @@ const IndexingPage = () => {
       });
     } catch {
       setDeletingIds((p) => {
+        const next = new Set(p);
+        next.delete(id);
+        return next;
+      });
+    }
+  };
+
+  const reindexDoc = async (id: number) => {
+    setReindexingIds((p) => new Set([...p, id]));
+    try {
+      await documentsApi.reindexDocument(id);
+      setDocuments((p) =>
+        p.map((d) => (d.id === id ? { ...d, status: "processing" } : d)),
+      );
+      fetchDocuments();
+    } catch {
+    } finally {
+      setReindexingIds((p) => {
         const next = new Set(p);
         next.delete(id);
         return next;
@@ -346,9 +365,39 @@ const IndexingPage = () => {
             Выбрать файлы
           </button>
         </div>
-        <span className="upload-hint">
-          PDF, DOCX, XLSX, PPTX, TXT, CSV, RTF, MD, PNG, JPG и другие
-        </span>
+        <div className="um-hint-row">
+          <span className="upload-hint">
+            PDF, DOCX, XLSX, PPTX, TXT, CSV, RTF, MD, PNG, JPG и другие
+          </span>
+          <div className="um-info-wrap">
+            <button
+              className="um-info-btn"
+              onClick={(e) => e.stopPropagation()}
+              tabIndex={-1}
+            >
+              i
+            </button>
+            <div className="um-info-tooltip">
+              <div className="um-tooltip-title">Поддерживаемые форматы</div>
+              <div className="um-tooltip-group">
+                <span className="um-tooltip-label">Документы</span>
+                <span className="um-tooltip-formats">PDF, DOCX, DOC, TXT, RTF, MD</span>
+              </div>
+              <div className="um-tooltip-group">
+                <span className="um-tooltip-label">Таблицы</span>
+                <span className="um-tooltip-formats">XLSX, XLS, ODS, CSV</span>
+              </div>
+              <div className="um-tooltip-group">
+                <span className="um-tooltip-label">Презентации</span>
+                <span className="um-tooltip-formats">PPTX, PPT</span>
+              </div>
+              <div className="um-tooltip-group">
+                <span className="um-tooltip-label">Изображения</span>
+                <span className="um-tooltip-formats">PNG, JPG, WEBP, TIFF</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="indexing-queue-container">
@@ -501,6 +550,21 @@ const IndexingPage = () => {
                         <span className="item-error-label">Ошибка</span>
                       ) : null}
                     </div>
+
+                    {(doc.status === "extraction_failed" ||
+                      doc.status === "processing") && (
+                      <button
+                        className="iq-reindex-btn"
+                        title="Переиндексировать"
+                        disabled={reindexingIds.has(doc.id)}
+                        onClick={() => reindexDoc(doc.id)}
+                      >
+                        <i
+                          className={`fa ${reindexingIds.has(doc.id) ? "fa-spinner fa-spin" : "fa-refresh"}`}
+                        />{" "}
+                        Переиндексировать
+                      </button>
+                    )}
 
                     <button
                       className={
