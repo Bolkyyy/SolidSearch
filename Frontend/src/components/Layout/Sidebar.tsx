@@ -1,5 +1,4 @@
 import { Link, useLocation } from "react-router-dom";
-import logo from "../../assets/images/BlackLogo.svg";
 
 const Sidebar = () => {
   const location = useLocation();
@@ -8,8 +7,13 @@ const Sidebar = () => {
   return (
     <aside className="sidebar">
       <div className="logo-container">
-        <img src={logo} className="logo-img" alt="logo" />
-        <span className="logo-text">AI-поиск по документам</span>
+        <div className="brand-icon-box">
+          <i className="fa fa-archive" />
+        </div>
+        <div className="brand-text">
+          <span className="brand-title">Интеллектуальный архив</span>
+          <span className="logo-text">AI-поиск по документам</span>
+        </div>
       </div>
 
       <Link
