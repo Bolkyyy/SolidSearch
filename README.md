@@ -104,8 +104,8 @@ npm run dev
 | Загрузка документов | Поиск и Результат |
 |---|---|
 | ![upload](Images/Upload.png) | ![search](Images/Search.png) |
-| ![upload](Images/Upload_2.png.png) | ![search](Images/Search_2.png) |
-| ![upload](Images/Upload_3.png.png) | ![result](Images/Search_3.png) |
+| ![upload](Images/Upload_2.png) | ![search](Images/Search_2.png) |
+| ![upload](Images/Upload_3.png) | ![result](Images/Search_3.png) |
 
  
 ---
